@@ -164,8 +164,19 @@ abstraction and run one OpenAI-vs-Claude comparison on the eval set
 Actions CI/CD, deploy to AWS per `CLOUD.md`. Write the final README with
 architecture diagram, eval numbers, and a failure-analysis section.
 
-*(Voice-mode interviews and PR-comment posting are explicit stretch goals
-only if Phase 1–4 finish early — do not pull them forward.)*
+**Phase 5 (Post-v1 extension) — DSA and LeetCode coaching mode**
+Only after Phase 1–4 are complete, add a DSA coaching mode for
+LeetCode-style interview practice. Users can paste a coding problem and their
+attempted solution, then get guided hints, reasoning questions, alternative
+solution prompts, time/space complexity feedback, and recommended next
+problems based on weak patterns or a target company. This phase should build
+on the completed parser, retrieval, interview simulation, progress tracking,
+and recommendation surfaces rather than competing with v1 scope.
+
+*(Voice-mode interviews and PR-comment posting remain stretch goals. DSA
+coaching is the preferred post-v1 extension because it naturally builds on
+Clutch's parsing, retrieval, interview, progress, and recommendation systems.
+Do not pull any stretch work forward before Phase 1–4 are complete.)*
 
 ## 4. Session workflow (every single Codex session)
 

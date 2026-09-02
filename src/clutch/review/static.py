@@ -1,8 +1,8 @@
-"""Deterministic static review used before parser, retrieval, and LLM layers."""
+"""Deterministic static review used before retrieval and LLM layers."""
 
 from collections.abc import Iterable
 
-from clutch.schemas import Citation, CodeFinding, ReviewRequest
+from clutch.schemas import Citation, CodeFinding, ParsedCode, ReviewRequest
 
 
 CLEAN_CODE_CITATION = Citation(
@@ -16,7 +16,9 @@ ERROR_HANDLING_CITATION = Citation(
 )
 
 
-def run_static_review(request: ReviewRequest) -> list[CodeFinding]:
+def run_static_review(
+    request: ReviewRequest, *, parsed_code: ParsedCode | None = None
+) -> list[CodeFinding]:
     """Return deterministic findings for the first local review endpoint."""
 
     lines = request.code.splitlines()
@@ -25,7 +27,8 @@ def run_static_review(request: ReviewRequest) -> list[CodeFinding]:
         *_find_debug_prints(lines),
         *_find_bare_excepts(lines),
         *_find_mutable_defaults(lines),
-        *_find_long_snippet(lines),
+        *_find_long_units(parsed_code),
+        *_find_long_snippet(lines, parsed_code),
     ]
 
     if findings:
@@ -146,7 +149,53 @@ def _find_mutable_defaults(lines: list[str]) -> Iterable[CodeFinding]:
             )
 
 
-def _find_long_snippet(lines: list[str]) -> Iterable[CodeFinding]:
+def _find_long_units(parsed_code: ParsedCode | None) -> Iterable[CodeFinding]:
+    if parsed_code is None:
+        return
+
+    for chunk in parsed_code.chunks:
+        if chunk.symbol_kind not in {"class", "function"}:
+            continue
+
+        non_empty_lines = [
+            line for line in chunk.source_text.splitlines() if line.strip()
+        ]
+        if len(non_empty_lines) <= 40:
+            continue
+
+        yield CodeFinding(
+            id=f"finding-long-{chunk.symbol_kind}-{chunk.line_start}",
+            severity="medium",
+            category="design",
+            message=(
+                f"{chunk.symbol_kind.title()} is large enough to deserve extraction"
+            ),
+            evidence=(
+                f"{chunk.symbol_kind.title()} `{chunk.symbol_name}` spans lines "
+                f"{chunk.line_start}-{chunk.line_end}"
+            ),
+            line_start=chunk.line_start,
+            line_end=chunk.line_end,
+            explanation=(
+                "Large functions or classes are harder to reason about, test, and "
+                "discuss in an interview setting."
+            ),
+            suggestion=(
+                "Split distinct responsibilities into named helpers and add tests "
+                "for the behavior at each boundary."
+            ),
+            citations=[CLEAN_CODE_CITATION],
+        )
+
+
+def _find_long_snippet(
+    lines: list[str], parsed_code: ParsedCode | None
+) -> Iterable[CodeFinding]:
+    if parsed_code is not None and any(
+        chunk.symbol_kind in {"class", "function"} for chunk in parsed_code.chunks
+    ):
+        return
+
     non_empty_lines = [line for line in lines if line.strip()]
     if len(non_empty_lines) <= 60:
         return
@@ -167,4 +216,3 @@ def _find_long_snippet(lines: list[str]) -> Iterable[CodeFinding]:
         ),
         citations=[CLEAN_CODE_CITATION],
     )
-

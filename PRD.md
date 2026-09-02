@@ -93,6 +93,7 @@ answers are improving.
 
 ## Out of Scope for V1
 
+- DSA or LeetCode-specific coaching mode.
 - Mutating a user's repository.
 - Posting PR comments automatically.
 - Voice-mode interviews.
@@ -100,6 +101,24 @@ answers are improving.
 - Kubernetes, Kafka, Spark, Airflow, Neo4j, multiple vector databases,
   fine-tuning, or RL.
 - Full production-grade auth and billing.
+
+## Post-v1 Extension
+
+### DSA / LeetCode Coaching Mode
+
+After the v1 review, question generation, interview simulation, progress
+tracking, eval, tracing, and deployment goals are complete, Clutch can add a
+DSA coaching mode for coding-interview preparation.
+
+In this mode, users paste a LeetCode-style problem and their attempted
+solution. The system guides them toward the solution through hints and
+reasoning questions, asks them to consider alternative approaches, gives
+time/space complexity feedback, and recommends follow-up problems based on
+weak patterns or a target company.
+
+This mode is intentionally post-v1. It should extend the finished interview
+readiness coach without becoming required for the initial two-month portfolio
+deliverable.
 
 ## Functional Requirements
 

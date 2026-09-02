@@ -62,6 +62,27 @@ class CodeFinding(BaseModel):
     citations: list[Citation] = Field(default_factory=list)
 
 
+class CodeChunk(BaseModel):
+    """A structure-aware source chunk produced by the parser."""
+
+    file_path: str = Field(..., min_length=1)
+    language: SupportedLanguage
+    symbol_name: str = Field(..., min_length=1)
+    symbol_kind: Literal["module", "class", "function"]
+    line_start: int = Field(..., ge=1)
+    line_end: int = Field(..., ge=1)
+    source_text: str = Field(..., min_length=1)
+
+
+class ParsedCode(BaseModel):
+    """Parser output used by review, retrieval, and future agent context."""
+
+    language: SupportedLanguage
+    file_path: str = Field(..., min_length=1)
+    chunks: list[CodeChunk] = Field(default_factory=list)
+    has_syntax_error: bool = False
+
+
 class InterviewQuestion(BaseModel):
     """Future contract for interviewer-style follow-up questions."""
 
@@ -93,4 +114,3 @@ class ProgressSnapshot(BaseModel):
     persistent_issues: list[str] = Field(default_factory=list)
     next_practice_tasks: list[str] = Field(default_factory=list)
     evidence_sessions: list[str] = Field(default_factory=list)
-

@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from clutch.parsing import parse_python_code
 from clutch.review.static import run_static_review
 from clutch.schemas import CodeFinding, ReviewRequest
 
@@ -20,5 +21,5 @@ async def health() -> dict[str, str]:
 
 @app.post("/review", response_model=list[CodeFinding])
 async def review_code(request: ReviewRequest) -> list[CodeFinding]:
-    return run_static_review(request)
-
+    parsed_code = parse_python_code(request.code)
+    return run_static_review(request, parsed_code=parsed_code)

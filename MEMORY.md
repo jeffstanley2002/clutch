@@ -2,8 +2,8 @@
 
 ## Current State
 
-The repo is in Phase 1 Day 1. It now has a runnable local skeleton for the
-first pasted-code review workflow.
+The repo is in Phase 1 Day 2. It now has a runnable local pasted-code review
+workflow with Python parsing wired into the backend.
 
 Foundation docs:
 
@@ -18,10 +18,13 @@ Implementation:
 
 - `pyproject.toml`: Python package metadata and dependencies.
 - `src/clutch/schemas.py`: shared Pydantic contracts.
+- `src/clutch/parsing/python.py`: tree-sitter Python parser producing
+  line-aware chunks.
 - `src/clutch/review/static.py`: deterministic Day 1 static reviewer.
 - `backend/app/main.py`: FastAPI app with `/health` and `/review`.
 - `frontend/app.py`: Streamlit pasted-code UI.
-- `tests/test_review_api.py`: route and validation tests.
+- `tests/test_python_parser.py`: parser unit tests.
+- `tests/test_review_api.py`: route, validation, and parsed-metadata tests.
 
 ## Active Direction
 
@@ -30,12 +33,13 @@ The current implementation target remains the smallest runnable Phase 1 slice:
 ```text
 Streamlit pasted Python code input
   -> FastAPI POST /review
+  -> tree-sitter parsed chunks
   -> validated CodeFinding[] response
   -> Streamlit findings display
 ```
 
-Parsing, retrieval, LangGraph, GitHub MCP, evals, tracing, Redis, and cloud
-deployment should be layered on only after this basic loop works.
+Retrieval, LangGraph, GitHub MCP, evals, tracing, Redis, and cloud deployment
+should be layered on only after this parsed review loop works well.
 
 ## Key Decisions
 
@@ -50,7 +54,8 @@ deployment should be layered on only after this basic loop works.
 ## Known Gaps
 
 - The static reviewer is intentionally shallow and deterministic.
-- No tree-sitter parser exists yet.
+- Tree-sitter parsing extracts functions/classes and falls back to a module
+  chunk for non-definition snippets.
 - No retrieval or real citation corpus exists yet.
 - No LangGraph graph or LLM provider path exists yet.
 - Tracing provider and initial model choice are still open.

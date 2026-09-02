@@ -75,3 +75,42 @@ Next up:
 - Add the Python parsing layer with line-aware chunks.
 - Route `/review` through parsed snippet metadata while preserving the same
   `CodeFinding[]` API shape.
+
+## 2026-09-02 (Day 2)
+
+Phase: 1
+
+Did:
+
+- Added Pydantic `CodeChunk` and `ParsedCode` models for parser output.
+- Added a tree-sitter Python parser that extracts line-aware class/function
+  chunks and falls back to a module chunk for snippets without definitions.
+- Moved tree-sitter dependencies into core runtime dependencies because
+  `/review` now parses every Python request.
+- Routed FastAPI `POST /review` through parser metadata before deterministic
+  static review.
+- Added parser unit tests and an API test proving large-function findings use
+  parsed line metadata.
+
+Learned / decided:
+
+- Keep parser output internal for now so the public API remains
+  `list[CodeFinding]`.
+- Parser metadata is immediately useful for line-aware findings even before
+  retrieval or LangGraph exists.
+
+Open issues:
+
+- Static review is still shallow and deterministic.
+- Syntax errors are detected by parsing but not surfaced as a dedicated
+  finding yet.
+- No clean-code retrieval, LangGraph orchestration, or model-backed structured
+  review exists yet.
+- Pytest still shows the upstream Starlette/FastAPI `TestClient` deprecation
+  warning.
+
+Next up:
+
+- Add the first seeded clean-code knowledge base and retrieval interface.
+- Use retrieved seed principles as real citations for deterministic findings
+  before introducing LangGraph or model calls.

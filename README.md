@@ -1,10 +1,11 @@
 # Clutch
 
 Clutch is a read-only AI code review and interview prep partner for junior
-engineers. The Day 1 slice is a local pasted-code review loop:
+engineers. The current Phase 1 slice is a local pasted-code review loop with
+Python parsing wired into the backend:
 
 ```text
-Streamlit UI -> FastAPI POST /review -> Pydantic CodeFinding[]
+Streamlit UI -> FastAPI POST /review -> tree-sitter Python parsing -> Pydantic CodeFinding[]
 ```
 
 ## Local Development
@@ -35,7 +36,6 @@ Run tests:
 python -m pytest
 ```
 
-The first reviewer is deterministic and intentionally local-only. Tree-sitter,
-retrieval, LangGraph, and model-backed structured review are layered in after
-this contract is stable.
-
+The first reviewer is deterministic and intentionally local-only. It now uses
+tree-sitter metadata for line-aware review context. Retrieval, LangGraph, and
+model-backed structured review are layered in after this contract is stable.
