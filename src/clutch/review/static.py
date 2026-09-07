@@ -1,18 +1,14 @@
-"""Deterministic static review used before retrieval and LLM layers."""
+"""Deterministic static review grounded by the seed knowledge base."""
 
 from collections.abc import Iterable
 
-from clutch.schemas import Citation, CodeFinding, ParsedCode, ReviewRequest
-
-
-CLEAN_CODE_CITATION = Citation(
-    source_id="seed.clean_code.readability",
-    title="Seed clean-code principle: small, explicit, reviewable units",
-)
-
-ERROR_HANDLING_CITATION = Citation(
-    source_id="seed.clean_code.error_handling",
-    title="Seed clean-code principle: preserve useful error context",
+from clutch.knowledge_base import retrieve_clean_code_principles
+from clutch.schemas import (
+    Citation,
+    CodeFinding,
+    FindingCategory,
+    ParsedCode,
+    ReviewRequest,
 )
 
 
@@ -50,7 +46,10 @@ def run_static_review(
                 "Add tests around expected behavior and resubmit once the richer "
                 "review agent is wired in."
             ),
-            citations=[CLEAN_CODE_CITATION],
+            citations=_citations_for(
+                "tests expected behavior boundary confidence",
+                category="testing",
+            ),
         )
     ]
 
@@ -74,7 +73,10 @@ def _find_todos(lines: list[str]) -> Iterable[CodeFinding]:
                     "Either complete the work or replace the marker with a clear "
                     "issue, owner, and decision about acceptable scope."
                 ),
-                citations=[CLEAN_CODE_CITATION],
+                citations=_citations_for(
+                    "TODO FIXME incomplete work scope tradeoff",
+                    category="maintainability",
+                ),
             )
 
 
@@ -98,7 +100,10 @@ def _find_debug_prints(lines: list[str]) -> Iterable[CodeFinding]:
                     "Use structured logging at the boundary, or remove the print if "
                     "it was only used while debugging."
                 ),
-                citations=[CLEAN_CODE_CITATION],
+                citations=_citations_for(
+                    "print debug logging observability boundary",
+                    category="maintainability",
+                ),
             )
 
 
@@ -121,7 +126,10 @@ def _find_bare_excepts(lines: list[str]) -> Iterable[CodeFinding]:
                     "Catch the narrow exception type you can handle, preserve useful "
                     "context, and let unexpected errors surface."
                 ),
-                citations=[ERROR_HANDLING_CITATION],
+                citations=_citations_for(
+                    "bare except exception failure context",
+                    category="correctness",
+                ),
             )
 
 
@@ -145,7 +153,10 @@ def _find_mutable_defaults(lines: list[str]) -> Iterable[CodeFinding]:
                     "Use None as the default, create the list or dict inside the "
                     "function, and type the parameter explicitly."
                 ),
-                citations=[ERROR_HANDLING_CITATION],
+                citations=_citations_for(
+                    "mutable default argument list dict python shared state",
+                    category="correctness",
+                ),
             )
 
 
@@ -184,7 +195,10 @@ def _find_long_units(parsed_code: ParsedCode | None) -> Iterable[CodeFinding]:
                 "Split distinct responsibilities into named helpers and add tests "
                 "for the behavior at each boundary."
             ),
-            citations=[CLEAN_CODE_CITATION],
+            citations=_citations_for(
+                f"large {chunk.symbol_kind} extraction small reviewable unit",
+                category="design",
+            ),
         )
 
 
@@ -214,5 +228,13 @@ def _find_long_snippet(
             "Split distinct responsibilities into named helpers and add tests for "
             "the behavior at each boundary."
         ),
-        citations=[CLEAN_CODE_CITATION],
+        citations=_citations_for(
+            "large snippet extraction small reviewable unit",
+            category="design",
+        ),
     )
+
+
+def _citations_for(query: str, *, category: FindingCategory) -> list[Citation]:
+    principles = retrieve_clean_code_principles(query, categories={category}, limit=1)
+    return [principle.citation for principle in principles]

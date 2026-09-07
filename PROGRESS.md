@@ -114,3 +114,42 @@ Next up:
 - Add the first seeded clean-code knowledge base and retrieval interface.
 - Use retrieved seed principles as real citations for deterministic findings
   before introducing LangGraph or model calls.
+
+## 2026-09-07 (Day 3)
+
+Phase: 1
+
+Did:
+
+- Added `src/clutch/knowledge_base` with Pydantic `CleanCodePrinciple` seed
+  records and deterministic lexical retrieval.
+- Seeded the first clean-code corpus: incomplete work, observability, narrow
+  error handling, mutable Python defaults, small reviewable units, and
+  behavioral test boundaries.
+- Updated the deterministic static reviewer so findings retrieve their
+  citations from the seed knowledge base instead of using module-level
+  placeholder citations.
+- Added retrieval unit tests and strengthened API tests to assert specific
+  citation source IDs.
+
+Learned / decided:
+
+- Keep Day 3 retrieval local and lexical so the pasted-code review loop stays
+  runnable without Postgres, embeddings, or model calls.
+- Treat the retrieval function as the stable interface that vector or hybrid
+  retrieval can replace internally later.
+
+Open issues:
+
+- Retrieval is still tiny and lexical; no vector-only retrieval, pgvector,
+  hybrid search, or reranking yet.
+- Static review is still deterministic and shallow.
+- No LangGraph orchestration or model-backed structured review exists yet.
+- Pytest still shows the upstream Starlette/FastAPI `TestClient` deprecation
+  warning.
+
+Next up:
+
+- Add the first LangGraph review orchestration layer with tools for
+  `static_review` and `retrieve_clean_code_principles`, while preserving the
+  same `/review -> CodeFinding[]` API shape.

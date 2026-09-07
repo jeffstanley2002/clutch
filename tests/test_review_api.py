@@ -41,6 +41,16 @@ def test_review_returns_structured_findings_for_static_issues() -> None:
     }
     assert all(finding["citations"] for finding in findings)
     assert all("id" in finding for finding in findings)
+    citation_source_ids = {
+        citation["source_id"]
+        for finding in findings
+        for citation in finding["citations"]
+    }
+    assert citation_source_ids == {
+        "seed.clean_code.explicit_incomplete_work",
+        "seed.clean_code.boundary_observability",
+        "seed.clean_code.safe_python_defaults",
+    }
 
 
 def test_review_uses_parsed_line_metadata_for_large_functions() -> None:
@@ -65,6 +75,10 @@ def test_review_uses_parsed_line_metadata_for_large_functions() -> None:
     assert long_function["line_start"] == 1
     assert long_function["line_end"] == 47
     assert "`calculate`" in long_function["evidence"]
+    assert (
+        long_function["citations"][0]["source_id"]
+        == "seed.clean_code.small_reviewable_units"
+    )
 
 
 def test_review_preserves_long_snippet_finding_for_top_level_code() -> None:
