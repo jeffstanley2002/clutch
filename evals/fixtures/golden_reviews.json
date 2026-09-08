@@ -1,0 +1,273 @@
+[
+  {
+    "id": "todo-marker",
+    "title": "Unresolved TODO",
+    "kind": "focused",
+    "code": "def calculate_total(items):\n    # TODO handle discounts\n    return sum(items)\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-todo-",
+        "category": "maintainability",
+        "severity": "medium",
+        "citation_ids": ["seed.clean_code.explicit_incomplete_work"]
+      }
+    ],
+    "question_keywords": ["todo", "maintainability"],
+    "retrieval_judgments": {
+      "seed.clean_code.explicit_incomplete_work": 3,
+      "seed.rubric.maintainable_change_scope": 2,
+      "seed.question.maintainability_change": 1,
+      "seed.question.maintenance_incident": 1,
+      "seed.clean_code.public_docstrings": 0
+    }
+  },
+  {
+    "id": "debug-print",
+    "title": "Debug print at a boundary",
+    "kind": "focused",
+    "code": "def publish(event):\n    print(event)\n    return True\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-print-",
+        "category": "maintainability",
+        "severity": "low",
+        "citation_ids": ["seed.clean_code.boundary_observability"]
+      }
+    ],
+    "question_keywords": ["debug print", "maintainability"],
+    "retrieval_judgments": {
+      "seed.clean_code.boundary_observability": 3,
+      "seed.rubric.maintainable_change_scope": 1,
+      "seed.clean_code.resource_lifetime": 1,
+      "seed.question.maintainability_change": 1,
+      "seed.question.maintenance_incident": 1,
+      "seed.clean_code.explicit_incomplete_work": 0,
+      "seed.clean_code.allowlist_validation": 0
+    }
+  },
+  {
+    "id": "bare-except",
+    "title": "Bare exception handler",
+    "kind": "focused",
+    "code": "def load_record(store):\n    try:\n        return store.load()\n    except:\n        return None\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-bare-except-",
+        "category": "correctness",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+      }
+    ],
+    "question_keywords": ["bare except", "correctness"],
+    "retrieval_judgments": {
+      "seed.clean_code.narrow_error_handling": 3,
+      "seed.rubric.correctness_failure_model": 2,
+      "seed.question.correctness_counterexample": 2
+    }
+  },
+  {
+    "id": "mutable-default",
+    "title": "Shared mutable default",
+    "kind": "focused",
+    "code": "def append_event(event, events=[]):\n    events.append(event)\n    return events\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-mutable-default-",
+        "category": "correctness",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+      }
+    ],
+    "question_keywords": ["mutable default", "correctness"],
+    "retrieval_judgments": {
+      "seed.clean_code.safe_python_defaults": 3,
+      "seed.rubric.correctness_failure_model": 2,
+      "seed.question.correctness_counterexample": 1,
+      "seed.question.correctness_second_call": 3,
+      "seed.rubric.correctness_state_transition": 2,
+      "seed.clean_code.narrow_error_handling": 0
+    }
+  },
+  {
+    "id": "long-function",
+    "title": "Long review unit",
+    "kind": "focused",
+    "code": "def transform(value):\n    value += 1\n    value += 2\n    value += 3\n    value += 4\n    value += 5\n    value += 6\n    value += 7\n    value += 8\n    value += 9\n    value += 10\n    value += 11\n    value += 12\n    value += 13\n    value += 14\n    value += 15\n    value += 16\n    value += 17\n    value += 18\n    value += 19\n    value += 20\n    value += 21\n    value += 22\n    value += 23\n    value += 24\n    value += 25\n    value += 26\n    value += 27\n    value += 28\n    value += 29\n    value += 30\n    value += 31\n    value += 32\n    value += 33\n    value += 34\n    value += 35\n    value += 36\n    value += 37\n    value += 38\n    value += 39\n    value += 40\n    return value\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-long-function-",
+        "category": "design",
+        "severity": "medium",
+        "citation_ids": ["seed.clean_code.small_reviewable_units"]
+      }
+    ],
+    "question_keywords": ["function", "design"],
+    "retrieval_judgments": {
+      "seed.clean_code.small_reviewable_units": 3,
+      "seed.clean_code.explicit_dependency_boundaries": 2,
+      "seed.rubric.design_tradeoff": 2,
+      "seed.question.design_second_requirement": 2,
+      "seed.question.design_replace_dependency": 0,
+      "seed.clean_code.single_source_of_behavior": 1
+    }
+  },
+  {
+    "id": "unsafe-sql",
+    "title": "Interpolated SQL value",
+    "kind": "focused",
+    "code": "def find_user(cursor, user_id):\n    query = f\"SELECT * FROM users WHERE id = {user_id}\"\n    return cursor.execute(query).fetchone()\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-sql-interpolation-",
+        "category": "security",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.parameterized_queries"]
+      }
+    ],
+    "question_keywords": ["sql", "security"],
+    "retrieval_judgments": {
+      "seed.clean_code.parameterized_queries": 3,
+      "seed.clean_code.allowlist_validation": 2,
+      "seed.rubric.security_trust_boundary": 2,
+      "seed.question.security_attack_path": 2,
+      "seed.clean_code.safe_subprocess_boundaries": 1
+    }
+  },
+  {
+    "id": "duplicated-logic",
+    "title": "Duplicated function bodies",
+    "kind": "focused",
+    "code": "def retail_total(items):\n    subtotal = sum(items)\n    return subtotal * 1.09\n\ndef wholesale_total(items):\n    subtotal = sum(items)\n    return subtotal * 1.09\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-duplicated-functions-",
+        "category": "design",
+        "severity": "medium",
+        "citation_ids": ["seed.clean_code.single_source_of_behavior"]
+      }
+    ],
+    "question_keywords": ["duplicate", "design"],
+    "retrieval_judgments": {
+      "seed.clean_code.single_source_of_behavior": 3,
+      "seed.clean_code.explicit_dependency_boundaries": 2,
+      "seed.clean_code.small_reviewable_units": 2,
+      "seed.rubric.design_tradeoff": 2,
+      "seed.question.design_second_requirement": 2,
+      "seed.question.design_replace_dependency": 1
+    }
+  },
+  {
+    "id": "clean-pure-function",
+    "title": "Small pure normalization function",
+    "kind": "clean",
+    "code": "def normalize_name(name):\n    return name.strip().title()\n",
+    "expected_findings": [],
+    "question_keywords": [],
+    "retrieval_judgments": {
+      "seed.rubric.correctness_failure_model": 1,
+      "seed.rubric.design_tradeoff": 1,
+      "seed.rubric.security_trust_boundary": 1,
+      "seed.rubric.testing_failure_diagnosis": 1,
+      "seed.rubric.maintainable_change_scope": 1,
+      "seed.rubric.readable_explanation": 1,
+      "seed.rubric.testing_evidence": 1
+    }
+  },
+  {
+    "id": "clean-parameterized-sql",
+    "title": "Parameterized database query",
+    "kind": "clean",
+    "code": "def find_user(cursor, user_id):\n    cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))\n    return cursor.fetchone()\n",
+    "expected_findings": [],
+    "question_keywords": [],
+    "retrieval_judgments": {
+      "seed.rubric.correctness_failure_model": 1,
+      "seed.rubric.design_tradeoff": 1,
+      "seed.rubric.security_trust_boundary": 1,
+      "seed.clean_code.parameterized_queries": 3,
+      "seed.clean_code.allowlist_validation": 2,
+      "seed.question.design_replace_dependency": 1
+    }
+  },
+  {
+    "id": "clean-narrow-exception",
+    "title": "Narrow exception handling",
+    "kind": "clean",
+    "code": "def parse_count(value):\n    try:\n        return int(value)\n    except ValueError:\n        return 0\n",
+    "expected_findings": [],
+    "question_keywords": [],
+    "retrieval_judgments": {
+      "seed.rubric.correctness_failure_model": 1,
+      "seed.rubric.design_tradeoff": 1,
+      "seed.rubric.security_trust_boundary": 1,
+      "seed.clean_code.narrow_error_handling": 2,
+      "seed.clean_code.exception_contract_tests": 2
+    }
+  },
+  {
+    "id": "mixed-boundary-state",
+    "title": "Mutable state with unfinished debug path",
+    "kind": "mixed",
+    "code": "def collect(event, events=[]):\n    # TODO replace temporary event flow\n    print(event)\n    events.append(event)\n    return events\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-todo-",
+        "category": "maintainability",
+        "severity": "medium",
+        "citation_ids": ["seed.clean_code.explicit_incomplete_work"]
+      },
+      {
+        "id_prefix": "finding-print-",
+        "category": "maintainability",
+        "severity": "low",
+        "citation_ids": ["seed.clean_code.boundary_observability"]
+      },
+      {
+        "id_prefix": "finding-mutable-default-",
+        "category": "correctness",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+      }
+    ],
+    "question_keywords": ["todo", "debug print", "mutable default"],
+    "retrieval_judgments": {
+      "seed.clean_code.safe_python_defaults": 3,
+      "seed.clean_code.explicit_incomplete_work": 3,
+      "seed.clean_code.boundary_observability": 3,
+      "seed.rubric.maintainable_change_scope": 2,
+      "seed.rubric.correctness_failure_model": 2,
+      "seed.question.maintainability_change": 1
+    }
+  },
+  {
+    "id": "mixed-errors-and-sql",
+    "title": "Broad failure handling around interpolated SQL",
+    "kind": "mixed",
+    "code": "def find_user(cursor, user_id):\n    try:\n        query = f\"SELECT * FROM users WHERE id = {user_id}\"\n        return cursor.execute(query).fetchone()\n    except:\n        return None\n",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-bare-except-",
+        "category": "correctness",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+      },
+      {
+        "id_prefix": "finding-sql-interpolation-",
+        "category": "security",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.parameterized_queries"]
+      }
+    ],
+    "question_keywords": ["bare except", "sql"],
+    "retrieval_judgments": {
+      "seed.clean_code.parameterized_queries": 3,
+      "seed.clean_code.narrow_error_handling": 3,
+      "seed.clean_code.allowlist_validation": 2,
+      "seed.rubric.security_trust_boundary": 2,
+      "seed.rubric.correctness_failure_model": 2,
+      "seed.clean_code.safe_subprocess_boundaries": 1,
+      "seed.question.security_attack_path": 1,
+      "seed.question.correctness_counterexample": 1
+    }
+  }
+]

@@ -1,0 +1,164 @@
+[
+  {
+    "id": "weak-repeated-gaps",
+    "title": "Repeated shallow answers produce recurring coaching gaps",
+    "questions": [
+      {
+        "id": "weak-question-1",
+        "finding_id": "weak-finding-1",
+        "question": "How would you make the failure path safer?",
+        "intent": "Assess correctness reasoning for a failure boundary.",
+        "difficulty": "hard"
+      },
+      {
+        "id": "weak-question-2",
+        "finding_id": "weak-finding-2",
+        "question": "How would you demonstrate this behavior?",
+        "intent": "Assess testing evidence and verification depth.",
+        "difficulty": "medium"
+      }
+    ],
+    "answers": [
+      "PRIVACY_SENTINEL_WEAK_8F3C I would change the implementation.",
+      "I would improve this part and describe the result."
+    ],
+    "expected_scores": [1, 1],
+    "expected_strengths": [],
+    "expected_recurring_issues": [
+      "Describe how tests or edge cases would verify the change.",
+      "Explain the reasoning in more depth.",
+      "Name at least one tradeoff behind the decision."
+    ],
+    "recommended_task_keywords": [
+      "verification matrix",
+      "60-second",
+      "rejected alternative"
+    ],
+    "readiness_keyword": "More practice",
+    "supporting_findings": [
+      {
+        "finding_id": "weak-finding-1",
+        "severity": "high",
+        "category": "correctness",
+        "message": "Failure path hides important context",
+        "explanation": "The error boundary does not preserve diagnostic context.",
+        "suggestion": "Handle only the expected failure and preserve context.",
+        "line_start": 4,
+        "line_end": 5,
+        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+      }
+    ],
+    "privacy_sentinel": "PRIVACY_SENTINEL_WEAK_8F3C"
+  },
+  {
+    "id": "strong-complete-reasoning",
+    "title": "Detailed answers demonstrate every interview signal",
+    "questions": [
+      {
+        "id": "strong-question-1",
+        "finding_id": "strong-finding-1",
+        "question": "How would you narrow this error boundary?",
+        "intent": "Assess correctness reasoning for exception handling.",
+        "difficulty": "hard"
+      },
+      {
+        "id": "strong-question-2",
+        "finding_id": "strong-finding-2",
+        "question": "How would you separate these responsibilities?",
+        "intent": "Assess design judgment around a system boundary.",
+        "difficulty": "medium"
+      }
+    ],
+    "answers": [
+      "I would catch the specific exception because the correct failure behavior must preserve context; the tradeoff is extra handling, and I would test the happy path plus an edge case. PRIVACY_SENTINEL_STRONG_2A91",
+      "I would move the boundary responsibility into a small helper because that design keeps policy explicit; the tradeoff is another abstraction, and I would verify both callers with focused tests."
+    ],
+    "expected_scores": [5, 5],
+    "expected_strengths": [
+      "Explained the approach with useful detail.",
+      "Made the decision rationale explicit.",
+      "Included a way to verify the change.",
+      "Connected the answer to the interviewer’s intent."
+    ],
+    "expected_recurring_issues": [],
+    "recommended_task_keywords": ["two-minute"],
+    "readiness_keyword": "Ready",
+    "supporting_findings": [
+      {
+        "finding_id": "strong-finding-1",
+        "severity": "high",
+        "category": "correctness",
+        "message": "Error boundary is too broad",
+        "explanation": "Broad handling obscures unexpected failures.",
+        "suggestion": "Catch the expected exception only.",
+        "line_start": 3,
+        "line_end": 4,
+        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+      },
+      {
+        "finding_id": "strong-finding-2",
+        "severity": "medium",
+        "category": "design",
+        "message": "Responsibilities share one large boundary",
+        "explanation": "Distinct decisions are harder to review together.",
+        "suggestion": "Extract a named responsibility boundary.",
+        "line_start": 8,
+        "line_end": 15,
+        "citation_ids": ["seed.clean_code.small_reviewable_units"]
+      }
+    ],
+    "privacy_sentinel": "PRIVACY_SENTINEL_STRONG_2A91"
+  },
+  {
+    "id": "mixed-answer-quality",
+    "title": "One strong and one weak answer yield developing readiness",
+    "questions": [
+      {
+        "id": "mixed-question-1",
+        "finding_id": "mixed-finding-1",
+        "question": "How would you make this query boundary safer?",
+        "intent": "Assess security reasoning for untrusted input.",
+        "difficulty": "hard"
+      },
+      {
+        "id": "mixed-question-2",
+        "finding_id": "mixed-finding-2",
+        "question": "How would you improve this helper?",
+        "intent": "Assess maintainability judgment.",
+        "difficulty": "medium"
+      }
+    ],
+    "answers": [
+      "I would use parameter binding because untrusted values must not alter query structure; the tradeoff is driver-specific syntax, and I would verify malicious input plus the normal path. PRIVACY_SENTINEL_MIXED_C71D",
+      "I would change the helper and describe the result."
+    ],
+    "expected_scores": [5, 2],
+    "expected_strengths": [
+      "Explained the approach with useful detail.",
+      "Made the decision rationale explicit.",
+      "Included a way to verify the change.",
+      "Connected the answer to the interviewer’s intent."
+    ],
+    "expected_recurring_issues": [],
+    "recommended_task_keywords": [
+      "verification matrix",
+      "60-second",
+      "rejected alternative"
+    ],
+    "readiness_keyword": "Developing",
+    "supporting_findings": [
+      {
+        "finding_id": "mixed-finding-1",
+        "severity": "high",
+        "category": "security",
+        "message": "Query interpolates an untrusted value",
+        "explanation": "The value can change the structure of the command.",
+        "suggestion": "Use driver-supported parameter binding.",
+        "line_start": 2,
+        "line_end": 2,
+        "citation_ids": ["seed.clean_code.parameterized_queries"]
+      }
+    ],
+    "privacy_sentinel": "PRIVACY_SENTINEL_MIXED_C71D"
+  }
+]
