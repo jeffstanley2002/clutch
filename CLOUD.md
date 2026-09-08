@@ -1,135 +1,127 @@
 # Cloud Plan
 
-## Purpose
+## Purpose and status
 
-This document covers deployment and infrastructure only. Product requirements
-live in `PRD.md`; system architecture lives in `ARCHITECTURE.md`.
+This document owns deployment/infra decisions. Product requirements live in
+`PRD.md`; application design lives in `ARCHITECTURE.md`.
 
-## Target Cloud Shape
+The local container boundary and Terraform root module are implemented and
+verified. Terraform has been formatted and validated without AWS credentials;
+it has never been planned against an account or applied. Creating paid cloud
+resources is an explicit user checkpoint.
 
-Clutch deploys to AWS using containers and managed data services:
+## Target AWS shape
 
-- ECS/Fargate for the Streamlit UI container.
-- ECS/Fargate for the FastAPI backend container.
-- RDS PostgreSQL with pgvector for app data and embeddings.
-- ElastiCache Redis for caching once caching is introduced.
-- AWS Secrets Manager or SSM Parameter Store for secrets.
-- S3 for non-sensitive generated artifacts if needed.
-- CloudWatch for container logs and metrics.
-- GitHub Actions for CI/CD.
+- One VPC across two availability zones.
+- Public ALB routes the Streamlit UI by default and FastAPI endpoint paths to a
+  separate backend target group.
+- Three ECS/Fargate services: Streamlit, FastAPI + agent, and read-only GitHub
+  MCP. Streamlit reaches FastAPI and FastAPI reaches MCP through private Cloud
+  Map DNS.
+- ECS tasks use public subnets for low-cost outbound access but accept ingress
+  only from the ALB or calling service security group. This avoids a NAT
+  Gateway for the small portfolio deployment.
+- RDS PostgreSQL is private, encrypted, RDS-password-managed, and supports the
+  pgvector extension created by Alembic.
+- Single-node ElastiCache Redis is private with encryption at rest and TLS in
+  transit.
+- Three immutable ECR repositories, CloudWatch log groups, ECS execution/task
+  roles, and least-privilege secret access.
+- AWS Budget forecasted/actual alerts are created before ALB/RDS/Redis.
+- Optional ACM certificate enables HTTPS and HTTP redirect. A public deployment
+  must use ACM; plain HTTP is only a scaffold/local-equivalent mode.
 
-The agent service should initially ship inside the FastAPI backend container.
-Split it into a separate worker only if latency, scaling, or operational
-evidence makes that worthwhile.
+The agent remains inside FastAPI. Split it only when measured scaling or
+operational evidence requires another deployable.
 
-## Local Development
+## Local Compose parity
 
-The first local setup should stay light:
+`compose.yaml` runs pgvector Postgres, Redis, GitHub MCP, FastAPI, and Streamlit
+with health-gated dependencies. Migrations are explicit:
 
-- Run Streamlit locally.
-- Run FastAPI locally.
-- Use local environment variables from `.env`.
-- Add Docker Compose when PostgreSQL, pgvector, or Redis become necessary.
+```bash
+export CLUTCH_DB_PASSWORD=replace-with-a-local-only-password
+docker compose build
+docker compose up -d postgres redis github-mcp
+docker compose run --rm backend alembic upgrade head
+docker compose up -d backend frontend
+```
 
-Cloud dependencies should not block the first pasted-code review demo.
+All three images run as UID/GID 10001. The MCP transport binds loopback by
+default and opts into all-interface binding only inside the container network,
+with DNS-rebinding host checks enabled.
 
-## Environments
+## Terraform safety model
 
-### Local
+The root module is `infra/terraform`. It requires Terraform 1.16.x and locks
+AWS provider 6.63.0. Remote state uses a separately created, private,
+versioned S3 bucket and native S3 lockfile; credentials are environment/profile
+inputs, never backend files committed to Git.
 
-- Developer machine.
-- `.env` for local secrets.
-- Local or containerized services.
-- Test data only.
+`service_desired_count` defaults to zero so tasks do not start before immutable
+images and migrations are ready. An apply still creates paid ALB, RDS, and
+ElastiCache resources, so zero tasks is not zero cost.
 
-### Staging
+Before any AWS plan/apply, confirm:
 
-- ECS service using staging secrets and staging database.
-- Runs after CI passes.
-- Used for deployment smoke tests and eval sanity checks.
-
-### Production
-
-- ECS service using production secrets and production database.
-- Deployed only after tests and eval gates pass.
-- No raw uploaded code stored in logs or traces.
+1. AWS account and `ap-southeast-1` (or chosen region).
+2. Budget email and acceptable monthly ceiling.
+3. Narrow public ingress CIDR, ACM/domain plan, and API-key secret ARN.
+4. Staging teardown time and production deletion/final-snapshot policy.
+5. Credential/profile source and operator identity.
+6. Per-call/daily model-spend ceilings appropriate for the approved budget.
 
 ## Secrets
 
-Required secrets will eventually include:
+- RDS creates and rotates its master password in Secrets Manager. ECS injects
+  only the `password` JSON field; the application assembles the URL in memory.
+- The required Clutch API key plus optional OpenAI, read-only GitHub, and
+  Langfuse values are existing plaintext Secrets Manager ARNs supplied as
+  sensitive deployment inputs.
+- Secret ARNs may appear in Terraform state; secret values must not.
+- Server-side Streamlit receives only the Clutch API key. The browser never
+  receives it, and neither frontend layer receives GitHub, model, database, or
+  Langfuse credentials.
 
-- `OPENAI_API_KEY`.
-- Tracing provider keys for Langfuse or Arize Phoenix.
-- Database connection URL.
-- Redis connection URL.
-- GitHub token for read-only repository or PR fetches, if needed.
+## Approved deployment sequence
 
-Rules:
+1. Run local quality, security, eval, image-build, Compose, and Terraform gates.
+2. Create/version the S3 state bucket and initialize the reviewed backend.
+3. Populate ignored tfvars, run a saved plan, and obtain explicit approval.
+4. Apply with ECS desired count zero.
+5. Push all three multi-platform images with the same immutable Git SHA tag.
+6. Run the backend task once with `alembic upgrade head`.
+7. Update `image_tag` and desired count to one; review/apply another saved plan.
+8. Verify UI/API/MCP health, one synthetic review/interview/progress flow,
+   Redis metrics, privacy-safe database/log/trace content, and rollback.
+9. Record deployed SHA, eval result, plan summary, smoke evidence, owner, and
+   teardown time.
 
-- Never commit secrets.
-- Keep `.env.example` with variable names but no secret values.
-- Use AWS Secrets Manager or SSM Parameter Store in deployed environments.
-- Scope GitHub credentials to read-only access.
+CI currently checks code/evals/security, builds images without publishing, and
+validates Terraform. ECR publication and ECS update intentionally remain absent
+until the AWS checkpoint is approved.
 
-## CI/CD
+## Observability and data handling
 
-GitHub Actions should eventually run:
+CloudWatch and Langfuse may capture request ID, endpoint/workflow, source hash,
+language, line count, categories, citations, model, tokens, cost, cache status,
+tool/retrieval timing, and safe error category. They must never receive raw
+code, repository content, prompts, provider payloads, interview answers, or
+secret values.
 
-- Formatting check.
-- Linting.
-- Type checks.
-- Unit tests.
-- API integration tests.
-- Retrieval tests.
-- Prompt-regression tests.
-- Prompt-injection guardrail tests.
-- Agent eval suite.
-- Docker build.
+RDS stores derived review/interview/progress data and hashes. Redis stores only
+hashed embedding/retrieval keys and knowledge-base values. No S3 artifact store
+is provisioned because v1 has no current non-sensitive artifact requirement.
 
-Deployment should be gated by tests and eval thresholds once the eval harness
-exists.
+## Cost and rollback
 
-## Deployment Flow
-
-1. Merge or push to the deployment branch.
-2. GitHub Actions runs checks and eval gates.
-3. Build Docker images for Streamlit and FastAPI.
-4. Push images to Amazon ECR.
-5. Update ECS services.
-6. Run health checks and a minimal smoke test.
-7. Record deployment metadata in release notes or CI logs.
-
-## Observability
-
-Cloud logs and traces should capture:
-
-- Request id.
-- Endpoint.
-- Latency.
-- Error category.
-- Model name.
-- Token usage.
-- Estimated cost.
-- Tool-call timing.
-- Retrieval document ids.
-
-They should not capture raw uploaded code, private repository contents, or
-secrets.
-
-## Cost Controls
-
-- Keep ECS service sizes small for v1.
-- Use one PostgreSQL instance until usage justifies more.
-- Introduce Redis only after a measured need.
-- Track model cost per request.
-- Cache embeddings and repeated retrieval once retrieval is active.
-- Prefer staging resources that can be paused or scaled down.
-
-## Open Decisions
-
-- Choose Langfuse or Arize Phoenix for first tracing implementation.
-- Decide whether the Streamlit UI and FastAPI backend share one domain or use
-  separate service URLs.
-- Decide initial RDS size and backup retention when deployment begins.
-- Decide whether to use Terraform, AWS CDK, or manual setup for the first AWS
-  deployment.
+- Budget alerts default to USD 30/month; this is an alert, not a hard cap.
+- Staging uses one task/service, single-AZ small RDS, one Redis node, short log
+  retention, and no NAT Gateway once enabled.
+- Keep desired count zero until images are published; tear staging down when
+  demo availability is unnecessary.
+- ECS deployment circuit breakers roll back unhealthy task revisions.
+- RDS staging skips final snapshot for cheap teardown; production requires a
+  final snapshot and should enable deletion protection.
+- Database rollback means restore from a tested snapshot and deploy the prior
+  image/migration-compatible revision—not blindly downgrade schema in place.

@@ -1,0 +1,116 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg16-bookworm
+    environment:
+      POSTGRES_DB: clutch
+      POSTGRES_USER: clutch
+      POSTGRES_PASSWORD: ${CLUTCH_DB_PASSWORD:?Set CLUTCH_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - clutch_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clutch -d clutch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:8.2.9-alpine3.22
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  github-mcp:
+    build:
+      context: .
+      dockerfile: infra/docker/github-mcp.Dockerfile
+    environment:
+      CLUTCH_MCP_HOST: 0.0.0.0
+      CLUTCH_MCP_TRANSPORT: streamable-http
+      GITHUB_API_VERSION: ${GITHUB_API_VERSION:-2026-03-10}
+      GITHUB_MCP_ALLOWED_HOSTS: 127.0.0.1:8001,localhost:8001,github-mcp:8001
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      CLUTCH_API_KEY: ${CLUTCH_API_KEY:-}
+      CLUTCH_MODEL_DAILY_USD: ${CLUTCH_MODEL_DAILY_USD:-1.00}
+      CLUTCH_MODEL_INPUT_USD_PER_MILLION: ${CLUTCH_MODEL_INPUT_USD_PER_MILLION:-}
+      CLUTCH_MODEL_OUTPUT_USD_PER_MILLION: ${CLUTCH_MODEL_OUTPUT_USD_PER_MILLION:-}
+      CLUTCH_MODEL_PER_REQUEST_USD: ${CLUTCH_MODEL_PER_REQUEST_USD:-0.10}
+      CLUTCH_EMBEDDING_USD_PER_MILLION: ${CLUTCH_EMBEDDING_USD_PER_MILLION:-}
+      CLUTCH_REQUIRE_AUTH: ${CLUTCH_REQUIRE_AUTH:-false}
+      DATABASE_URL: postgresql+asyncpg://clutch:${CLUTCH_DB_PASSWORD:?Set CLUTCH_DB_PASSWORD}@postgres:5432/clutch
+      GITHUB_MCP_URL: http://github-mcp:8001/mcp
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      LANGFUSE_OBSERVE_DECORATOR_IO_CAPTURE_ENABLED: "false"
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SAMPLE_RATE: ${LANGFUSE_SAMPLE_RATE:-1.0}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      github-mcp:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      CLUTCH_API_KEY: ${CLUTCH_API_KEY:-}
+      CLUTCH_API_BASE_URL: http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  clutch_postgres_data:

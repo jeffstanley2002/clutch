@@ -1,0 +1,21 @@
+budget_alert_email    = "owner@example.com"
+aws_region            = "ap-southeast-1"
+allowed_ingress_cidr  = "203.0.113.10/32"
+monthly_budget_usd    = 30
+service_desired_count = 0
+image_tag             = "replace-with-git-sha"
+
+# Configure these only after creating plaintext Secrets Manager values.
+# clutch_api_key_secret_arn        = "arn:aws:secretsmanager:..." # pragma: allowlist secret
+# openai_api_key_secret_arn        = "arn:aws:secretsmanager:..." # pragma: allowlist secret
+# github_token_secret_arn          = "arn:aws:secretsmanager:..." # pragma: allowlist secret
+# langfuse_public_key_secret_arn   = "arn:aws:secretsmanager:..." # pragma: allowlist secret
+# langfuse_secret_key_secret_arn   = "arn:aws:secretsmanager:..." # pragma: allowlist secret
+
+# Paid-model ceilings are enforced before provider calls and shared via Redis.
+model_per_request_usd = 0.10
+model_daily_usd       = 1.00
+
+# Production should also provide a validated ACM certificate and protection.
+# acm_certificate_arn       = "arn:aws:acm:..."
+# enable_deletion_protection = true

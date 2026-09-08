@@ -1,0 +1,17 @@
+.env
+.git
+.github
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.secrets.baseline
+.streamlit
+.venv
+**/__pycache__
+**/*.pyc
+evals/results
+terraform.tfstate
+terraform.tfstate.*
+**/.terraform
+infra/terraform/backend.hcl
+infra/terraform/terraform.tfvars

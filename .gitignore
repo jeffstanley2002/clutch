@@ -6,3 +6,8 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 *.pyc
+.terraform/
+*.tfstate
+*.tfstate.*
+infra/terraform/backend.hcl
+infra/terraform/terraform.tfvars
