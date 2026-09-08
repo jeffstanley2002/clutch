@@ -12,7 +12,7 @@ from clutch.observability import OBSERVABILITY, Observability
 from clutch.parsing import parse_python_code
 from clutch.rag import (
     KnowledgeRetriever,
-    extract_code_retrieval_terms,
+    build_retrieval_query,
     knowledge_retriever_from_env,
 )
 from clutch.review.static import run_static_review
@@ -69,31 +69,15 @@ async def retrieve_principles(
 
     request = state["request"]
     findings = state["static_findings"]
-    if findings:
-        query = " ".join(
-            [
-                request.role_context,
-                "rubric question interview",
-                *(finding.message for finding in findings),
-                *(finding.explanation for finding in findings),
-                *(finding.suggestion for finding in findings),
-                *(finding.category for finding in findings),
-            ]
-        )
-    else:
-        code_terms = extract_code_retrieval_terms(request.code)
-        query = " ".join(
-            [
-                request.role_context,
-                "rubric",
-                "maintainability readability correctness testing design security",
-                *code_terms,
-            ]
-        )
+    retrieval_query = build_retrieval_query(request, findings)
     principles = await retriever.retrieve(
-        query,
-        categories={finding.category for finding in findings} or None,
-        limit=max(3, sum(len(finding.citations) for finding in findings)),
+        retrieval_query.text,
+        categories=(
+            set(retrieval_query.categories)
+            if retrieval_query.categories is not None
+            else None
+        ),
+        limit=retrieval_query.limit,
     )
     return {"retrieved_principles": principles}
 

@@ -1,6 +1,10 @@
 """Retrieval adapters for local and PostgreSQL-backed knowledge search."""
 
-from clutch.rag.query import extract_code_retrieval_terms
+from clutch.rag.query import (
+    RetrievalQuery,
+    build_retrieval_query,
+    extract_code_retrieval_terms,
+)
 from clutch.rag.retrieval import (
     CachedEmbeddingProvider,
     CachedKnowledgeRetriever,
@@ -22,8 +26,10 @@ __all__ = [
     "KnowledgeRetriever",
     "LocalKnowledgeRetriever",
     "OpenAIEmbeddingProvider",
+    "RetrievalQuery",
     "SqlAlchemyHybridRetriever",
     "SqlAlchemyKnowledgeBase",
+    "build_retrieval_query",
     "extract_code_retrieval_terms",
     "knowledge_retriever_from_env",
 ]
