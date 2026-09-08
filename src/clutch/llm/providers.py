@@ -5,7 +5,7 @@ from typing import Any, Protocol
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.llm.spend import (
@@ -53,6 +53,12 @@ class ProviderReview(BaseModel):
     model_name: str | None = None
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
+    attempt_count: int = Field(default=0, ge=0, le=MAX_MODEL_ATTEMPTS)
+    validation_failure_count: int = Field(
+        default=0,
+        ge=0,
+        le=MAX_MODEL_ATTEMPTS,
+    )
     fallback_reason: str | None = None
 
 
@@ -63,6 +69,22 @@ class ReviewProvider(Protocol):
 
 class OpenAIResponsesClient(Protocol):
     responses: Any
+
+
+class ReviewProviderFailure(RuntimeError):
+    """Provider failure carrying only privacy-safe diagnostic counters."""
+
+    def __init__(
+        self,
+        *,
+        failure_reason: str,
+        attempt_count: int,
+        validation_failure_count: int,
+    ) -> None:
+        super().__init__("review provider failed after bounded attempts")
+        self.failure_reason = failure_reason
+        self.attempt_count = attempt_count
+        self.validation_failure_count = validation_failure_count
 
 
 class FallbackStaticProvider:
@@ -99,6 +121,8 @@ class OpenAIProvider:
             principles=context.principles,
         )
         last_error: Exception | None = None
+        attempt_count = 0
+        validation_failure_count = 0
         estimated_cost = completion_cost_usd(
             self._model,
             input_tokens=conservative_token_estimate(f"{prompt.system}\n{prompt.user}"),
@@ -107,6 +131,7 @@ class OpenAIProvider:
 
         for _ in range(MAX_MODEL_ATTEMPTS):
             reservation = await self._spend_guard.reserve(estimated_cost)
+            attempt_count += 1
             try:
                 response = await self._client.responses.parse(
                     model=self._model,
@@ -142,11 +167,21 @@ class OpenAIProvider:
                     model_name=self._model,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
                 )
+            except (ValidationError, ValueError) as exc:
+                validation_failure_count += 1
+                last_error = exc
             except Exception as exc:
                 last_error = exc
 
-        raise RuntimeError("OpenAI review failed after one retry") from last_error
+        assert last_error is not None
+        raise ReviewProviderFailure(
+            failure_reason=type(last_error).__name__,
+            attempt_count=attempt_count,
+            validation_failure_count=validation_failure_count,
+        ) from last_error
 
 
 class ModelRouter:
@@ -179,6 +214,15 @@ class ModelRouter:
             )
         try:
             return await self._primary.review(context)
+        except ReviewProviderFailure as exc:
+            fallback = await self._fallback.review(context)
+            return fallback.model_copy(
+                update={
+                    "fallback_reason": exc.failure_reason,
+                    "attempt_count": exc.attempt_count,
+                    "validation_failure_count": exc.validation_failure_count,
+                }
+            )
         except Exception as exc:
             # Store only the exception class. The provider payload and request context
             # may contain source and must never cross the observability boundary.

@@ -40,6 +40,8 @@ class ReviewGraphState(TypedDict):
     model_name: NotRequired[str | None]
     input_tokens: NotRequired[int | None]
     output_tokens: NotRequired[int | None]
+    attempt_count: NotRequired[int]
+    validation_failure_count: NotRequired[int]
     fallback_reason: NotRequired[str | None]
 
 
@@ -119,6 +121,8 @@ async def synthesize_review(
         "model_name": result.model_name,
         "input_tokens": result.input_tokens,
         "output_tokens": result.output_tokens,
+        "attempt_count": result.attempt_count,
+        "validation_failure_count": result.validation_failure_count,
         "fallback_reason": result.fallback_reason,
     }
 
@@ -258,6 +262,10 @@ def build_review_graph(
                     "model_name": result["model_name"],
                     "input_tokens": result["input_tokens"],
                     "output_tokens": result["output_tokens"],
+                    "attempt_count": result["attempt_count"],
+                    "validation_failure_count": result[
+                        "validation_failure_count"
+                    ],
                     "fallback_reason": result["fallback_reason"],
                 }
             )

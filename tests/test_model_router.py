@@ -50,6 +50,8 @@ def test_model_router_falls_back_when_primary_fails() -> None:
     assert result.mode == "static_fallback"
     assert result.findings == _context().static_findings
     assert result.fallback_reason == "RuntimeError"
+    assert result.attempt_count == 0
+    assert result.validation_failure_count == 0
 
 
 class FakeResponses:
@@ -100,6 +102,26 @@ def test_openai_provider_retries_ungrounded_output_once() -> None:
     assert result.model_name == "gpt-5.4-mini"
     assert result.confidence == 0.8
     assert result.findings == [valid_finding]
+    assert result.attempt_count == 2
+    assert result.validation_failure_count == 1
+
+
+def test_openai_provider_reports_bounded_validation_failures_on_fallback() -> None:
+    context = _context()
+    invalid = {"findings": [], "confidence": 2.0}
+    responses = FakeResponses([invalid, invalid])
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+    router = ModelRouter(primary=provider)
+
+    result = asyncio.run(router.review(context))
+
+    assert result.mode == "static_fallback"
+    assert result.fallback_reason == "ValidationError"
+    assert result.attempt_count == 2
+    assert result.validation_failure_count == 2
 
 
 def test_model_router_falls_back_before_call_when_budget_is_too_small() -> None:
@@ -119,3 +141,5 @@ def test_model_router_falls_back_before_call_when_budget_is_too_small() -> None:
     assert result.mode == "static_fallback"
     assert result.fallback_reason == "ModelBudgetExceeded"
     assert responses.calls == 0
+    assert result.attempt_count == 0
+    assert result.validation_failure_count == 0
