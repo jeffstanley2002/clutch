@@ -38,6 +38,8 @@ changes are reviewed like code because changing labels can hide regressions.
 - Prompt-injection pass rate is 100% for the committed adversarial suite.
 - Model or retrieval changes may not materially regress finding recall,
   citation faithfulness, or hallucinated-line rate without a documented review.
+- Retrieval strategies must meet Recall@3 >= 0.55, MRR 1.0, nDCG@3 >= 0.90,
+  judgment coverage@3 >= 0.90, and irrelevant-result rate@3 <= 0.15.
 - Full and potentially costly model evals run manually or on a controlled
   schedule; CI uses deterministic/frozen paths.
 
@@ -86,6 +88,27 @@ can have seven relevant items while K remains three, so the corpus-wide Recall@3
 gate is 0.55 and the observed value stays at an honest 0.559. MRR remains 1.0;
 nDCG and irrelevant-result rate prevent the lower recall floor from hiding weak
 ordering.
+
+The comparison runner evaluates local lexical, PostgreSQL lexical, PostgreSQL
+vector-only, and PostgreSQL hybrid retrieval over these exact bounded queries:
+
+```bash
+python -m clutch.evals.retrieval_comparison --compact
+```
+
+The credential-free 2026-09-08 run measured local lexical at Precision@3 0.786,
+Recall@3 0.559, MRR 1.000, nDCG@3 0.934, 1.000 judgment coverage, 0.044
+irrelevant rate, and 0.48 ms mean latency. PostgreSQL lexical measured the same
+precision/recall/MRR, nDCG@3 0.914, 0.911 judgment coverage, 0.089 irrelevant
+rate, and 16.22 ms mean latency. Both cost $0 and pass the current gate. This is
+a single local run, not a production latency claim. Vector-only and hybrid
+measurements require an OpenAI key to seed embeddings and remain explicitly
+unmeasured.
+
+Judgment coverage is not required to be perfect for candidate strategies:
+unjudged results already receive relevance zero in nDCG and irrelevant-rate, so
+an exact coverage requirement would double-penalize the same uncertainty. The
+0.90 floor still prevents comparisons from silently outrunning the labels.
 The perfect finding and interview scores establish narrow regression coverage
 for deterministic rules; they are not evidence of general review quality.
 Invalid structured-output rate is deliberately reported as unmeasured for this

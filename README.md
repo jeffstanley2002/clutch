@@ -143,6 +143,31 @@ The perfect scores prove only the named deterministic rules, not general code
 review quality. Live-model accuracy, structured-output failures, latency, and
 cost remain unmeasured until an API key is provided.
 
+The same 15 bounded queries and relevance judgments can compare every retrieval
+strategy without serializing raw submitted source:
+
+```bash
+python -m clutch.evals.retrieval_comparison --compact
+```
+
+A credential-free local PostgreSQL run on 2026-09-08 produced:
+
+| Strategy | Precision@3 | Recall@3 | MRR | nDCG@3 | Judgment coverage@3 | Irrelevant@3 | Mean latency | Query cost |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Local lexical | 0.786 | 0.559 | 1.000 | 0.934 | 1.000 | 0.044 | 0.48 ms | $0.00 |
+| PostgreSQL lexical | 0.786 | 0.559 | 1.000 | 0.914 | 0.911 | 0.089 | 16.22 ms | $0.00 |
+
+This single-machine latency sample is diagnostic, not a production benchmark.
+The PostgreSQL path exposed and now regression-tests OR semantics for broad
+review queries. The gate requires Recall@3 >= 0.55, MRR 1.0, nDCG@3 >= 0.90,
+judgment coverage@3 >= 0.90, and irrelevant@3 <= 0.15. Unjudged hits still
+receive zero relevance, so nDCG and irrelevant-rate penalize them.
+
+Vector-only and hybrid rows remain unavailable until `OPENAI_API_KEY` is added
+to the untracked `.env`. With the local database running, reseed once to create
+missing embeddings, then run the comparison with `--require-all`; the shared
+spend guard and hashed embedding cache remain active.
+
 A local container smoke test on 2026-09-08 measured the same synthetic review
 at about 111 ms cold and 8.6 ms after a Redis retrieval-cache hit. That is a
 single correctness smoke test, not a production benchmark.
