@@ -1,5 +1,6 @@
 """Deterministic static review grounded by the seed knowledge base."""
 
+import re
 from collections.abc import Iterable
 
 from clutch.knowledge_base import retrieve_clean_code_principles
@@ -23,35 +24,13 @@ def run_static_review(
         *_find_debug_prints(lines),
         *_find_bare_excepts(lines),
         *_find_mutable_defaults(lines),
+        *_find_insecure_sql(lines),
         *_find_long_units(parsed_code),
+        *_find_duplicated_units(parsed_code),
         *_find_long_snippet(lines, parsed_code),
     ]
 
-    if findings:
-        return findings
-
-    return [
-        CodeFinding(
-            id="finding-001",
-            severity="low",
-            category="readability",
-            message="No obvious deterministic issues found",
-            evidence="Submitted Python snippet",
-            explanation=(
-                "The Day 1 reviewer only checks a small deterministic rule set. "
-                "A future parser, retrieval layer, and model-backed reviewer will "
-                "look for deeper design and correctness issues."
-            ),
-            suggestion=(
-                "Add tests around expected behavior and resubmit once the richer "
-                "review agent is wired in."
-            ),
-            citations=_citations_for(
-                "tests expected behavior boundary confidence",
-                category="testing",
-            ),
-        )
-    ]
+    return findings
 
 
 def _find_todos(lines: list[str]) -> Iterable[CodeFinding]:
@@ -160,6 +139,44 @@ def _find_mutable_defaults(lines: list[str]) -> Iterable[CodeFinding]:
             )
 
 
+def _find_insecure_sql(lines: list[str]) -> Iterable[CodeFinding]:
+    sql_pattern = re.compile(r"\b(select|insert|update|delete)\b", re.IGNORECASE)
+
+    for line_number, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        lower = stripped.lower()
+        is_interpolated = (
+            lower.startswith(('f"', "f'"))
+            or '= f"' in lower
+            or "= f'" in lower
+            or ".format(" in lower
+        )
+        if not is_interpolated or sql_pattern.search(stripped) is None:
+            continue
+
+        yield CodeFinding(
+            id=f"finding-sql-interpolation-{line_number}",
+            severity="high",
+            category="security",
+            message="SQL query interpolates values into command text",
+            evidence=stripped,
+            line_start=line_number,
+            line_end=line_number,
+            explanation=(
+                "Building SQL with string interpolation can turn untrusted values "
+                "into executable query syntax and makes the data boundary unclear."
+            ),
+            suggestion=(
+                "Use the database driver's parameter binding and keep SQL structure "
+                "separate from user-controlled values."
+            ),
+            citations=_citations_for(
+                "sql query interpolation parameter binding injection security",
+                category="security",
+            ),
+        )
+
+
 def _find_long_units(parsed_code: ParsedCode | None) -> Iterable[CodeFinding]:
     if parsed_code is None:
         return
@@ -197,6 +214,57 @@ def _find_long_units(parsed_code: ParsedCode | None) -> Iterable[CodeFinding]:
             ),
             citations=_citations_for(
                 f"large {chunk.symbol_kind} extraction small reviewable unit",
+                category="design",
+            ),
+        )
+
+
+def _find_duplicated_units(
+    parsed_code: ParsedCode | None,
+) -> Iterable[CodeFinding]:
+    if parsed_code is None:
+        return
+
+    fingerprints: dict[str, list[tuple[str, int, int]]] = {}
+    for chunk in parsed_code.chunks:
+        if chunk.symbol_kind != "function":
+            continue
+        body_lines = chunk.source_text.splitlines()[1:]
+        fingerprint = "\n".join(
+            line.strip()
+            for line in body_lines
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+        if len(fingerprint) < 20:
+            continue
+        fingerprints.setdefault(fingerprint, []).append(
+            (chunk.symbol_name, chunk.line_start, chunk.line_end)
+        )
+
+    for matches in fingerprints.values():
+        if len(matches) < 2:
+            continue
+        names = ", ".join(f"`{name}`" for name, _, _ in matches)
+        first_line = min(line_start for _, line_start, _ in matches)
+        last_line = max(line_end for _, _, line_end in matches)
+        yield CodeFinding(
+            id=f"finding-duplicated-functions-{first_line}",
+            severity="medium",
+            category="design",
+            message="Multiple functions duplicate the same implementation",
+            evidence=f"Functions {names} contain the same body",
+            line_start=first_line,
+            line_end=last_line,
+            explanation=(
+                "Duplicated behavior creates multiple change points and lets small "
+                "fixes drift between otherwise equivalent paths."
+            ),
+            suggestion=(
+                "Extract the shared behavior into one named helper and keep each "
+                "caller responsible only for its distinct context."
+            ),
+            citations=_citations_for(
+                "duplicated logic shared behavior extraction change points design",
                 category="design",
             ),
         )

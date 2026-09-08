@@ -5,10 +5,9 @@ from collections.abc import Iterator
 import tree_sitter_python
 from tree_sitter import Language, Node, Parser
 
-from clutch.schemas import CodeChunk, ParsedCode
+from clutch.schemas import CodeChunk, ParsedCode, SymbolKind
 
-
-DEFINITION_NODE_TYPES = {
+DEFINITION_NODE_TYPES: dict[str, SymbolKind] = {
     "class_definition": "class",
     "function_definition": "function",
 }
@@ -104,7 +103,8 @@ def _node_to_chunk(
     line_start = node.start_point[0] + 1
     line_end = node.end_point[0] + 1
     name_node = node.child_by_field_name("name")
-    symbol_name = name_node.text.decode("utf-8") if name_node else "<anonymous>"
+    name_bytes = name_node.text if name_node is not None else None
+    symbol_name = name_bytes.decode("utf-8") if name_bytes else "<anonymous>"
     source_text = "\n".join(source_lines[line_start - 1 : line_end])
 
     return CodeChunk(
