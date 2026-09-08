@@ -54,7 +54,7 @@ class GitHubReviewService:
             for file in diff.files
             if PurePosixPath(file.path).suffix.lower() in PYTHON_EXTENSIONS
         ]
-        code, included = _compose_source(sources)
+        code, included = compose_github_review_source(sources)
         result = await self._reviewer.review(
             ReviewRequest(
                 code=code,
@@ -86,7 +86,7 @@ class GitHubReviewService:
             for file in repository.files
             if PurePosixPath(file.path).suffix.lower() in PYTHON_EXTENSIONS
         ]
-        code, included = _compose_source(sources)
+        code, included = compose_github_review_source(sources)
         result = await self._reviewer.review(
             ReviewRequest(
                 code=code,
@@ -109,7 +109,11 @@ class GitHubReviewService:
         )
 
 
-def _compose_source(sources: list[tuple[str, str]]) -> tuple[str, list[str]]:
+def compose_github_review_source(
+    sources: list[tuple[str, str]],
+) -> tuple[str, list[str]]:
+    """Compose bounded file text exactly as the GitHub review path consumes it."""
+
     chunks: list[str] = []
     included: list[str] = []
     current_length = 0

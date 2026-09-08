@@ -208,3 +208,47 @@ class EvalReport(BaseModel):
     cases: list[EvalCaseResult]
     injection_cases: list[InjectionCaseResult]
     interview_cases: list[InterviewCaseResult]
+
+
+class RetrievalComparisonCaseResult(BaseModel):
+    """Privacy-reduced ranking evidence for one query and one strategy."""
+
+    case_id: str
+    query_sha256: str = Field(..., min_length=64, max_length=64)
+    categories: list[FindingCategory] = Field(default_factory=list)
+    retrieved_ids: list[str] = Field(default_factory=list, max_length=3)
+    relevant_retrieved: int = Field(..., ge=0)
+    relevant_total: int = Field(..., ge=0)
+    judged_retrieved: int = Field(..., ge=0)
+    irrelevant_retrieved: int = Field(..., ge=0)
+    reciprocal_rank: float = Field(..., ge=0.0, le=1.0)
+    ndcg_at_3: float = Field(..., ge=0.0, le=1.0)
+    latency_ms: float = Field(..., ge=0.0)
+
+
+class RetrievalStrategyReport(BaseModel):
+    """Aggregate quality, latency, and estimated cost for one retriever."""
+
+    strategy: str = Field(..., min_length=1)
+    case_count: int = Field(..., ge=1)
+    precision_at_3: float = Field(..., ge=0.0, le=1.0)
+    recall_at_3: float = Field(..., ge=0.0, le=1.0)
+    mrr: float = Field(..., ge=0.0, le=1.0)
+    ndcg_at_3: float = Field(..., ge=0.0, le=1.0)
+    judgment_coverage_at_3: float = Field(..., ge=0.0, le=1.0)
+    irrelevant_at_3: float = Field(..., ge=0.0, le=1.0)
+    average_latency_ms: float = Field(..., ge=0.0)
+    estimated_query_cost_usd: float = Field(..., ge=0.0)
+    meets_current_gate: bool
+    cases: list[RetrievalComparisonCaseResult]
+
+
+class RetrievalComparisonReport(BaseModel):
+    """Same-query comparison across all configured retrieval strategies."""
+
+    dataset_version: str
+    corpus_size: int = Field(..., ge=1)
+    k: int = Field(default=3, ge=1)
+    all_strategies_available: bool
+    unavailable_strategies: dict[str, str] = Field(default_factory=dict)
+    strategies: list[RetrievalStrategyReport] = Field(min_length=1)
