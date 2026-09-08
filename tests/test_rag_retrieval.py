@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from typing import Any, cast
 
 from sqlalchemy import func, select
 
@@ -11,8 +12,9 @@ from clutch.rag import (
     LocalKnowledgeRetriever,
     OpenAIEmbeddingProvider,
     SqlAlchemyKnowledgeBase,
+    SqlAlchemyVectorRetriever,
 )
-from clutch.rag.retrieval import _hybrid_score, _to_principle
+from clutch.rag.retrieval import _hybrid_score, _principle_values, _to_principle
 
 
 class FailingRetriever:
@@ -28,6 +30,55 @@ class FakeEmbeddings:
         self.calls.append(kwargs)
         dimensions = int(kwargs["dimensions"])
         return SimpleNamespace(data=[SimpleNamespace(embedding=[0.25] * dimensions)])
+
+
+class FakeEmbeddingProvider:
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    async def embed(self, text: str) -> list[float]:
+        self.queries.append(text)
+        return [0.25] * 1536
+
+
+class FakeScalarResult:
+    def __init__(self, items: list[KnowledgeBaseItemModel]) -> None:
+        self._items = items
+
+    def all(self) -> list[KnowledgeBaseItemModel]:
+        return self._items
+
+
+class FakeExecuteResult:
+    def __init__(self, items: list[KnowledgeBaseItemModel]) -> None:
+        self._items = items
+
+    def scalars(self) -> FakeScalarResult:
+        return FakeScalarResult(self._items)
+
+
+class FakeVectorSession:
+    def __init__(self, items: list[KnowledgeBaseItemModel]) -> None:
+        self._items = items
+        self.executions = 0
+
+    async def __aenter__(self) -> "FakeVectorSession":
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        return None
+
+    async def execute(self, statement: object) -> FakeExecuteResult:
+        self.executions += 1
+        return FakeExecuteResult(self._items)
+
+
+class FakeVectorSessionFactory:
+    def __init__(self, session: FakeVectorSession) -> None:
+        self._session = session
+
+    def __call__(self) -> FakeVectorSession:
+        return self._session
 
 
 def test_fallback_retriever_preserves_local_review_when_database_fails() -> None:
@@ -115,3 +166,27 @@ def test_local_retriever_keeps_category_filtering() -> None:
     )
 
     assert results[0].category == "design"
+
+
+def test_vector_retriever_embeds_query_and_returns_typed_items() -> None:
+    principle = SEED_CLEAN_CODE_PRINCIPLES[0]
+    item = KnowledgeBaseItemModel(**_principle_values(principle))
+    item.embedding = [0.5] * 1536
+    session = FakeVectorSession([item])
+    provider = FakeEmbeddingProvider()
+    retriever = SqlAlchemyVectorRetriever(
+        cast(Any, FakeVectorSessionFactory(session)),
+        embedding_provider=provider,
+    )
+
+    results = asyncio.run(
+        retriever.retrieve(
+            "explicit incomplete work",
+            categories={"maintainability"},
+            limit=1,
+        )
+    )
+
+    assert provider.queries == ["explicit incomplete work"]
+    assert session.executions == 1
+    assert [result.id for result in results] == [principle.id]

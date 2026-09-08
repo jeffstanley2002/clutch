@@ -337,6 +337,48 @@ class SqlAlchemyHybridRetriever:
         return [candidate[2] for candidate in candidates[:limit]]
 
 
+class SqlAlchemyVectorRetriever:
+    """Rank embedded knowledge items only by pgvector cosine distance."""
+
+    def __init__(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+        *,
+        embedding_provider: EmbeddingProvider,
+    ) -> None:
+        self._session_factory = session_factory
+        self._embedding_provider = embedding_provider
+
+    async def retrieve(
+        self,
+        query: str,
+        *,
+        categories: set[FindingCategory] | None = None,
+        limit: int = 3,
+    ) -> list[CleanCodePrinciple]:
+        if limit < 1:
+            return []
+
+        query_embedding = await self._embedding_provider.embed(query)
+        vector_distance = KnowledgeBaseItemModel.embedding.cosine_distance(
+            query_embedding
+        )
+        statement = select(KnowledgeBaseItemModel).where(
+            KnowledgeBaseItemModel.embedding.is_not(None)
+        )
+        if categories:
+            statement = statement.where(
+                KnowledgeBaseItemModel.category.in_(categories)
+            )
+        statement = statement.order_by(
+            vector_distance,
+            KnowledgeBaseItemModel.source_id,
+        ).limit(limit)
+        async with self._session_factory() as session:
+            items = (await session.execute(statement)).scalars().all()
+        return [_to_principle(item) for item in items]
+
+
 def knowledge_retriever_from_env() -> KnowledgeRetriever:
     """Prefer durable hybrid search when configured and always retain fallback."""
 

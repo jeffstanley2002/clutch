@@ -15,6 +15,7 @@ from clutch.rag.retrieval import (
     OpenAIEmbeddingProvider,
     SqlAlchemyHybridRetriever,
     SqlAlchemyKnowledgeBase,
+    SqlAlchemyVectorRetriever,
     knowledge_retriever_from_env,
 )
 
@@ -29,6 +30,7 @@ __all__ = [
     "RetrievalQuery",
     "SqlAlchemyHybridRetriever",
     "SqlAlchemyKnowledgeBase",
+    "SqlAlchemyVectorRetriever",
     "build_retrieval_query",
     "extract_code_retrieval_terms",
     "knowledge_retriever_from_env",
