@@ -14,7 +14,12 @@ from clutch.rag import (
     SqlAlchemyKnowledgeBase,
     SqlAlchemyVectorRetriever,
 )
-from clutch.rag.retrieval import _hybrid_score, _principle_values, _to_principle
+from clutch.rag.retrieval import (
+    _hybrid_score,
+    _postgres_websearch_query,
+    _principle_values,
+    _to_principle,
+)
 
 
 class FailingRetriever:
@@ -154,6 +159,22 @@ def test_hybrid_score_rewards_semantic_and_lexical_evidence() -> None:
     combined = _hybrid_score(lexical_rank=1.0, vector_distance=0.1)
 
     assert combined > semantic_only > lexical_only
+
+
+def test_postgres_lexical_query_uses_bounded_or_terms() -> None:
+    query = _postgres_websearch_query(
+        "Backend intern rubric narrow exception handling narrow"
+    )
+
+    assert query == "backend OR intern OR rubric OR narrow OR exception OR handling"
+    assert (
+        len(
+            _postgres_websearch_query(" ".join(f"term{n}" for n in range(80))).split(
+                " OR "
+            )
+        )
+        == 64
+    )
 
 
 def test_local_retriever_keeps_category_filtering() -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Sequence
 from typing import Any, Protocol, cast
 
@@ -289,7 +290,7 @@ class SqlAlchemyHybridRetriever:
         )
         lexical_rank = func.ts_rank_cd(
             func.to_tsvector("english", KnowledgeBaseItemModel.search_text),
-            func.plainto_tsquery("english", query),
+            func.websearch_to_tsquery("english", _postgres_websearch_query(query)),
         ).label("lexical_rank")
         statement = select(KnowledgeBaseItemModel, lexical_rank)
         if categories:
@@ -424,6 +425,13 @@ def _hybrid_score(
         else 0.0
     )
     return (0.45 * lexical_score) + (0.55 * semantic_score)
+
+
+def _postgres_websearch_query(query: str, *, max_terms: int = 64) -> str:
+    """Match any bounded query term instead of requiring every term."""
+
+    terms = list(dict.fromkeys(re.findall(r"[a-z0-9_]+", query.lower())))[:max_terms]
+    return " OR ".join(terms) or "clutch"
 
 
 def _principle_values(principle: CleanCodePrinciple) -> dict[str, object]:
