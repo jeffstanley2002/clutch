@@ -1,30 +1,35 @@
 # Knowledge Base Memory
 
-## Current State
+## Current state
 
-`src/clutch/knowledge_base` contains the first seeded clean-code corpus and a
-deterministic retrieval interface.
+The committed `corpus.json` contains 60 validated items across all six finding
+categories: 36 cited references plus 12 interview rubrics and 12 question-bank
+prompts. Every item has a stable ID, citation, item type, role tags, and
+seniority levels. Package data is validated at import; duplicate IDs or citation
+ID mismatches fail fast.
 
-Current corpus:
+`src/clutch/rag/retrieval.py` provides:
 
-- Explicit incomplete work.
-- Intentional boundary observability.
-- Narrow error handling.
-- Safe Python defaults.
-- Small reviewable units.
-- Behavioral test boundaries.
+- deterministic in-memory lexical retrieval;
+- PostgreSQL full-text ranking;
+- optional OpenAI embeddings + pgvector cosine distance;
+- reciprocal-rank-style score fusion and local fallback;
+- Redis wrappers for hashed retrieval results and embeddings.
+
+Alembic seeds the durable corpus and creates FTS plus 1536-dimensional HNSW
+vector indexes. Migration `20260908_0002` adds item type, roles, and seniority
+metadata to existing databases.
 
 ## Decisions
 
-- Retrieval is local and lexical for Day 3 so `/review` remains fully runnable
-  without a database, embeddings, or model calls.
-- Each principle is a Pydantic model with an embedded `Citation`, so findings
-  can be grounded through the same structured citation shape the API already
-  returns.
-- This is the stable interface that later vector or hybrid retrieval can
-  replace internally.
+- Retrieval remains internal; only GitHub belongs behind MCP.
+- No OpenAI key means lexical PostgreSQL retrieval, not a broken vector path.
+- Cache values contain knowledge-base material only; raw code/review evidence is
+  excluded and keys contain SHA-256 digests.
 
-## Known Gaps
+## Known gaps
 
-- No embeddings, pgvector storage, BM25, or reranking yet.
-- The corpus is intentionally tiny and should grow during Phase 2.
+- Expand from 60 to the planned 100–500 role/rubric/question items without
+  duplicating near-identical text.
+- Capture vector-only vs hybrid quality/latency/cost on the same expanded eval
+  set; current deterministic fixtures are too small to justify reranking.

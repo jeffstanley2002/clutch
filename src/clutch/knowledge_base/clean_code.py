@@ -1,14 +1,47 @@
-"""Seeded clean-code knowledge base and deterministic retrieval."""
+"""Validated local knowledge corpus and deterministic lexical retrieval."""
 
+import json
 import re
+from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from clutch.schemas import Citation, FindingCategory
 
+KnowledgeItemKind = Literal["reference", "rubric", "question_bank"]
+SeniorityLevel = Literal["intern", "junior", "mid", "senior"]
+CORPUS_PATH = Path(__file__).with_name("corpus.json")
+_STOP_WORDS = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "this",
+    "to",
+    "with",
+}
+
+
+def _default_seniority_levels() -> list[SeniorityLevel]:
+    return ["intern", "junior"]
+
 
 class CleanCodePrinciple(BaseModel):
-    """A review principle that can ground findings and interview questions."""
+    """A cited reference, rubric, or question-bank item used for grounding."""
 
     id: str = Field(..., min_length=1)
     title: str = Field(..., min_length=1)
@@ -16,119 +49,38 @@ class CleanCodePrinciple(BaseModel):
     summary: str = Field(..., min_length=1)
     guidance: str = Field(..., min_length=1)
     tags: list[str] = Field(default_factory=list)
+    item_type: KnowledgeItemKind = "reference"
+    roles: list[str] = Field(default_factory=lambda: ["general"])
+    seniority_levels: list[SeniorityLevel] = Field(
+        default_factory=_default_seniority_levels
+    )
     citation: Citation
 
 
-SEED_CLEAN_CODE_PRINCIPLES: tuple[CleanCodePrinciple, ...] = (
-    CleanCodePrinciple(
-        id="seed.clean_code.explicit_incomplete_work",
-        title="Make incomplete work explicit and actionable",
-        category="maintainability",
-        summary=(
-            "Unresolved TODOs and FIXMEs should communicate remaining scope, "
-            "risk, ownership, or a tracked follow-up."
-        ),
-        guidance=(
-            "Interview reviewers should be able to tell whether unfinished work is "
-            "intentional, acceptable for the current scope, and safely tracked."
-        ),
-        tags=["todo", "fixme", "scope", "maintainability", "tradeoff"],
-        citation=Citation(
-            source_id="seed.clean_code.explicit_incomplete_work",
-            title="Seed clean-code principle: make incomplete work explicit",
-        ),
-    ),
-    CleanCodePrinciple(
-        id="seed.clean_code.boundary_observability",
-        title="Use intentional observability at system boundaries",
-        category="maintainability",
-        summary=(
-            "Production behavior should rely on intentional logs or traces rather "
-            "than stray debug prints."
-        ),
-        guidance=(
-            "Prefer structured logging where behavior crosses an API, job, or user "
-            "workflow boundary, and remove local debugging output before review."
-        ),
-        tags=["print", "logging", "observability", "debug", "boundary"],
-        citation=Citation(
-            source_id="seed.clean_code.boundary_observability",
-            title="Seed clean-code principle: intentional boundary observability",
-        ),
-    ),
-    CleanCodePrinciple(
-        id="seed.clean_code.narrow_error_handling",
-        title="Preserve failure context with narrow error handling",
-        category="correctness",
-        summary=(
-            "Catch only exceptions the code can handle and keep enough context to "
-            "debug unexpected failures."
-        ),
-        guidance=(
-            "A bare except can hide programmer errors, interrupts, and important "
-            "runtime details that interviewers expect candidates to reason about."
-        ),
-        tags=["except", "exception", "error", "failure", "correctness"],
-        citation=Citation(
-            source_id="seed.clean_code.narrow_error_handling",
-            title="Seed clean-code principle: narrow error handling",
-        ),
-    ),
-    CleanCodePrinciple(
-        id="seed.clean_code.safe_python_defaults",
-        title="Avoid shared mutable Python defaults",
-        category="correctness",
-        summary=(
-            "Mutable default arguments are created once at function definition time "
-            "and can leak state between calls."
-        ),
-        guidance=(
-            "Use None as the default for lists, dicts, and sets, then create a fresh "
-            "object inside the function."
-        ),
-        tags=["mutable", "default", "argument", "list", "dict", "python"],
-        citation=Citation(
-            source_id="seed.clean_code.safe_python_defaults",
-            title="Seed clean-code principle: avoid shared mutable Python defaults",
-        ),
-    ),
-    CleanCodePrinciple(
-        id="seed.clean_code.small_reviewable_units",
-        title="Keep units small enough to review and test",
-        category="design",
-        summary=(
-            "Functions, classes, and pasted snippets should be small enough that a "
-            "reviewer can identify responsibilities and test boundaries."
-        ),
-        guidance=(
-            "Extract distinct decisions into named helpers when a unit grows large "
-            "enough to obscure behavior, dependencies, or edge cases."
-        ),
-        tags=["large", "function", "class", "snippet", "extraction", "design"],
-        citation=Citation(
-            source_id="seed.clean_code.small_reviewable_units",
-            title="Seed clean-code principle: small reviewable units",
-        ),
-    ),
-    CleanCodePrinciple(
-        id="seed.clean_code.behavioral_test_boundaries",
-        title="Test behavior at meaningful boundaries",
-        category="testing",
-        summary=(
-            "Tests should cover expected behavior, important edge cases, and the "
-            "boundaries where code collaborates with other systems."
-        ),
-        guidance=(
-            "When no deterministic issue is found, the next useful interview signal "
-            "is usually whether the candidate can explain and test the behavior."
-        ),
-        tags=["tests", "behavior", "edge", "boundary", "confidence"],
-        citation=Citation(
-            source_id="seed.clean_code.behavioral_test_boundaries",
-            title="Seed clean-code principle: behavioral test boundaries",
-        ),
-    ),
-)
+def load_clean_code_corpus(path: Path = CORPUS_PATH) -> tuple[CleanCodePrinciple, ...]:
+    """Load and validate the committed corpus, including stable ID invariants."""
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError(f"knowledge corpus must contain a JSON list: {path}")
+    principles = tuple(CleanCodePrinciple.model_validate(item) for item in payload)
+    identifiers = [principle.id for principle in principles]
+    if len(identifiers) != len(set(identifiers)):
+        raise ValueError("knowledge corpus source IDs must be unique")
+    mismatches = [
+        principle.id
+        for principle in principles
+        if principle.citation.source_id != principle.id
+    ]
+    if mismatches:
+        raise ValueError(
+            "knowledge corpus citation IDs must match item IDs: "
+            + ", ".join(mismatches)
+        )
+    return principles
+
+
+SEED_CLEAN_CODE_PRINCIPLES = load_clean_code_corpus()
 
 
 def retrieve_clean_code_principles(
@@ -137,7 +89,7 @@ def retrieve_clean_code_principles(
     categories: set[FindingCategory] | None = None,
     limit: int = 3,
 ) -> list[CleanCodePrinciple]:
-    """Return the highest-scoring seed principles for a short review query."""
+    """Return the highest-scoring corpus items for a short review query."""
 
     if limit < 1:
         return []
@@ -152,8 +104,12 @@ def retrieve_clean_code_principles(
         searchable_text = " ".join(
             [
                 principle.title,
+                principle.id,
                 principle.summary,
                 principle.guidance,
+                principle.item_type,
+                " ".join(principle.roles),
+                " ".join(principle.seniority_levels),
                 " ".join(principle.tags),
             ]
         )
@@ -170,4 +126,8 @@ def retrieve_clean_code_principles(
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9_]+", text.lower())
+    return [
+        token
+        for token in re.findall(r"[a-z0-9_]+", text.lower())
+        if token not in _STOP_WORDS
+    ]
