@@ -599,3 +599,68 @@ Next up:
   explicit API-key checkpoint.
 - Then capture controlled OpenAI, Langfuse, and private-GitHub evidence before
   any adaptive-interview or AWS decision.
+
+## 2026-09-08 (Day 11)
+
+Phase: 2–3 retrieval-strategy comparison checkpoint
+
+Did:
+
+- Centralized bounded retrieval-query construction for the live graph and eval
+  runners: at most eight derived findings, 4,000 query characters, and eight
+  results, with raw finding evidence and source comments excluded.
+- Added a vector-only pgvector retriever alongside the existing PostgreSQL
+  lexical/hybrid path.
+- Added a reproducible comparison runner for local lexical, PostgreSQL lexical,
+  PostgreSQL vector-only, and PostgreSQL hybrid retrieval over the same 15
+  bounded queries and v5 relevance judgments.
+- Kept comparison output privacy-reduced to query hashes, categories, retrieved
+  source IDs, metrics, latency, and estimated query cost.
+- Migrated and seeded a disposable local PostgreSQL service with all 100 corpus
+  items, then discovered that `plainto_tsquery` required every term in a broad
+  review query and returned no rows.
+- Replaced that query with a deduplicated, bounded 64-term OR web-search query
+  and added a regression test.
+- Replaced the exact judgment-coverage gate with a 0.90 floor. Unjudged hits
+  still count as relevance zero in nDCG and irrelevant-rate, avoiding a double
+  penalty while preventing label coverage from silently collapsing.
+- Split the work into focused local commits for bounded queries, eval
+  primitives, vector retrieval, comparison runner, the PostgreSQL fix, and the
+  eval-policy change. No remote push was performed.
+
+Learned / decided:
+
+- Review-derived retrieval queries are naturally long; PostgreSQL AND semantics
+  are unsuitable because no one knowledge item should repeat the entire review.
+- Field-weighted full-text experiments did not improve the judged metrics and
+  were discarded rather than shipped.
+- A comparison runner must report unavailable credentialed strategies honestly;
+  it must not silently substitute lexical results for vector or hybrid modes.
+
+Verification:
+
+- Ruff passes; mypy passes over 61 source files; all 78 tests pass.
+- Local lexical: Precision@3 0.786, Recall@3 0.559, MRR 1.0, nDCG@3 0.934,
+  judgment coverage 1.0, irrelevant rate 0.044, mean latency 0.48 ms, $0 cost.
+- PostgreSQL lexical: Precision@3 0.786, Recall@3 0.559, MRR 1.0, nDCG@3
+  0.914, judgment coverage 0.911, irrelevant rate 0.089, mean latency 16.22 ms,
+  $0 cost. Both strategies pass the current gate.
+
+Open issues:
+
+- PostgreSQL vector-only and hybrid quality, latency, and cost remain unmeasured
+  because corpus/query embeddings require a user-owned OpenAI API key.
+- Live review synthesis and Langfuse evidence require user-owned credentials;
+  private GitHub verification requires a scoped read-only token.
+- Adaptive interview follow-ups remain deferred until controlled model evidence
+  justifies the added latency and cost.
+- AWS staging remains behind explicit account, region, budget, ingress/TLS,
+  credential, and teardown approval. No paid resource exists.
+
+Next up:
+
+- At the explicit credential checkpoint, add `OPENAI_API_KEY` only to the
+  untracked `.env`, seed missing corpus embeddings, and run the comparison with
+  `--require-all` under the existing spend guard.
+- Then capture a controlled live OpenAI structured-output baseline and optional
+  privacy-reduced Langfuse trace before requesting private-GitHub or AWS access.
