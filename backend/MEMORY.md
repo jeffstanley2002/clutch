@@ -1,32 +1,31 @@
 # Backend Memory
 
-## Current State
+## Current state
 
-The backend exposes a small FastAPI app at `backend.app.main:app`.
+`backend.app.main:app` is the thin FastAPI boundary. Routes are `GET /health`,
+`GET /runtime/cache`, `GET /runtime/spend`, `POST /review`,
+`POST /review/github`, `POST /interview/turn`,
+`GET /interview/{session_id}/feedback`, `GET /progress/{profile_id}`, and
+`POST /progress/{profile_id}/snapshots`.
 
-Routes:
-
-- `GET /health`: returns `{"status": "ok"}`.
-- `POST /review`: accepts `ReviewRequest` and returns `list[CodeFinding]`.
-  The route parses pasted Python with tree-sitter before calling the
-  deterministic reviewer, whose citations now come from seed clean-code
-  retrieval.
+Factories choose in-memory/local adapters unless database, Redis, model, MCP,
+or tracing configuration is present. GitHub and interview errors become bounded
+4xx/5xx responses without provider bodies. Optional API-key middleware protects
+every non-health route and fails closed when auth is required but unconfigured.
+Shutdown closes Redis/cache/spend clients and flushes Langfuse.
 
 ## Decisions
 
-- The first `/review` route is deterministic and local-only. It calls
-  `parse_python_code` and then `run_static_review` rather than an LLM so the
-  API contract can be tested before retrieval, LangGraph, and model calls are
-  introduced.
-- Raw pasted code is only used in-memory for the request and is not logged or
-  persisted.
-- The API response shape remains `list[CodeFinding]`; retrieval is an internal
-  grounding step for now.
+- Routes validate HTTP/Pydantic contracts and delegate; business logic stays in
+  application services.
+- Profile IDs are length/pattern constrained.
+- `ReviewService` hashes source before recording derived metadata and attaches
+  only safe inputs/outputs to the root trace.
+- The backend container runs as UID/GID 10001 and does not auto-run migrations.
 
-## Known Gaps
+## Known gaps
 
-- Parser metadata is not exposed directly in the API yet; it only improves the
-  internal review context.
-- Citations are grounded in a small seed knowledge base, but there is no
-  database/vector retrieval yet.
-- No LangGraph agent orchestration yet.
+- No streaming/SSE interview response yet.
+- API-key auth is deployment-level; user accounts, key rotation, and request-rate
+  limiting are not implemented.
+- Live OpenAI/Langfuse failure behavior needs credentialed staging evidence.
