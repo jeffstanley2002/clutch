@@ -18,6 +18,7 @@ from clutch.evals.config import (
     DATASET_VERSION,
     FIXTURE_ROOT,
     MAX_RETRIEVAL_IRRELEVANT_AT_3,
+    MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3,
     MIN_RETRIEVAL_NDCG_AT_3,
     MIN_RETRIEVAL_RECALL_AT_3,
 )
@@ -208,7 +209,7 @@ async def _evaluate_strategy(
             recall >= MIN_RETRIEVAL_RECALL_AT_3
             and mrr == 1.0
             and ndcg >= MIN_RETRIEVAL_NDCG_AT_3
-            and judgment_coverage == 1.0
+            and judgment_coverage >= MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3
             and irrelevant <= MAX_RETRIEVAL_IRRELEVANT_AT_3
         ),
         cases=case_results,

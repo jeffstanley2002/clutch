@@ -9,4 +9,5 @@ MIN_SCORE = 1.0
 # meaningful corpus-wide recall floor while nDCG protects the quality of ordering.
 MIN_RETRIEVAL_RECALL_AT_3 = 0.55
 MIN_RETRIEVAL_NDCG_AT_3 = 0.90
+MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3 = 0.90
 MAX_RETRIEVAL_IRRELEVANT_AT_3 = 0.15

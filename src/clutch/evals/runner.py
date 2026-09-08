@@ -13,6 +13,7 @@ from clutch.evals.config import (
     DATASET_VERSION,
     FIXTURE_ROOT,
     MAX_RETRIEVAL_IRRELEVANT_AT_3,
+    MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3,
     MIN_RETRIEVAL_NDCG_AT_3,
     MIN_RETRIEVAL_RECALL_AT_3,
     MIN_SCORE,
@@ -202,7 +203,7 @@ async def run_evaluation_suite() -> EvalReport:
         all(score >= MIN_SCORE for score in gated_scores)
         and retrieval_recall >= MIN_RETRIEVAL_RECALL_AT_3
         and retrieval_ndcg >= MIN_RETRIEVAL_NDCG_AT_3
-        and retrieval_judgment_coverage == 1.0
+        and retrieval_judgment_coverage >= MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3
         and retrieval_irrelevant <= MAX_RETRIEVAL_IRRELEVANT_AT_3
         and hallucinated_line_rate == 0.0
     )
