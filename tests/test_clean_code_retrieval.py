@@ -1,11 +1,12 @@
 from clutch.knowledge_base import retrieve_clean_code_principles
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
+from clutch.schemas import FindingCategory
 
 
 def test_committed_corpus_has_unique_typed_items_for_phase_two() -> None:
     source_ids = [item.id for item in SEED_CLEAN_CODE_PRINCIPLES]
 
-    assert len(source_ids) == 60
+    assert len(source_ids) == 100
     assert len(source_ids) == len(set(source_ids))
     assert {item.item_type for item in SEED_CLEAN_CODE_PRINCIPLES} == {
         "reference",
@@ -15,6 +16,29 @@ def test_committed_corpus_has_unique_typed_items_for_phase_two() -> None:
     assert all(
         item.citation.source_id == item.id for item in SEED_CLEAN_CODE_PRINCIPLES
     )
+    categories: set[FindingCategory] = {
+        "maintainability",
+        "readability",
+        "correctness",
+        "testing",
+        "design",
+        "security",
+    }
+    for category in categories:
+        category_items = [
+            item for item in SEED_CLEAN_CODE_PRINCIPLES if item.category == category
+        ]
+        assert len(
+            [item for item in category_items if item.item_type == "reference"]
+        ) == 10
+        assert len(
+            [item for item in category_items if item.item_type == "rubric"]
+        ) == 3
+        assert len(
+            [item for item in category_items if item.item_type == "question_bank"]
+        ) >= 3
+    assert all(item.roles for item in SEED_CLEAN_CODE_PRINCIPLES)
+    assert all(item.seniority_levels for item in SEED_CLEAN_CODE_PRINCIPLES)
 
 
 def test_retrieve_clean_code_principles_ranks_specific_seed_principle() -> None:

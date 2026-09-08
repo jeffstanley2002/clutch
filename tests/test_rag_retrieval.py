@@ -81,9 +81,9 @@ def test_seed_knowledge_base_is_idempotent() -> None:
                 KnowledgeBaseItemModel,
                 "seed.clean_code.parameterized_queries",
             )
-        assert first_added == 60
+        assert first_added == 100
         assert second_added == 0
-        assert item_count == 60
+        assert item_count == 100
         assert sql_item is not None
         assert "security" in sql_item.tags
         assert sql_item.item_type == "reference"

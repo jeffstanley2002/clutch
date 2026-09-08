@@ -6,7 +6,7 @@ from clutch.evals.runner import run_evaluation_suite
 def test_deterministic_eval_suite_meets_regression_gate() -> None:
     report = asyncio.run(run_evaluation_suite())
 
-    assert report.dataset_version == "2026-09-08.v4"
+    assert report.dataset_version == "2026-09-08.v5"
     assert report.review_case_count == 15
     assert report.github_review_case_count == 3
     assert report.clean_case_count == 4

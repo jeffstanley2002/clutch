@@ -66,6 +66,7 @@
       "seed.clean_code.narrow_error_handling": 3,
       "seed.rubric.correctness_failure_model": 2,
       "seed.question.correctness_counterexample": 2,
+      "seed.question.correctness_concurrent_failure": 1,
       "seed.clean_code.structured_concurrency": 1
     }
   },
@@ -177,7 +178,8 @@
       "seed.rubric.testing_failure_diagnosis": 1,
       "seed.rubric.maintainable_change_scope": 1,
       "seed.rubric.readable_explanation": 1,
-      "seed.rubric.testing_evidence": 1
+      "seed.rubric.testing_evidence": 1,
+      "seed.clean_code.public_module_surface": 0
     }
   },
   {
@@ -210,6 +212,7 @@
       "seed.rubric.security_trust_boundary": 1,
       "seed.clean_code.narrow_error_handling": 2,
       "seed.clean_code.exception_contract_tests": 2,
+      "seed.clean_code.explicit_exception_assertions": 2,
       "seed.clean_code.structured_concurrency": 0
     }
   },

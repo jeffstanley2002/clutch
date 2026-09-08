@@ -44,7 +44,7 @@ from clutch.schemas import (
     ReviewRequest,
 )
 
-DATASET_VERSION = "2026-09-08.v4"
+DATASET_VERSION = "2026-09-08.v5"
 FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "evals" / "fixtures"
 MIN_SCORE = 1.0
 # Mixed multi-file queries have more relevant items than K=3 can return. Keep a
