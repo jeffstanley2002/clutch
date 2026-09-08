@@ -3,16 +3,22 @@
 import argparse
 import asyncio
 import json
-import math
 from hashlib import sha256
-from pathlib import Path
 from time import perf_counter
-from typing import TypeVar
 
 from langgraph.graph.state import CompiledStateGraph
-from pydantic import BaseModel
 
 from clutch.agent import build_review_graph
+from clutch.evals.config import (
+    DATASET_VERSION,
+    FIXTURE_ROOT,
+    MAX_RETRIEVAL_IRRELEVANT_AT_3,
+    MIN_RETRIEVAL_NDCG_AT_3,
+    MIN_RETRIEVAL_RECALL_AT_3,
+    MIN_SCORE,
+)
+from clutch.evals.fixtures import load_cases
+from clutch.evals.metrics import ndcg_at_k, ratio
 from clutch.evals.models import (
     EvalCaseResult,
     EvalReport,
@@ -44,33 +50,23 @@ from clutch.schemas import (
     ReviewRequest,
 )
 
-DATASET_VERSION = "2026-09-08.v5"
-FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "evals" / "fixtures"
-MIN_SCORE = 1.0
-# Mixed multi-file queries have more relevant items than K=3 can return. Keep a
-# meaningful corpus-wide recall floor while nDCG protects the quality of ordering.
-MIN_RETRIEVAL_RECALL_AT_3 = 0.55
-MIN_RETRIEVAL_NDCG_AT_3 = 0.90
-MAX_RETRIEVAL_IRRELEVANT_AT_3 = 0.15
-CaseT = TypeVar("CaseT", bound=BaseModel)
-
 
 async def run_evaluation_suite() -> EvalReport:
     """Evaluate review, guardrail, interview, report, and privacy contracts."""
 
-    golden_cases = _load_cases(
+    golden_cases = load_cases(
         FIXTURE_ROOT / "golden_reviews.json",
         GoldenReviewCase,
     )
-    injection_cases = _load_cases(
+    injection_cases = load_cases(
         FIXTURE_ROOT / "prompt_injection_cases.json",
         PromptInjectionCase,
     )
-    interview_cases = _load_cases(
+    interview_cases = load_cases(
         FIXTURE_ROOT / "interview_cases.json",
         GoldenInterviewCase,
     )
-    github_cases = _load_cases(
+    github_cases = load_cases(
         FIXTURE_ROOT / "github_reviews.json",
         GoldenGitHubReviewCase,
     )
@@ -110,77 +106,77 @@ async def run_evaluation_suite() -> EvalReport:
     clean_results = [result for result in all_case_results if result.kind == "clean"]
     mixed_results = [result for result in all_case_results if result.kind == "mixed"]
 
-    finding_precision = _ratio(true_positives, predicted)
-    finding_recall = _ratio(true_positives, expected)
-    finding_severity_accuracy = _ratio(severity_matches, expected)
-    clean_negative_pass_rate = _ratio(
+    finding_precision = ratio(true_positives, predicted)
+    finding_recall = ratio(true_positives, expected)
+    finding_severity_accuracy = ratio(severity_matches, expected)
+    clean_negative_pass_rate = ratio(
         sum(
             result.predicted_findings == 0 and result.question_relevant
             for result in clean_results
         ),
         len(clean_results),
     )
-    mixed_case_full_recall = _ratio(
+    mixed_case_full_recall = ratio(
         sum(result.false_negatives == 0 for result in mixed_results),
         len(mixed_results),
     )
-    retrieval_precision = _ratio(retrieved_relevant, retrieved_total)
-    retrieval_recall = _ratio(retrieved_relevant, relevant_total)
-    retrieval_mrr = _ratio(
+    retrieval_precision = ratio(retrieved_relevant, retrieved_total)
+    retrieval_recall = ratio(retrieved_relevant, relevant_total)
+    retrieval_mrr = ratio(
         sum(result.retrieval_reciprocal_rank for result in retrieval_results),
         len(retrieval_results),
     )
-    retrieval_ndcg = _ratio(
+    retrieval_ndcg = ratio(
         sum(result.retrieval_ndcg for result in all_case_results),
         len(all_case_results),
     )
     all_retrieved = sum(result.retrieval_returned for result in all_case_results)
-    retrieval_judgment_coverage = _ratio(
+    retrieval_judgment_coverage = ratio(
         sum(result.retrieval_judged for result in all_case_results),
         all_retrieved,
     )
-    retrieval_irrelevant = _ratio(
+    retrieval_irrelevant = ratio(
         sum(result.retrieval_irrelevant for result in all_case_results),
         all_retrieved,
     )
-    citation_faithfulness = _ratio(
+    citation_faithfulness = ratio(
         sum(result.citation_faithful for result in all_case_results),
         len(all_case_results),
     )
-    question_relevance = _ratio(
+    question_relevance = ratio(
         sum(result.question_relevant for result in all_case_results),
         len(all_case_results),
     )
-    github_ingestion_pass_rate = _ratio(
+    github_ingestion_pass_rate = ratio(
         sum(result.ingestion_matched is True for result in github_case_results),
         len(github_case_results),
     )
-    github_source_privacy_pass_rate = _ratio(
+    github_source_privacy_pass_rate = ratio(
         sum(
             result.source_privacy_preserved is True
             for result in github_case_results
         ),
         len(github_case_results),
     )
-    injection_pass_rate = _ratio(
+    injection_pass_rate = ratio(
         sum(result.passed for result in injection_results),
         len(injection_results),
     )
-    hallucinated_line_rate = _ratio(hallucinated_lines, finding_count)
+    hallucinated_line_rate = ratio(hallucinated_lines, finding_count)
     interview_turn_count = sum(result.turn_count for result in interview_results)
-    interview_score_accuracy = _ratio(
+    interview_score_accuracy = ratio(
         sum(result.exact_score_matches for result in interview_results),
         interview_turn_count,
     )
-    interview_completion_rate = _ratio(
+    interview_completion_rate = ratio(
         sum(result.completed for result in interview_results),
         len(interview_results),
     )
-    feedback_expectation_pass_rate = _ratio(
+    feedback_expectation_pass_rate = ratio(
         sum(_feedback_expectations_met(result) for result in interview_results),
         len(interview_results),
     )
-    answer_privacy_pass_rate = _ratio(
+    answer_privacy_pass_rate = ratio(
         sum(result.answer_privacy_preserved for result in interview_results),
         len(interview_results),
     )
@@ -420,9 +416,10 @@ def _evaluate_review_output(
         retrieval_reciprocal_rank=(
             1.0 / min(relevant_ranks) if relevant_ranks else 0.0
         ),
-        retrieval_ndcg=_ndcg_at_3(
+        retrieval_ndcg=ndcg_at_k(
             retrieval_grades,
             list(case.retrieval_judgments.values()),
+            k=3,
         ),
         citation_faithful=(
             len(matches) == len(case.expected_findings)
@@ -634,32 +631,6 @@ def _feedback_expectations_met(result: InterviewCaseResult) -> bool:
             result.supporting_findings_matched,
         ]
     )
-
-
-def _ndcg_at_3(retrieved_grades: list[int], all_grades: list[int]) -> float:
-    """Return normalized discounted cumulative gain for relevance grades 0–3."""
-
-    def discounted_gain(grades: list[int]) -> float:
-        return sum(
-            ((2**grade) - 1) / math.log2(rank + 1)
-            for rank, grade in enumerate(grades[:3], start=1)
-        )
-
-    ideal_gain = discounted_gain(sorted(all_grades, reverse=True))
-    if ideal_gain == 0.0:
-        return 1.0 if not any(retrieved_grades) else 0.0
-    return discounted_gain(retrieved_grades) / ideal_gain
-
-
-def _load_cases(path: Path, model_type: type[CaseT]) -> list[CaseT]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, list):
-        raise ValueError(f"eval fixture must contain a JSON list: {path}")
-    return [model_type.model_validate(item) for item in payload]
-
-
-def _ratio(numerator: int | float, denominator: int | float) -> float:
-    return numerator / denominator if denominator else 0.0
 
 
 def main() -> None:
