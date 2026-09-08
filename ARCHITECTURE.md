@@ -6,23 +6,25 @@ Clutch is a read-only AI review and interview prep system built around one
 well-scoped agent. The user submits code through Streamlit. Streamlit calls a
 FastAPI backend. FastAPI validates the request, invokes a LangGraph agent, and
 returns structured Pydantic outputs. The agent uses direct internal tools for
-static review and clean-code retrieval, and later uses one MCP server for
-external GitHub fetch operations.
+static review and clean-code retrieval. A separate, deliberately narrow MCP
+server owns all external GitHub fetch operations.
 
-The first runnable milestone is intentionally small:
+The implemented review path is:
 
 ```text
 Streamlit pasted-code form
   -> FastAPI /review
   -> Pydantic request model
-  -> static review service
-  -> Pydantic CodeFinding[]
-  -> Streamlit findings view
+  -> LangGraph review service
+  -> deterministic fallback or strict OpenAI structured synthesis
+  -> Pydantic ReviewResponse
+  -> Streamlit findings and interview follow-ups
 ```
 
-Tree-sitter parsing, retrieval, LangGraph orchestration, GitHub MCP, evals,
-guardrails, tracing, Redis, and cloud deployment are added in that order as the
-earlier slice becomes runnable.
+That path now supports pasted code and bounded GitHub repo/PR input, durable
+PostgreSQL/pgvector retrieval, Redis caching, privacy-reduced Langfuse tracing,
+stateful interview turns, and progress snapshots. Every optional service has a
+zero-service fallback so the first path remains runnable.
 
 ## System Components
 
@@ -31,7 +33,7 @@ earlier slice becomes runnable.
 Streamlit is the only v1 web client. It should stay focused on the review and
 interview workflow rather than becoming a marketing site.
 
-Initial screens:
+Current screens:
 
 - Review input: pasted code, language, role/seniority context, submit button.
 - Findings output: severity, category, evidence, explanation, suggestion, and
@@ -44,14 +46,27 @@ Initial screens:
 FastAPI owns the service boundary. Streamlit should not call model providers,
 retrieval code, databases, or MCP tools directly.
 
-Initial endpoints:
+Current endpoints:
 
-- `POST /review`: accepts pasted code and returns `CodeFinding[]`.
-- `POST /questions`: accepts review findings and returns
-  `InterviewQuestion[]`.
-- `POST /interview/turn`: accepts session state and a user answer, streams or
-  returns the next interviewer turn.
+- `POST /review`: accepts pasted code and returns `ReviewResponse`, including
+  findings, first-pass questions, mode/confidence, citations, request id, and
+  latency.
+- `POST /review/github`: accepts a repository or pull-request URL and routes all
+  source fetching through MCP before using the same review flow.
+- `POST /interview/turn`: accepts session state and a user answer and returns
+  the next interviewer turn. The current implementation is non-streaming.
+- `GET /interview/{session_id}/feedback`: aggregates privacy-reduced completed
+  turn assessments plus persisted review metadata into `FeedbackReport`.
+- `GET /progress/{profile_id}` and `POST /progress/{profile_id}/snapshots`:
+  aggregate and save cross-session progress.
+- `GET /runtime/cache`: safe aggregate Redis cache metrics.
+- `GET /runtime/spend`: safe current UTC-day reservation total and ceilings.
 - `GET /health`: local and deployment health check.
+
+When `CLUTCH_API_KEY` is set—or `CLUTCH_REQUIRE_AUTH` is true—every route except
+`/health` requires a constant-time `X-Clutch-API-Key` match. Terraform requires
+a Secrets Manager API-key ARN before any public ECS service count can exceed
+zero and injects the value only into FastAPI and server-side Streamlit.
 
 SSE is introduced for streaming interview turns once the non-streaming review
 path is stable.
@@ -93,9 +108,20 @@ Regex-only parsing should be avoided for code structure.
 The knowledge base stores clean-code principles, rubric items, role-specific
 expectations, and interview follow-up patterns.
 
-Initial retrieval can be vector-only over a small seeded corpus. Phase 2
-upgrades retrieval to hybrid search using pgvector plus PostgreSQL full-text
-search, with reranking if evals justify it.
+The current durable retriever uses PostgreSQL full-text ranking plus optional
+pgvector cosine distance and score fusion over a validated package-data corpus.
+The first two expansions contain 60 references, rubrics, and question-bank items;
+each has explicit role and seniority metadata. Without PostgreSQL it uses
+deterministic local lexical retrieval; without an embedding key PostgreSQL still
+provides lexical results. Reranking remains deferred until the corpus and eval
+set are large enough to justify it.
+
+The local query builder removes common stop words and never uses source-ID
+prefixes as ranking evidence. Positive deterministic signals restrict retrieval
+to their finding categories and request reference/rubric/question context;
+zero-finding code contributes at most 40 non-comment identifier and literal
+terms. Those derived terms are request-scoped, and cache/database records retain
+only query hashes.
 
 Every retrieved item should carry:
 
@@ -109,15 +135,17 @@ Every retrieved item should carry:
 
 MCP is used for one deliberate external boundary: GitHub fetch operations.
 
-The MCP server exposes:
+The MCP server exposes exactly:
 
 - `fetch_repo`
 - `fetch_pr_diff`
 - `list_repo_files`
 
-It must remain read-only in v1. The agent consumes this MCP server as a client.
-Internal rubric/question retrieval remains a normal app tool because it is
-tightly coupled to the product's own knowledge store.
+Every tool is annotated read-only/idempotent. Strict GitHub URL/ref parsing,
+fixed-host GET-only HTTP, no redirects, response/file/tree/byte caps, safe path
+checks, and text allowlists bound the surface. The application consumes the
+server in-process locally or over stateless Streamable HTTP in containers.
+Internal rubric retrieval remains a normal app tool.
 
 ### Data Stores
 
@@ -125,7 +153,6 @@ PostgreSQL stores durable app data:
 
 - Review sessions.
 - Interview sessions.
-- Feedback reports.
 - Progress snapshots.
 - Knowledge-base items.
 - Retrieval metadata.
@@ -133,28 +160,34 @@ PostgreSQL stores durable app data:
 pgvector stores embeddings inside PostgreSQL so the project does not need a
 separate vector database for v1.
 
-Redis is introduced later for:
+Redis currently caches:
 
 - Embedding cache.
 - Retrieval result cache.
-- Short-lived session acceleration.
-- Before/after latency measurements.
+- Only hashed embedding and retrieval inputs plus knowledge-base results.
+
+Review responses are intentionally not cached because finding evidence may
+contain submitted source. The cache fails open and exposes only aggregate
+metrics. A local container smoke measured ~111 ms cold and ~8.6 ms after the
+first retrieval-cache hit; this is not a production benchmark.
 
 ### Observability
 
-Langfuse or Arize Phoenix should trace:
+Langfuse is the tracing implementation. Explicit observations capture:
 
 - Request id.
 - User workflow.
-- Prompt and context assembly metadata.
+- Privacy-reduced context metadata (source hash, language, line count).
 - Model name and configuration.
 - Tool calls and tool latency.
 - Retrieval inputs and selected documents.
 - Token usage, cost, and latency.
-- Structured output validation failures.
+- Structured output mode/fallback category and validation stage.
 
-Raw uploaded code should not be stored in observability events. Log metadata,
-hashes, line counts, language, and issue categories instead.
+Raw uploaded code, prompts, provider payloads, and interview answers are never
+passed to observability. A second redaction mask covers sensitive keys and
+Bearer tokens, sampling is bounded, automatic decorator IO capture is disabled,
+and graceful shutdown flushes pending spans.
 
 ## Public Schemas
 
@@ -181,6 +214,15 @@ shapes:
 - `explanation`: why this matters in an interview-grade review.
 - `suggestion`: concrete improvement.
 - `citations`: clean-code or rubric source references.
+
+### ReviewResponse
+
+- `findings`: validated `CodeFinding[]`.
+- `questions`: first-pass `InterviewQuestion[]` generated from findings.
+- `mode`: `model` or the clearly labeled `static_fallback`.
+- `confidence`: bounded workflow confidence, not a claim of correctness.
+- `citations_used`: de-duplicated sources used across findings.
+- `request_id` and `latency_ms`: operational metadata without raw code.
 
 ### InterviewQuestion
 
@@ -218,29 +260,31 @@ shapes:
 3. FastAPI validates size, language, and required fields.
 4. Backend treats code as untrusted input and passes it as quoted source data,
    never as instructions.
-5. Parser extracts line-aware chunks when parsing exists; before that, the
-   static review path can use the raw pasted snippet.
+5. Tree-sitter extracts bounded line-aware chunks.
 6. Retrieval returns clean-code principles relevant to the code and role
    context.
-7. LangGraph assembles bounded context and requests structured findings.
-8. Pydantic validates `CodeFinding[]`; invalid output is rejected or retried.
-9. FastAPI returns structured findings to Streamlit.
+7. LangGraph synthesizes deterministic or model-backed structured findings.
+8. Pydantic validates findings and generated questions; invalid model output is
+   rejected, retried once, then replaced by the static fallback.
+9. FastAPI returns `ReviewResponse` to Streamlit without logging raw code.
 
 ### GitHub Review
 
 1. User submits a repository or PR link.
 2. FastAPI requests files or diffs through the GitHub MCP server.
-3. The MCP server fetches only read-only data.
-4. The same parsing, retrieval, and review flow runs over selected chunks.
+3. The MCP server fetches only bounded, allowlisted, explicitly untrusted data.
+4. Python files/patches are reduced to a bounded request and the same parsing,
+   retrieval, review, and privacy-safe persistence flow runs.
 
 ### Interview Turn
 
 1. User starts from findings or generated questions.
 2. FastAPI loads interview session state.
-3. LangGraph chooses the next question or follow-up.
-4. The response is returned normally first, then via SSE once streaming is
-   introduced.
-5. Session state updates with question, answer, assessment, and next step.
+3. The deterministic interview service assesses explicit reasoning signals and
+   selects the next generated question.
+4. Session state persists current/remaining questions. Answers persist only as
+   SHA-256 plus a bounded signal summary.
+5. Adaptive model-generated follow-ups and SSE remain future work.
 
 ## Guardrails
 
@@ -285,25 +329,26 @@ System metrics:
 - Cost per request.
 - Tool-call latency.
 
-CI should eventually block deployment when core eval scores regress beyond an
-agreed threshold.
+CI blocks changes when deterministic tests/eval thresholds, prompt-injection
+behavior, type/lint checks, secret/dependency scans, image builds, or Terraform
+validation fail. Credentialed model evals remain manual/controlled.
 
 ## Deployment Architecture
 
 Local development runs all services locally or through Docker Compose.
 
-Cloud deployment uses:
+The validated, unapplied Terraform deployment models:
 
-- Streamlit container for the UI.
-- FastAPI container for the backend.
+- Streamlit, FastAPI, and GitHub MCP ECS/Fargate services.
 - Agent code packaged with the backend unless scaling pressure requires a
   separate worker.
 - AWS ECS/Fargate for containers.
 - AWS RDS PostgreSQL with pgvector.
 - AWS ElastiCache Redis.
-- AWS Secrets Manager or SSM Parameter Store for secrets.
-- S3 for non-sensitive artifacts if needed.
-- GitHub Actions for CI/CD.
+- An ALB for UI/API routing and private Cloud Map for service-to-service calls.
+- RDS-managed and optional Secrets Manager values injected by ECS.
+- AWS Budget alerts, ECR, CloudWatch logs, and least-privilege security groups.
+- GitHub Actions build/validate gates; publish/deploy remains user-gated.
 
 Detailed deployment choices live in `CLOUD.md`.
 

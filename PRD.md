@@ -83,13 +83,15 @@ answers are improving.
 - Tree-sitter based parsing for Python first, with room for more languages.
 - Pydantic schemas for all API and LLM boundaries.
 - Seeded clean-code/rubric knowledge base.
-- Retrieval with citations; vector-only first, hybrid retrieval later.
+- Retrieval with citations: PostgreSQL full-text + pgvector hybrid when
+  configured, with a no-service local fallback.
 - GitHub fetch operations behind one MCP server.
 - Follow-up question generation from findings.
 - Text-based interview simulation.
 - Feedback report and progress snapshot schemas.
 - Prompt-injection guardrail tests for untrusted code/comments/README input.
-- Basic tracing, eval harness, and CI regression gate before deployment.
+- Privacy-reduced tracing, an eval harness, and CI regression gates before
+  deployment.
 
 ## Out of Scope for V1
 
@@ -131,8 +133,8 @@ deliverable.
 - The system must generate interview questions from findings.
 - The interview flow must persist enough session state to support multi-turn
   follow-ups.
-- GitHub operations must go through the MCP boundary once repository and PR
-  review is introduced.
+- GitHub operations must go through the MCP boundary for every repository and
+  PR review.
 - Any future repository-mutating capability must require explicit human
   approval before execution.
 
@@ -143,12 +145,25 @@ deliverable.
   session requires.
 - Secrets must come from environment variables locally and from managed secrets
   in cloud deployments.
-- The system must provide structured logs and traces for model calls, tool
-  calls, latency, token usage, and cost once tracing is introduced.
+- The system must provide privacy-reduced structured traces for model calls,
+  tool calls, latency, token usage, and cost without including raw source,
+  prompts, secrets, or interview answers.
 - Evals must track retrieval quality, finding quality, citation faithfulness,
   hallucination rate, latency, tokens, and cost.
 - The first build increments should be runnable locally without cloud
   dependencies.
+
+### Retention and deletion
+
+- In-memory sessions disappear when the process stops.
+- Durable mode retains only derived review/interview/progress records and
+  content hashes until the local database/volume or cloud environment is
+  explicitly deleted. Raw submitted/repository code and raw interview answers
+  are never durable records.
+- A self-service profile deletion endpoint and a documented production
+  retention window are required before a public account system launches. The
+  current local-profile workflow is not presented as an account/data-retention
+  product.
 
 ## Success Criteria
 
@@ -175,10 +190,16 @@ The project is successful when it can demonstrate:
 
 ## Open Questions
 
-- Which tracing platform should be used first: Langfuse or Arize Phoenix?
-- What exact model should be used for the first OpenAI implementation?
-- How large should the initial clean-code knowledge base be before the first
-  eval baseline?
 - Which non-Python language should be supported second, if any?
 - What minimum UI state is needed for progress tracking without creating heavy
   auth requirements too early?
+
+Resolved implementation defaults from the 14-day sprint brief:
+
+- Langfuse is the first tracing platform.
+- `gpt-5.4-mini` is the initial OpenAI review model, configurable through
+  `OPENAI_MODEL` so eval evidence can justify a change later.
+- Deterministic baseline `2026-09-08.v3` uses a 60-item typed corpus, 12 review
+  cases (including clean negatives and mixed signals), three injection cases,
+  and three interview-to-feedback cases. Phase 2 still targets 100–500
+  knowledge items before broader quality claims.
