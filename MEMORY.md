@@ -51,10 +51,10 @@ Implemented boundaries:
 
 - Live OpenAI and Langfuse need user credentials; private GitHub needs a scoped
   read-only token.
-- Baseline `2026-09-08.v3` now covers clean-negative and mixed review cases,
-  complete interview assessment, deterministic feedback expectations, and raw
-  answer privacy. Adaptive follow-ups and the remaining expansion from 60 to
-  100–500 knowledge items remain incomplete.
+- Baseline `2026-09-08.v5` covers 12 pasted and three multi-file GitHub review
+  cases, complete interview assessment, deterministic feedback expectations,
+  raw source/answer privacy, and the 100-item lower corpus target. Adaptive
+  follow-ups and the controlled vector-only/hybrid comparison remain incomplete.
 - Deployment API-key auth and shared per-call/daily OpenAI spend reservations
   are implemented; user accounts, rate limiting, and key-rotation automation
   remain later hardening.

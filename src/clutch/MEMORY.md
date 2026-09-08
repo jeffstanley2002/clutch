@@ -32,11 +32,11 @@ repositories, no-op cache, no-op tracing, in-process MCP, and static synthesis.
 ## Known gaps
 
 - Python is the only reviewed/parser language.
-- The validated corpus contains 60 typed reference/rubric/question-bank items
-  with role and seniority metadata. It remains below the 100–500 Phase 2 target.
-- Eval `2026-09-08.v3` covers 12 review cases plus three complete
-  interview-to-feedback cases; it is still synthetic and does not justify a
-  general-quality claim.
+- The validated corpus contains 100 typed reference/rubric/question-bank items
+  with role and seniority metadata, reaching the Phase 2 lower bound.
+- Eval `2026-09-08.v5` covers 12 pasted reviews, three multi-file GitHub
+  reviews, and three complete interview-to-feedback cases; it is still
+  synthetic and does not justify a general-quality claim.
 - Live provider accuracy, cost, and traces require user-owned credentials.
 - Adaptive interviews are still deferred. Final reports, interview/report eval
   coverage, deployment API-key auth, and shared per-call/daily spend limits are

@@ -15,6 +15,10 @@ The application calls `list_repo_files`, `fetch_repo`, or `fetch_pr_diff`
 through `GitHubMcpClient`, using in-process MCP locally or a configured
 Streamable HTTP URL in containers/cloud.
 
+Three deterministic multi-file repository fixtures exercise the production
+review coordinator. They verify included-file metadata, cross-file findings,
+clean behavior, and absence of raw source sentinels from persistence.
+
 ## Decisions
 
 - No GitHub mutation method exists.

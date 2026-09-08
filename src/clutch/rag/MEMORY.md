@@ -6,9 +6,12 @@ Retrieval supports local lexical search and durable PostgreSQL hybrid search.
 PostgreSQL combines full-text rank with optional 1536-dimensional OpenAI
 embedding distance; local fallback preserves availability. Redis wrappers cache
 only hashed queries/vectors and knowledge-base results. The validated corpus has
-60 references/rubrics/question prompts with explicit item type, role, and
-seniority metadata; those fields participate in lexical search and survive the
-SQL round trip.
+100 references/rubrics/question prompts with explicit item type, role, and
+seniority metadata; those fields survive the SQL round trip.
+
+Local ranking treats category, role, seniority, rubric, and question words as
+routing metadata. Issue-specific tag/title/body overlap controls relevance, and
+finding explanations/suggestions provide safe derived query context.
 
 ## Decisions
 
@@ -18,5 +21,5 @@ SQL round trip.
 
 ## Known gaps
 
-- No semantic reranker and no credible vector-vs-hybrid comparison until the
-  corpus reaches at least 100 items and multi-file eval coverage exists.
+- No semantic reranker or controlled lexical/vector-only/hybrid comparison yet;
+  the corpus and multi-file judgment prerequisites now exist.

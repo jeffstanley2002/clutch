@@ -116,23 +116,24 @@ The quality command runs Ruff, mypy, pytest, and the zero-cost eval gate. The
 security command runs `detect-secrets` and `pip-audit` and therefore needs
 network access for current advisory data.
 
-Dataset `2026-09-08.v3` has 12 review cases (seven focused, three clean
-negatives, and two mixed-signal), three adversarial prompt-injection samples,
-and three complete interview-to-feedback cases. Its deterministic baseline is
-deliberately narrow:
+Dataset `2026-09-08.v5` has 15 review cases: 12 pasted-code cases and three
+multi-file repositories run through the real GitHub review coordinator. It also
+has three adversarial prompt-injection samples and three complete
+interview-to-feedback cases. Its deterministic baseline is deliberately narrow:
 
 | Metric | Baseline |
 |---|---:|
 | Finding precision / recall | 1.000 / 1.000 |
 | Finding severity accuracy | 1.000 |
 | Clean-negative / mixed full-recall rate | 1.000 / 1.000 |
-| Retrieval Precision@3 / Recall@3 | 0.727 / 0.649 |
-| Retrieval MRR / nDCG@3 | 1.000 / 0.951 |
+| Retrieval Precision@3 / Recall@3 | 0.786 / 0.559 |
+| Retrieval MRR / nDCG@3 | 1.000 / 0.934 |
 | Retrieval judgment coverage@3 | 1.000 |
-| Irrelevant-result rate@3 | 0.028 |
+| Irrelevant-result rate@3 | 0.044 |
 | Citation faithfulness | 1.000 |
 | Hallucinated-line rate | 0.000 |
 | Question relevance | 1.000 |
+| GitHub ingestion / persisted-source privacy | 1.000 / 1.000 |
 | Interview score / completion accuracy | 1.000 / 1.000 |
 | Feedback expectation / answer-privacy pass rate | 1.000 / 1.000 |
 | Prompt-injection pass rate | 1.000 |
@@ -178,10 +179,10 @@ teardown approval.
 ## Known limitations
 
 - Python is the only parsed language; GitHub review selects Python files.
-- The validated knowledge corpus has 60 cited references, rubrics, and
-  question-bank items with role/seniority metadata; Phase 2 still targets
-  100–500. The deterministic eval remains synthetic despite adding clean and
-  mixed-signal cases.
+- The validated knowledge corpus has 100 cited references, rubrics, and
+  question-bank items with role/seniority metadata, reaching Phase 2's lower
+  bound. The deterministic eval remains synthetic despite adding multi-file,
+  clean, and mixed-signal cases.
 - Interview assessment is deterministic and does not yet adaptively generate
   novel follow-ups; the final report is deterministic and evidence-based rather
   than a claim of general interview readiness.

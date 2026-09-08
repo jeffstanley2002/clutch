@@ -2,9 +2,10 @@
 
 ## Current state
 
-The committed `corpus.json` contains 60 validated items across all six finding
-categories: 36 cited references plus 12 interview rubrics and 12 question-bank
-prompts. Every item has a stable ID, citation, item type, role tags, and
+The committed `corpus.json` contains 100 validated items across all six finding
+categories: 60 cited references, 18 interview rubrics, and 22 question-bank
+prompts. Each category has 10 references, three rubrics, and at least three
+questions. Every item has a stable ID, citation, item type, role tags, and
 seniority levels. Package data is validated at import; duplicate IDs or citation
 ID mismatches fail fast.
 
@@ -29,7 +30,6 @@ metadata to existing databases.
 
 ## Known gaps
 
-- Expand from 60 to the planned 100–500 role/rubric/question items without
-  duplicating near-identical text.
-- Capture vector-only vs hybrid quality/latency/cost on the same expanded eval
-  set; current deterministic fixtures are too small to justify reranking.
+- Capture lexical vs vector-only vs hybrid quality/latency/cost on the same
+  expanded eval set; the credentialed vector paths still lack a measured
+  baseline.

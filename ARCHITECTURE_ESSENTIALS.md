@@ -92,9 +92,9 @@ request-scoped.
 
 ## Next sequence
 
-1. Expand the validated 60-item knowledge corpus toward 100–500 items and add
-   multi-file retrieval cases. Top-three results already have explicit 0–3
-   relevance judgments.
+1. Compare deterministic lexical, credentialed vector-only, and hybrid
+   retrieval against the same `2026-09-08.v5` judgments; the 100-item lower
+   corpus target and multi-file cases are complete.
 2. Add adaptive interview follow-ups only if the expanded deterministic and
    controlled live-model evals justify another model call.
 3. With user credentials, capture controlled OpenAI and Langfuse baselines and

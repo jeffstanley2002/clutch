@@ -535,3 +535,67 @@ Next up:
   without reducing judgment coverage.
 - At the credential checkpoint, run controlled OpenAI/Langfuse/private-GitHub
   baselines before any adaptive interview or AWS deployment decision.
+
+## 2026-09-08 (Day 10)
+
+Phase: 2–3 multi-file evaluation and corpus lower-bound checkpoint
+
+Did:
+
+- Added three typed multi-file repository fixtures and ran them through the real
+  `GitHubReviewService` coordinator with an in-memory read-only gateway.
+- Added report-level GitHub ingestion and persisted-source privacy gates; all
+  intended Python paths must be included and request-scoped sentinels must not
+  appear in the review recorder.
+- Expanded per-case evidence with retrieved source IDs, then included GitHub
+  cases in finding, retrieval, citation, question, clean, and mixed metrics.
+- Reworked deterministic lexical scoring so issue-specific tag, title, and body
+  evidence outranks generic category, role, rubric, and question metadata.
+- Expanded retrieval queries with finding explanation and suggestion text,
+  which is derived feedback rather than raw source.
+- Expanded the curated corpus from 60 to 100 items: 60 references, 18 rubrics,
+  and 22 question prompts. Every category has 10 references, three rubrics, and
+  at least three questions, with stable citation IDs and role/seniority tags.
+- Kept the work dependency-ordered in three local commits: multi-file evals,
+  ranking robustness, then corpus expansion. No remote push was performed.
+
+Learned / decided:
+
+- The old lexical score let generic words such as `question` and `design`
+  create tie groups whose order depended on source IDs. Identifiers and routing
+  metadata must not masquerade as semantic relevance.
+- Mixed multi-file queries can have seven relevant corpus items while K is
+  fixed at three. The Recall@3 floor is now 0.55; MRR, nDCG, full judgment
+  coverage, and irrelevant-result rate remain independent ordering safeguards.
+- Reaching 100 items satisfies the Phase 2 lower bound. Further corpus growth
+  should answer measured retrieval gaps rather than chase item count.
+
+Verification:
+
+- Ruff passes; mypy passes over 54 source files; all 73 tests pass.
+- Eval `2026-09-08.v5` passes at $0 model cost across 15 review cases, including
+  three multi-file GitHub repositories. Finding/citation/question/ingestion/
+  privacy gates are 1.0.
+- Retrieval Precision@3 is 0.786, Recall@3 0.559, MRR 1.0, nDCG@3 0.934,
+  judgment coverage 1.0, and irrelevant-result rate 0.044.
+- Corpus validation reports 100 unique IDs, 100 matching citation IDs, no exact
+  duplicate summaries, and 57 externally linked references.
+
+Open issues:
+
+- The same judgments have not yet been compared across local lexical,
+  PostgreSQL lexical, vector-only, and hybrid retrieval modes.
+- Live OpenAI/Langfuse evidence and private GitHub verification require
+  user-owned credentials.
+- Adaptive interview follow-ups remain deferred until controlled model evidence
+  justifies the added latency and cost.
+- AWS staging remains behind explicit account, region, budget, ingress/TLS,
+  credential, and teardown approval. No paid resource exists.
+
+Next up:
+
+- Add a reproducible retrieval-comparison runner over the existing graded
+  queries, execute all credential-free modes, and leave vector/model runs at the
+  explicit API-key checkpoint.
+- Then capture controlled OpenAI, Langfuse, and private-GitHub evidence before
+  any adaptive-interview or AWS decision.

@@ -5,8 +5,10 @@ whether added complexity earns its place.
 
 ## Golden Dataset
 
-The current dataset contains 12 Python review samples: seven focused positive
-cases, three clean negatives, and two mixed-signal cases. Separate adversarial
+The current dataset contains 15 Python review samples: 12 pasted-code cases and
+three multi-file repository cases evaluated through the real GitHub review
+coordinator. Across both sources there are eight focused positives, four clean
+negatives, and three mixed-signal cases. Separate adversarial
 fixtures place prompt-injection instructions in comments, strings, and
 README-style text. Three interview fixtures run complete weak, strong, and mixed
 answer sequences through final feedback generation.
@@ -45,10 +47,12 @@ invented in advance.
 
 ## Current Baseline
 
-Dataset version `2026-09-08.v3` runs the real review graph with model routing
+Dataset version `2026-09-08.v5` runs the real review graph with model routing
 forced to the deterministic fallback, then runs the actual interview service and
-final-report generator against in-memory privacy-safe repositories. It contains
-12 review cases, three prompt-injection cases, and three complete interviews.
+final-report generator against in-memory privacy-safe repositories. The three
+GitHub cases verify selected-file metadata and prove that request-scoped source
+sentinels do not enter persisted review records. It also contains three
+prompt-injection cases and three complete interviews.
 
 | Metric | Baseline |
 |---|---:|
@@ -57,15 +61,17 @@ final-report generator against in-memory privacy-safe repositories. It contains
 | Finding severity accuracy | 1.000 |
 | Clean-negative pass rate | 1.000 |
 | Mixed-case full recall | 1.000 |
-| Retrieval Recall@3 | 0.649 |
-| Retrieval Precision@3 | 0.727 |
+| Retrieval Recall@3 | 0.559 |
+| Retrieval Precision@3 | 0.786 |
 | Retrieval MRR | 1.000 |
-| Retrieval nDCG@3 | 0.951 |
+| Retrieval nDCG@3 | 0.934 |
 | Retrieval judgment coverage@3 | 1.000 |
-| Retrieval irrelevant-result rate@3 | 0.028 |
+| Retrieval irrelevant-result rate@3 | 0.044 |
 | Citation faithfulness | 1.000 |
 | Hallucinated line-number rate | 0.000 |
 | Question relevance | 1.000 |
+| GitHub ingestion expectation pass rate | 1.000 |
+| GitHub persisted-source privacy pass rate | 1.000 |
 | Interview score accuracy | 1.000 |
 | Interview completion rate | 1.000 |
 | Feedback expectation pass rate | 1.000 |
@@ -75,8 +81,11 @@ final-report generator against in-memory privacy-safe repositories. It contains
 
 Binary retrieval metrics treat grades 2–3 as relevant; nDCG uses all four grades.
 Every returned top-three result is explicitly judged, while the fixture also
-lists known-relevant candidates that were not returned. Recall@3 therefore stays
-at an honest 0.649 even though the first relevant result is always ranked first.
+lists known-relevant candidates that were not returned. Mixed multi-file cases
+can have seven relevant items while K remains three, so the corpus-wide Recall@3
+gate is 0.55 and the observed value stays at an honest 0.559. MRR remains 1.0;
+nDCG and irrelevant-result rate prevent the lower recall floor from hiding weak
+ordering.
 The perfect finding and interview scores establish narrow regression coverage
 for deterministic rules; they are not evidence of general review quality.
 Invalid structured-output rate is deliberately reported as unmeasured for this

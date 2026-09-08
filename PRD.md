@@ -199,7 +199,7 @@ Resolved implementation defaults from the 14-day sprint brief:
 - Langfuse is the first tracing platform.
 - `gpt-5.4-mini` is the initial OpenAI review model, configurable through
   `OPENAI_MODEL` so eval evidence can justify a change later.
-- Deterministic baseline `2026-09-08.v3` uses a 60-item typed corpus, 12 review
-  cases (including clean negatives and mixed signals), three injection cases,
-  and three interview-to-feedback cases. Phase 2 still targets 100–500
-  knowledge items before broader quality claims.
+- Deterministic baseline `2026-09-08.v5` uses a 100-item typed corpus, 15 review
+  cases (including three multi-file repositories, clean negatives, and mixed
+  signals), three injection cases, and three interview-to-feedback cases. This
+  reaches the lower product target but does not establish general quality.
