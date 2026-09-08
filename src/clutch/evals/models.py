@@ -19,18 +19,19 @@ class ExpectedFinding(BaseModel):
     citation_ids: list[str] = Field(min_length=1)
 
 
-class GoldenReviewCase(BaseModel):
+class ReviewExpectations(BaseModel):
+    """Expected review behavior shared by pasted and GitHub sources."""
+
     id: str = Field(..., min_length=1)
     title: str = Field(..., min_length=1)
     kind: ReviewCaseKind
-    code: str = Field(..., min_length=1)
     role_context: str = "backend intern"
     expected_findings: list[ExpectedFinding] = Field(default_factory=list)
     question_keywords: list[str] = Field(default_factory=list)
     retrieval_judgments: dict[str, int] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def validate_expected_findings(self) -> "GoldenReviewCase":
+    def validate_expected_findings(self) -> "ReviewExpectations":
         if self.kind == "clean" and self.expected_findings:
             raise ValueError("clean cases cannot declare expected findings")
         if self.kind != "clean" and not self.expected_findings:
@@ -52,6 +53,37 @@ class GoldenReviewCase(BaseModel):
                 "required finding citations need relevance grade 2 or 3: "
                 + ", ".join(sorted(insufficient))
             )
+        return self
+
+
+class GoldenReviewCase(ReviewExpectations):
+    code: str = Field(..., min_length=1)
+
+
+class GoldenGitHubFile(BaseModel):
+    """One request-scoped source file returned by the fixture gateway."""
+
+    path: str = Field(..., min_length=1, max_length=1_000)
+    content: str = Field(..., min_length=1, max_length=50_000)
+
+
+class GoldenGitHubReviewCase(ReviewExpectations):
+    """A multi-file repository case evaluated through GitHubReviewService."""
+
+    source_url: str = Field(..., min_length=1, max_length=500)
+    ref: str = Field(default="main", min_length=1, max_length=200)
+    files: list[GoldenGitHubFile] = Field(min_length=2, max_length=10)
+    privacy_sentinel: str = Field(..., min_length=8)
+
+    @model_validator(mode="after")
+    def validate_repository_fixture(self) -> "GoldenGitHubReviewCase":
+        paths = [file.path for file in self.files]
+        if len(paths) != len(set(paths)):
+            raise ValueError("GitHub fixture file paths must be unique")
+        if sum(path.endswith((".py", ".pyi")) for path in paths) < 2:
+            raise ValueError("GitHub fixture must contain at least two Python files")
+        if not any(self.privacy_sentinel in file.content for file in self.files):
+            raise ValueError("privacy sentinel must appear in at least one file")
         return self
 
 
@@ -91,6 +123,7 @@ class GoldenInterviewCase(BaseModel):
 
 class EvalCaseResult(BaseModel):
     case_id: str
+    source: Literal["pasted_code", "github_repository"] = "pasted_code"
     kind: ReviewCaseKind
     expected_findings: int = Field(..., ge=0)
     predicted_findings: int = Field(..., ge=0)
@@ -101,6 +134,7 @@ class EvalCaseResult(BaseModel):
     retrieval_evaluated: bool
     retrieval_relevant: int = Field(..., ge=0)
     retrieval_relevant_total: int = Field(..., ge=0)
+    retrieved_ids: list[str] = Field(default_factory=list)
     retrieval_returned: int = Field(..., ge=0)
     retrieval_judged: int = Field(..., ge=0)
     retrieval_irrelevant: int = Field(..., ge=0)
@@ -110,6 +144,8 @@ class EvalCaseResult(BaseModel):
     hallucinated_line_numbers: int = Field(..., ge=0)
     question_relevant: bool
     latency_ms: float = Field(..., ge=0.0)
+    ingestion_matched: bool | None = None
+    source_privacy_preserved: bool | None = None
 
 
 class InjectionCaseResult(BaseModel):
@@ -136,6 +172,7 @@ class EvalReport(BaseModel):
     dataset_version: str
     evaluation_mode: Literal["static_fallback"]
     review_case_count: int = Field(..., ge=1)
+    github_review_case_count: int = Field(..., ge=1)
     clean_case_count: int = Field(..., ge=1)
     mixed_case_count: int = Field(..., ge=1)
     interview_case_count: int = Field(..., ge=1)
@@ -153,6 +190,8 @@ class EvalReport(BaseModel):
     citation_faithfulness: float = Field(..., ge=0.0, le=1.0)
     hallucinated_line_number_rate: float = Field(..., ge=0.0, le=1.0)
     question_relevance: float = Field(..., ge=0.0, le=1.0)
+    github_ingestion_pass_rate: float = Field(..., ge=0.0, le=1.0)
+    github_source_privacy_pass_rate: float = Field(..., ge=0.0, le=1.0)
     interview_score_accuracy: float = Field(..., ge=0.0, le=1.0)
     interview_completion_rate: float = Field(..., ge=0.0, le=1.0)
     feedback_expectation_pass_rate: float = Field(..., ge=0.0, le=1.0)

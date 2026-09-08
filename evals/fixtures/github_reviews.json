@@ -1,0 +1,122 @@
+[
+  {
+    "id": "multi-file-state-and-sql",
+    "title": "Shared state and SQL interpolation across repository files",
+    "kind": "mixed",
+    "source_url": "https://github.com/eval/multi-file-state-and-sql",
+    "ref": "main",
+    "role_context": "backend intern",
+    "files": [
+      {
+        "path": "src/state.py",
+        "content": "def remember(event, events=[]):\n    # EVAL_GITHUB_STATE_SQL_SENTINEL\n    events.append(event)\n    return events\n"
+      },
+      {
+        "path": "src/repository.py",
+        "content": "def find_user(cursor, user_id):\n    query = f\"SELECT * FROM users WHERE id = {user_id}\"\n    return cursor.execute(query).fetchone()\n"
+      },
+      {
+        "path": "README.md",
+        "content": "# Evaluation repository\n"
+      }
+    ],
+    "privacy_sentinel": "EVAL_GITHUB_STATE_SQL_SENTINEL",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-mutable-default-",
+        "category": "correctness",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+      },
+      {
+        "id_prefix": "finding-sql-interpolation-",
+        "category": "security",
+        "severity": "high",
+        "citation_ids": ["seed.clean_code.parameterized_queries"]
+      }
+    ],
+    "question_keywords": ["mutable default", "sql", "correctness", "security"],
+    "retrieval_judgments": {
+      "seed.clean_code.safe_python_defaults": 3,
+      "seed.clean_code.parameterized_queries": 3,
+      "seed.rubric.correctness_failure_model": 2,
+      "seed.rubric.correctness_state_transition": 2,
+      "seed.rubric.security_trust_boundary": 2,
+      "seed.question.correctness_second_call": 2,
+      "seed.question.security_attack_path": 2,
+      "seed.clean_code.narrow_error_handling": 0,
+      "seed.clean_code.allowlist_validation": 1,
+      "seed.clean_code.safe_subprocess_boundaries": 1
+    }
+  },
+  {
+    "id": "multi-file-duplicated-behavior",
+    "title": "Duplicated behavior split across modules",
+    "kind": "focused",
+    "source_url": "https://github.com/eval/multi-file-duplicated-behavior",
+    "ref": "main",
+    "role_context": "backend intern",
+    "files": [
+      {
+        "path": "pricing/retail.py",
+        "content": "def retail_total(items):\n    # EVAL_GITHUB_DUPLICATION_SENTINEL\n    subtotal = sum(items)\n    return subtotal * 1.09\n"
+      },
+      {
+        "path": "pricing/wholesale.py",
+        "content": "def wholesale_total(items):\n    subtotal = sum(items)\n    return subtotal * 1.09\n"
+      }
+    ],
+    "privacy_sentinel": "EVAL_GITHUB_DUPLICATION_SENTINEL",
+    "expected_findings": [
+      {
+        "id_prefix": "finding-duplicated-functions-",
+        "category": "design",
+        "severity": "medium",
+        "citation_ids": ["seed.clean_code.single_source_of_behavior"]
+      }
+    ],
+    "question_keywords": ["duplicate", "design"],
+    "retrieval_judgments": {
+      "seed.clean_code.single_source_of_behavior": 3,
+      "seed.clean_code.explicit_dependency_boundaries": 2,
+      "seed.clean_code.small_reviewable_units": 2,
+      "seed.rubric.design_tradeoff": 2,
+      "seed.rubric.design_cohesion": 2,
+      "seed.question.design_second_requirement": 2,
+      "seed.question.design_replace_dependency": 1
+    }
+  },
+  {
+    "id": "multi-file-clean-boundaries",
+    "title": "Clean parameterized query and narrow exception boundary",
+    "kind": "clean",
+    "source_url": "https://github.com/eval/multi-file-clean-boundaries",
+    "ref": "main",
+    "role_context": "backend intern",
+    "files": [
+      {
+        "path": "src/repository.py",
+        "content": "def find_user(cursor, user_id):\n    # EVAL_GITHUB_CLEAN_SENTINEL\n    cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))\n    return cursor.fetchone()\n"
+      },
+      {
+        "path": "src/parsing.py",
+        "content": "def parse_count(value):\n    try:\n        return int(value)\n    except ValueError:\n        return 0\n"
+      }
+    ],
+    "privacy_sentinel": "EVAL_GITHUB_CLEAN_SENTINEL",
+    "expected_findings": [],
+    "question_keywords": [],
+    "retrieval_judgments": {
+      "seed.clean_code.parameterized_queries": 3,
+      "seed.clean_code.narrow_error_handling": 3,
+      "seed.clean_code.exception_contract_tests": 2,
+      "seed.clean_code.allowlist_validation": 2,
+      "seed.rubric.correctness_failure_model": 1,
+      "seed.rubric.design_tradeoff": 1,
+      "seed.rubric.security_trust_boundary": 1,
+      "seed.rubric.testing_failure_diagnosis": 1,
+      "seed.rubric.maintainable_change_scope": 1,
+      "seed.rubric.readable_explanation": 1
+    }
+  }
+]
