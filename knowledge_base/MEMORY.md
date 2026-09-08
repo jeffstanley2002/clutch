@@ -30,6 +30,6 @@ metadata to existing databases.
 
 ## Known gaps
 
-- Capture lexical vs vector-only vs hybrid quality/latency/cost on the same
-  expanded eval set; the credentialed vector paths still lack a measured
-  baseline.
+- Local and PostgreSQL lexical quality/latency/cost are now measured on the same
+  expanded eval set. The credentialed vector-only and hybrid paths still lack a
+  measured baseline.

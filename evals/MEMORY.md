@@ -13,6 +13,10 @@
 - `src/clutch/evals/runner.py`: runs the real graph with `primary=None` and
   the real interview/report services, reporting review, retrieval, citation,
   coaching, guardrail, privacy, latency, and cost evidence.
+- `src/clutch/evals/retrieval_comparison.py`: evaluates local lexical,
+  PostgreSQL lexical, PostgreSQL vector-only, and PostgreSQL hybrid strategies
+  over the same 15 privacy-bounded queries and judgments. Reports contain only
+  query hashes, categories, retrieved source IDs, metrics, latency, and cost.
 - Dataset `2026-09-08.v5` passes every deterministic gate. Finding, citation,
   question, severity, clean-negative, mixed recall, interview, feedback,
   privacy, ingestion, and injection metrics are 1.0. Graded retrieval is
@@ -32,9 +36,17 @@
   highly relevant. Every current top-three candidate must be explicitly judged.
 - Mixed repository queries can have more relevant items than K=3 can return;
   the Recall@3 floor is 0.55 while nDCG and irrelevant-rate gates protect order.
+- Candidate strategies may have up to 10% unjudged top-three results. Unjudged
+  hits are still relevance zero for nDCG and irrelevant-rate, avoiding a hidden
+  quality exemption while preventing an exact-coverage double penalty.
+- Credential-free comparison baseline: local lexical P@3 0.786, R@3 0.559,
+  MRR 1.0, nDCG@3 0.934, coverage 1.0, irrelevant 0.044, mean 0.48 ms;
+  PostgreSQL lexical P@3 0.786, R@3 0.559, MRR 1.0, nDCG@3 0.914, coverage
+  0.911, irrelevant 0.089, mean 16.22 ms. Both cost $0 and pass.
 
 ## Known gaps
 
-- Compare lexical, vector-only, and hybrid retrieval on these same judgments.
+- Measure PostgreSQL vector-only and hybrid retrieval on these same judgments
+  after the user configures an OpenAI key and the corpus embeddings are seeded.
 - Live OpenAI accuracy, invalid-output, fallback, latency, token, and cost
   baselines require a user-provided key.

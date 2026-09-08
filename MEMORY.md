@@ -28,7 +28,11 @@ Implemented boundaries:
 ## Verified evidence
 
 - Full local quality/security gates are green; rerun after any new change.
-- Dataset `2026-09-07.v1` passes all deterministic thresholds.
+- Dataset `2026-09-08.v5` passes all deterministic thresholds across 15 review
+  cases, including three multi-file repositories.
+- The reproducible retrieval comparison passes for local and PostgreSQL lexical
+  modes. They match at Precision@3 0.786, Recall@3 0.559, and MRR 1.0;
+  PostgreSQL lexical nDCG@3 is 0.914 in the recorded local run.
 - Real Compose smoke: pgvector migration succeeded, five services healthy,
   review persisted only a 64-character source hash + derived metadata.
 - Repeated synthetic review produced a Redis hit and dropped application
@@ -54,7 +58,8 @@ Implemented boundaries:
 - Baseline `2026-09-08.v5` covers 12 pasted and three multi-file GitHub review
   cases, complete interview assessment, deterministic feedback expectations,
   raw source/answer privacy, and the 100-item lower corpus target. Adaptive
-  follow-ups and the controlled vector-only/hybrid comparison remain incomplete.
+  follow-ups and the credentialed vector-only/hybrid measurements remain
+  incomplete.
 - Deployment API-key auth and shared per-call/daily OpenAI spend reservations
   are implemented; user accounts, rate limiting, and key-rotation automation
   remain later hardening.
