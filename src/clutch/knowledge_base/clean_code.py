@@ -34,6 +34,26 @@ _STOP_WORDS = {
     "to",
     "with",
 }
+_ROUTING_TERMS = {
+    "backend",
+    "correctness",
+    "data",
+    "design",
+    "general",
+    "intern",
+    "interview",
+    "junior",
+    "library",
+    "maintainability",
+    "mid",
+    "platform",
+    "question",
+    "readability",
+    "rubric",
+    "security",
+    "senior",
+    "testing",
+}
 
 
 def _default_seniority_levels() -> list[SeniorityLevel]:
@@ -95,28 +115,36 @@ def retrieve_clean_code_principles(
         return []
 
     query_terms = set(_tokenize(query))
+    issue_terms = query_terms - _ROUTING_TERMS
     scored_principles = []
 
     for principle in SEED_CLEAN_CODE_PRINCIPLES:
         if categories is not None and principle.category not in categories:
             continue
 
-        searchable_text = " ".join(
-            [
-                principle.title,
-                principle.id,
-                principle.summary,
-                principle.guidance,
-                principle.item_type,
-                " ".join(principle.roles),
-                " ".join(principle.seniority_levels),
-                " ".join(principle.tags),
-            ]
+        title_terms = set(_tokenize(principle.title)) - _ROUTING_TERMS
+        body_terms = set(
+            _tokenize(f"{principle.summary} {principle.guidance}")
+        ) - _ROUTING_TERMS
+        tag_terms = set(principle.tags) - _ROUTING_TERMS
+        tag_overlap = issue_terms & tag_terms
+        title_overlap = issue_terms & title_terms
+        body_overlap = issue_terms & body_terms
+        role_bonus = int(bool(query_terms & set(principle.roles)))
+        intent_bonus = int(
+            (principle.item_type == "rubric" and "rubric" in query_terms)
+            or (
+                principle.item_type == "question_bank"
+                and "question" in query_terms
+            )
         )
-        principle_terms = set(_tokenize(searchable_text))
-        overlap = query_terms & principle_terms
-        tag_overlap = query_terms & set(principle.tags)
-        score = len(overlap) + (2 * len(tag_overlap))
+        score = (
+            (4 * len(tag_overlap))
+            + (2 * len(title_overlap))
+            + len(body_overlap)
+            + role_bonus
+            + intent_bonus
+        )
 
         if score > 0:
             scored_principles.append((score, principle.id, principle))

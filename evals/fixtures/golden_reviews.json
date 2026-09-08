@@ -18,6 +18,8 @@
       "seed.rubric.maintainable_change_scope": 2,
       "seed.question.maintainability_change": 1,
       "seed.question.maintenance_incident": 1,
+      "seed.clean_code.externalized_configuration": 0,
+      "seed.rubric.operational_maintainability": 1,
       "seed.clean_code.public_docstrings": 0
     }
   },
@@ -41,6 +43,7 @@
       "seed.clean_code.resource_lifetime": 1,
       "seed.question.maintainability_change": 1,
       "seed.question.maintenance_incident": 1,
+      "seed.rubric.operational_maintainability": 2,
       "seed.clean_code.explicit_incomplete_work": 0,
       "seed.clean_code.allowlist_validation": 0
     }
@@ -62,7 +65,8 @@
     "retrieval_judgments": {
       "seed.clean_code.narrow_error_handling": 3,
       "seed.rubric.correctness_failure_model": 2,
-      "seed.question.correctness_counterexample": 2
+      "seed.question.correctness_counterexample": 2,
+      "seed.clean_code.structured_concurrency": 1
     }
   },
   {
@@ -106,6 +110,7 @@
       "seed.clean_code.small_reviewable_units": 3,
       "seed.clean_code.explicit_dependency_boundaries": 2,
       "seed.rubric.design_tradeoff": 2,
+      "seed.rubric.design_cohesion": 2,
       "seed.question.design_second_requirement": 2,
       "seed.question.design_replace_dependency": 0,
       "seed.clean_code.single_source_of_behavior": 1
@@ -151,6 +156,7 @@
       "seed.clean_code.single_source_of_behavior": 3,
       "seed.clean_code.explicit_dependency_boundaries": 2,
       "seed.clean_code.small_reviewable_units": 2,
+      "seed.clean_code.abstract_behavior_contracts": 2,
       "seed.rubric.design_tradeoff": 2,
       "seed.question.design_second_requirement": 2,
       "seed.question.design_replace_dependency": 1
@@ -165,6 +171,7 @@
     "question_keywords": [],
     "retrieval_judgments": {
       "seed.rubric.correctness_failure_model": 1,
+      "seed.rubric.correctness_state_transition": 1,
       "seed.rubric.design_tradeoff": 1,
       "seed.rubric.security_trust_boundary": 1,
       "seed.rubric.testing_failure_diagnosis": 1,
@@ -186,6 +193,7 @@
       "seed.rubric.security_trust_boundary": 1,
       "seed.clean_code.parameterized_queries": 3,
       "seed.clean_code.allowlist_validation": 2,
+      "seed.clean_code.boundary_observability": 1,
       "seed.question.design_replace_dependency": 1
     }
   },
@@ -201,7 +209,8 @@
       "seed.rubric.design_tradeoff": 1,
       "seed.rubric.security_trust_boundary": 1,
       "seed.clean_code.narrow_error_handling": 2,
-      "seed.clean_code.exception_contract_tests": 2
+      "seed.clean_code.exception_contract_tests": 2,
+      "seed.clean_code.structured_concurrency": 0
     }
   },
   {

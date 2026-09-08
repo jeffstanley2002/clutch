@@ -41,6 +41,23 @@ def test_retrieve_clean_code_principles_filters_by_category() -> None:
     ]
 
 
+def test_issue_terms_outrank_generic_question_metadata() -> None:
+    principles = retrieve_clean_code_principles(
+        (
+            "backend intern rubric question interview multiple functions duplicate "
+            "the same implementation shared behavior extraction change points"
+        ),
+        categories={"design"},
+        limit=3,
+    )
+
+    assert principles[0].id == "seed.clean_code.single_source_of_behavior"
+    assert not {principle.id for principle in principles} & {
+        "seed.question.design_data_shape_growth",
+        "seed.question.design_ownership_boundary",
+    }
+
+
 def test_retrieve_clean_code_principles_returns_empty_for_zero_limit() -> None:
     principles = retrieve_clean_code_principles("logging debug print", limit=0)
 

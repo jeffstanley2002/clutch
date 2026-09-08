@@ -75,6 +75,8 @@ async def retrieve_principles(
                 request.role_context,
                 "rubric question interview",
                 *(finding.message for finding in findings),
+                *(finding.explanation for finding in findings),
+                *(finding.suggestion for finding in findings),
                 *(finding.category for finding in findings),
             ]
         )
