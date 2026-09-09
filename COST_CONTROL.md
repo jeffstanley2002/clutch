@@ -19,6 +19,9 @@ quality alongside accuracy and latency, not a cleanup task after launch.
 - Reconcile successful reservations with reported token usage. If usage or the
   counter is unavailable, retain the conservative reservation; never allow a
   paid call when the pre-call counter is unavailable.
+- Keep manual live-model evaluation on its own in-memory budget: at most $0.50
+  per run and $0.10 per request by default. A missing key produces a zero-cost
+  unavailable report; fallback or incomplete execution fails the command.
 
 ## Deployment Defaults
 
@@ -44,6 +47,12 @@ Use the same golden eval set when comparing:
 Report finding accuracy, citation faithfulness, latency, tokens, and estimated
 cost per review together so cheaper behavior is not mistaken for better
 behavior when quality regresses.
+
+Run the capped comparison manually with:
+
+```bash
+python -m clutch.evals.live_model --compact
+```
 
 ## Deployment Breakpoint
 

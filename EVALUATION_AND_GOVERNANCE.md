@@ -43,6 +43,14 @@ changes are reviewed like code because changing labels can hide regressions.
 - Full and potentially costly model evals run manually or on a controlled
   schedule; CI uses deterministic/frozen paths.
 
+`python -m clutch.evals.live_model --compact` is the controlled live gate. It
+uses six representative review cases plus all three injection cases, a separate
+in-memory spend guard capped at $0.50 by default, and the production graph with
+local retrieval. The privacy-reduced report contains IDs, metrics, safe failure
+categories, tokens, latency, and charged cost—never fixture source or prompts.
+Missing credentials return a typed unavailable result without a provider call;
+any fallback causes a nonzero configured-run exit.
+
 Deterministic thresholds are checked by the committed eval runner. Credentialed
 model thresholds will be added only after a measured baseline rather than being
 invented in advance.
@@ -112,7 +120,9 @@ an exact coverage requirement would double-penalize the same uncertainty. The
 The perfect finding and interview scores establish narrow regression coverage
 for deterministic rules; they are not evidence of general review quality.
 Invalid structured-output rate is deliberately reported as unmeasured for this
-static run and will be recorded after the first controlled live-model baseline.
+static run. Provider attempt and validation-failure counters plus the capped
+live harness are now implemented; the first credentialed baseline remains a
+deployment checkpoint.
 
 Local cache evidence is tracked separately from quality: one container smoke on
 2026-09-08 measured ~111 ms cold versus ~8.6 ms after a retrieval-cache hit.

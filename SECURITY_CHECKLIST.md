@@ -52,7 +52,7 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Deployment logs contain no source code or secrets.
 - A rollback path and incident owner are documented before public deployment.
 
-## Current evidence (2026-09-08)
+## Current evidence (2026-09-09)
 
 - Three prompt-injection fixtures remain data under the real static graph,
   avoid prohibited behavior, and emit only known citations.
@@ -76,6 +76,12 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Completion and embedding calls reserve conservative cost through an atomic
   Redis daily counter before provider access; unit tests cover per-call and
   daily rejection and the static fallback path.
+- Provider diagnostics expose bounded attempt and validation-failure counts plus
+  safe cause categories only. The capped live-model report omits fixture source,
+  prompts, provider payloads, credentials, and raw exception messages.
+- A fresh local acceptance pass rebuilt every image, ran migrations, verified
+  all five health checks, exercised review/interview/feedback/progress, passed 83
+  tests, and found no known dependency vulnerabilities.
 
 Remaining release evidence: credentialed live-model trace inspection, verified
 read-only scope on a private GitHub token, AWS log review, saved-plan/cost
