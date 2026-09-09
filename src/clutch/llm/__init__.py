@@ -4,6 +4,8 @@ from clutch.llm.providers import (
     FallbackStaticProvider,
     ModelRouter,
     OpenAIProvider,
+    ProviderQuestions,
+    QuestionContext,
     ReviewContext,
     ReviewModelUnavailable,
 )
@@ -23,6 +25,8 @@ __all__ = [
     "ModelBudgetUnavailable",
     "ModelRouter",
     "OpenAIProvider",
+    "ProviderQuestions",
+    "QuestionContext",
     "ReviewContext",
     "ReviewModelUnavailable",
     "SpendMetrics",

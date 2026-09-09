@@ -8,13 +8,14 @@ from clutch.llm.providers import (
     ModelRouter,
     OpenAIProvider,
     ProviderReview,
+    QuestionContext,
     ReviewContext,
     ReviewModelUnavailable,
 )
 from clutch.llm.spend import InMemorySpendGuard
 from clutch.parsing import parse_python_code
 from clutch.review.static import run_static_review
-from clutch.schemas import CodeFinding, ReviewRequest
+from clutch.schemas import CodeFinding, InterviewQuestion, ReviewRequest
 
 
 def _context() -> ReviewContext:
@@ -33,6 +34,15 @@ def _context() -> ReviewContext:
         parsed_code=parsed,
         static_findings=findings,
         principles=principles,
+    )
+
+
+def _question_context() -> QuestionContext:
+    context = _context()
+    return QuestionContext(
+        role_context=context.request.role_context,
+        findings=context.static_findings[:1],
+        principles=context.principles,
     )
 
 
@@ -71,8 +81,10 @@ class FakeResponses:
     def __init__(self, outputs: list[object]) -> None:
         self.outputs = outputs
         self.calls = 0
+        self.requests: list[dict[str, object]] = []
 
     async def parse(self, **kwargs: object) -> SimpleNamespace:
+        self.requests.append(kwargs)
         output = self.outputs[self.calls]
         self.calls += 1
         return SimpleNamespace(output_parsed=output)
@@ -183,3 +195,77 @@ def test_model_router_raises_typed_failure_only_when_both_paths_fail() -> None:
     assert error.value.failure_reason == "fallback_failed"
     assert error.value.failure_category == "fallback_failed"
     assert "internals" not in str(error.value)
+
+
+def test_openai_provider_generates_canonical_grounded_questions() -> None:
+    context = _question_context()
+    citation = context.principles[0].citation
+    responses = FakeResponses(
+        [
+            {
+                "questions": [
+                    {
+                        "finding_id": context.findings[0].id,
+                        "question": "How would you verify the safer default?",
+                        "intent": "Assess reasoning about state shared across calls.",
+                        "difficulty": "medium",
+                        "citation_ids": [citation.source_id],
+                    }
+                ]
+            }
+        ]
+    )
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+
+    result = asyncio.run(provider.generate_questions(context))
+
+    assert result.questions[0].id == "question-001"
+    assert result.questions[0].finding_id == context.findings[0].id
+    assert result.questions[0].citations == [citation]
+    assert result.questions[0].origin == "ai_generated"
+    assert result.prompt_version == "questions.v1"
+    assert responses.requests[0]["store"] is False
+    assert responses.requests[0]["max_output_tokens"] == 1_600
+
+
+def test_question_generation_falls_back_after_grounding_validation() -> None:
+    context = _question_context()
+    invalid = {
+        "questions": [
+            {
+                "finding_id": context.findings[0].id,
+                "question": "Invented grounding?",
+                "intent": "This should be rejected.",
+                "difficulty": "easy",
+                "citation_ids": ["invented.source"],
+            }
+        ]
+    }
+    responses = FakeResponses([invalid, invalid])
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+    template = InterviewQuestion(
+        id="template-1",
+        finding_id=context.findings[0].id,
+        question="How would you improve this issue?",
+        intent="Assess practical reasoning.",
+        difficulty="medium",
+    )
+
+    result = asyncio.run(
+        ModelRouter(primary=provider).generate_questions(
+            context,
+            template_questions=[template],
+        )
+    )
+
+    assert result.questions == [template]
+    assert result.failure_category == "grounding_validation_failed"
+    assert result.attempt_count == 2
+    assert result.validation_failure_count == 2
+    assert responses.calls == 2

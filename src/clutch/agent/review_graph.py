@@ -8,7 +8,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from clutch.knowledge_base import CleanCodePrinciple
-from clutch.llm import ModelRouter, ReviewContext
+from clutch.llm import ModelRouter, QuestionContext, ReviewContext
 from clutch.observability import OBSERVABILITY, Observability
 from clutch.parsing import parse_python_code
 from clutch.rag import (
@@ -203,13 +203,16 @@ def validate_findings(state: ReviewGraphState) -> dict[str, list[CodeFinding]]:
     return {"findings": validated}
 
 
-def generate_questions(
+async def generate_questions(
     state: ReviewGraphState,
+    *,
+    model_router: ModelRouter,
 ) -> dict[str, object]:
-    """Turn the most useful findings into deterministic interview prompts."""
+    """Generate grounded questions with an honestly labeled template fallback."""
 
     role = state["request"].role_context
-    questions = [
+    findings = state["findings"][:3]
+    template_questions = [
         InterviewQuestion(
             id=f"question-{index:03d}",
             finding_id=finding.id,
@@ -224,14 +227,43 @@ def generate_questions(
             difficulty=_question_difficulty(finding),
             citations=finding.citations,
         )
-        for index, finding in enumerate(state["findings"][:3], start=1)
+        for index, finding in enumerate(findings, start=1)
     ]
+    if not findings:
+        return {
+            "questions": [],
+            "question_provenance": StageProvenance(
+                stage="question_generation",
+                status="skipped",
+                origin="template_generated",
+            ),
+        }
+    result = await model_router.generate_questions(
+        QuestionContext(
+            role_context=role,
+            findings=findings,
+            principles=state["retrieved_principles"][:8],
+        ),
+        template_questions=template_questions,
+    )
+    ai_generated = all(
+        question.origin == "ai_generated" for question in result.questions
+    )
     return {
-        "questions": questions,
+        "questions": result.questions,
         "question_provenance": StageProvenance(
             stage="question_generation",
-            status="succeeded",
-            origin="template_generated",
+            status="succeeded" if ai_generated else "fallback",
+            origin="ai_generated" if ai_generated else "template_generated",
+            model_name=result.model_name,
+            prompt_version=result.prompt_version,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=result.latency_ms,
+            estimated_cost_usd=result.estimated_cost_usd,
+            attempt_count=result.attempt_count,
+            validation_failure_count=result.validation_failure_count,
+            failure_category=result.failure_category,
         ),
     }
 
@@ -343,13 +375,27 @@ def build_review_graph(
             span.update(output={"validated_finding_count": len(result["findings"])})
             return result
 
-    def generate_questions_node(
+    async def generate_questions_node(
         state: ReviewGraphState,
     ) -> dict[str, object]:
-        with observer.span("review.generate_questions", as_type="tool") as span:
-            result = generate_questions(state)
+        with observer.span(
+            "review.generate_questions",
+            as_type="generation",
+            metadata={"prompt_version": "questions.v1"},
+        ) as span:
+            result = await generate_questions(state, model_router=router)
             questions = cast(list[InterviewQuestion], result["questions"])
-            span.update(output={"question_count": len(questions)})
+            provenance = cast(StageProvenance, result["question_provenance"])
+            span.update(
+                output={
+                    "question_count": len(questions),
+                    "origin": provenance.origin,
+                    "model_name": provenance.model_name,
+                    "input_tokens": provenance.input_tokens,
+                    "output_tokens": provenance.output_tokens,
+                    "failure_category": provenance.failure_category,
+                }
+            )
             return result
 
     builder = StateGraph(ReviewGraphState)
