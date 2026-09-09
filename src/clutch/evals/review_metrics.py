@@ -15,10 +15,15 @@ def evaluate_review_output(
     questions: list[InterviewQuestion],
     line_count: int,
     latency_ms: float,
+    require_id_prefix: bool = True,
 ) -> EvalCaseResult:
     """Score one typed review result without retaining its submitted source."""
 
-    matches = match_expected_findings(case, findings)
+    matches = match_expected_findings(
+        case,
+        findings,
+        require_id_prefix=require_id_prefix,
+    )
     retrieved_ids = [principle.citation.source_id for principle in retrieved]
     retrieval_grades = [
         case.retrieval_judgments.get(source_id, 0) for source_id in retrieved_ids
@@ -108,6 +113,8 @@ def evaluate_review_output(
 def match_expected_findings(
     case: ReviewExpectations,
     findings: list[CodeFinding],
+    *,
+    require_id_prefix: bool = True,
 ) -> dict[int, int]:
     """Match each expectation to one finding using its atomic identity."""
 
@@ -118,7 +125,10 @@ def match_expected_findings(
             (
                 index
                 for index in sorted(available_findings)
-                if findings[index].id.startswith(expected.id_prefix)
+                if (
+                    not require_id_prefix
+                    or findings[index].id.startswith(expected.id_prefix)
+                )
                 and findings[index].category == expected.category
             ),
             None,

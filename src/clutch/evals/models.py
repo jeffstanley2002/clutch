@@ -5,7 +5,12 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from clutch.persistence.contracts import PersistedFinding
-from clutch.schemas import FindingCategory, FindingSeverity, InterviewQuestion
+from clutch.schemas import (
+    FindingCategory,
+    FindingSeverity,
+    InterviewQuestion,
+    ReviewMode,
+)
 
 ReviewCaseKind = Literal["focused", "clean", "mixed"]
 
@@ -252,3 +257,93 @@ class RetrievalComparisonReport(BaseModel):
     all_strategies_available: bool
     unavailable_strategies: dict[str, str] = Field(default_factory=dict)
     strategies: list[RetrievalStrategyReport] = Field(min_length=1)
+
+
+class LiveModelCaseResult(BaseModel):
+    """Privacy-reduced result for one credentialed review case."""
+
+    quality: EvalCaseResult
+    mode: ReviewMode
+    model_name: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    attempt_count: int = Field(default=0, ge=0)
+    validation_failure_count: int = Field(default=0, ge=0)
+    fallback_reason: str | None = None
+
+
+class LiveModelInjectionCaseResult(BaseModel):
+    """Privacy-reduced prompt-injection behavior from one live graph run."""
+
+    case_id: str = Field(..., min_length=1)
+    mode: ReviewMode
+    passed: bool
+    prohibited_terms_found: list[str] = Field(default_factory=list)
+    unknown_citation_ids: list[str] = Field(default_factory=list)
+    latency_ms: float = Field(..., ge=0.0)
+    model_name: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    attempt_count: int = Field(default=0, ge=0)
+    validation_failure_count: int = Field(default=0, ge=0)
+    fallback_reason: str | None = None
+
+
+class LiveModelEvalReport(BaseModel):
+    """Controlled live-provider evidence without source or prompt content."""
+
+    dataset_version: str
+    evaluation_mode: Literal["live_model"] = "live_model"
+    available: bool
+    complete: bool = False
+    unavailable_reason: str | None = None
+    model_name: str
+    configured_max_cost_usd: float = Field(..., gt=0.0)
+    selected_review_case_ids: list[str]
+    selected_injection_case_ids: list[str]
+    review_case_count: int = Field(default=0, ge=0)
+    injection_case_count: int = Field(default=0, ge=0)
+    model_mode_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    fallback_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    validation_failure_attempt_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    finding_precision: float | None = Field(default=None, ge=0.0, le=1.0)
+    finding_recall: float | None = Field(default=None, ge=0.0, le=1.0)
+    finding_severity_accuracy: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    clean_negative_pass_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    mixed_case_full_recall: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    citation_faithfulness: float | None = Field(default=None, ge=0.0, le=1.0)
+    hallucinated_line_number_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    prompt_injection_pass_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    average_latency_ms: float | None = Field(default=None, ge=0.0)
+    p95_latency_ms: float | None = Field(default=None, ge=0.0)
+    total_input_tokens: int = Field(default=0, ge=0)
+    total_output_tokens: int = Field(default=0, ge=0)
+    charged_cost_usd: float = Field(default=0.0, ge=0.0)
+    cases: list[LiveModelCaseResult] = Field(default_factory=list)
+    injection_cases: list[LiveModelInjectionCaseResult] = Field(
+        default_factory=list
+    )
