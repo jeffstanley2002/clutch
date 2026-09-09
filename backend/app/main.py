@@ -29,6 +29,7 @@ from clutch.llm import (
     spend_metrics_snapshot,
 )
 from clutch.observability import close_observability
+from clutch.persistence import close_application_database
 from clutch.progress import progress_service
 from clutch.review.service import review_service
 from clutch.schemas import (
@@ -48,6 +49,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
     await close_registered_caches()
     await close_spend_guard()
+    await close_application_database()
     close_observability()
 
 

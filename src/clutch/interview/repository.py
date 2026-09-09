@@ -13,7 +13,7 @@ from clutch.interview.contracts import (
     InterviewTurnEvidence,
     InterviewTurnRecord,
 )
-from clutch.persistence.database import create_session_factory, database_url_from_env
+from clutch.persistence.database import application_session_factory_from_env
 from clutch.persistence.models import InterviewSessionModel, InterviewTurnModel
 from clutch.schemas import InterviewAssessment, InterviewQuestion, InterviewStatus
 
@@ -159,6 +159,7 @@ class SqlAlchemyInterviewRepository:
                     answer_sha256=record.answer_sha256,
                     answer_summary=record.answer_summary,
                     assessment=record.assessment.model_dump(mode="json"),
+                    assessment_origin=record.assessment.origin,
                 )
             )
             model.current_question = (
@@ -196,10 +197,9 @@ class SqlAlchemyInterviewRepository:
 
 
 def interview_repository_from_env() -> InterviewRepository:
-    database_url = database_url_from_env()
-    if not database_url:
+    session_factory = application_session_factory_from_env()
+    if session_factory is None:
         return InMemoryInterviewRepository()
-    _, session_factory = create_session_factory(database_url)
     return SqlAlchemyInterviewRepository(session_factory)
 
 

@@ -9,8 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from clutch.persistence.contracts import PersistedFinding, ReviewPersistenceRecord
-from clutch.persistence.database import create_session_factory, database_url_from_env
+from clutch.persistence.database import application_session_factory_from_env
 from clutch.persistence.models import (
+    AgentRunModel,
     GeneratedQuestionModel,
     ReviewFindingModel,
     ReviewSessionModel,
@@ -75,6 +76,9 @@ class SqlAlchemyReviewRecorder:
             mode=record.mode,
             confidence=record.confidence,
             latency_ms=record.latency_ms,
+            provenance=[
+                stage.model_dump(mode="json") for stage in record.provenance
+            ],
             findings=[
                 ReviewFindingModel(
                     id=str(uuid4()),
@@ -87,6 +91,7 @@ class SqlAlchemyReviewRecorder:
                     line_start=finding.line_start,
                     line_end=finding.line_end,
                     citation_ids=finding.citation_ids,
+                    origin=finding.origin,
                 )
                 for finding in record.findings
             ],
@@ -99,12 +104,36 @@ class SqlAlchemyReviewRecorder:
                     intent=question.intent,
                     difficulty=question.difficulty,
                     citation_ids=question.citation_ids,
+                    origin=question.origin,
                 )
                 for question in record.questions
             ],
         )
         async with self._session_factory() as session:
             session.add(session_model)
+            session.add_all(
+                [
+                    AgentRunModel(
+                        id=str(uuid4()),
+                        review_session_id=record.review_session_id,
+                        workflow=stage.stage,
+                        mode=stage.origin,
+                        status=stage.status,
+                        model_name=stage.model_name,
+                        prompt_version=stage.prompt_version,
+                        input_tokens=stage.input_tokens,
+                        output_tokens=stage.output_tokens,
+                        estimated_cost_usd=stage.estimated_cost_usd,
+                        latency_ms=stage.latency_ms,
+                        attempt_count=stage.attempt_count,
+                        validation_failure_count=(
+                            stage.validation_failure_count
+                        ),
+                        failure_category=stage.failure_category,
+                    )
+                    for stage in record.provenance
+                ]
+            )
             await session.commit()
 
     async def get_findings(self, review_session_id: str) -> list[PersistedFinding]:
@@ -127,6 +156,7 @@ class SqlAlchemyReviewRecorder:
                     "line_start": finding.line_start,
                     "line_end": finding.line_end,
                     "citation_ids": finding.citation_ids,
+                    "origin": finding.origin,
                 }
             )
             for finding in findings
@@ -136,20 +166,18 @@ class SqlAlchemyReviewRecorder:
 def review_recorder_from_env() -> ReviewRecorder:
     """Build the database recorder only when durable storage is configured."""
 
-    database_url = database_url_from_env()
-    if not database_url:
+    session_factory = application_session_factory_from_env()
+    if session_factory is None:
         return IN_MEMORY_REVIEW_RECORDER
-    _, session_factory = create_session_factory(database_url)
     return SqlAlchemyReviewRecorder(session_factory)
 
 
 def review_finding_reader_from_env() -> ReviewFindingReader:
     """Build the matching privacy-safe review finding reader."""
 
-    database_url = database_url_from_env()
-    if not database_url:
+    session_factory = application_session_factory_from_env()
+    if session_factory is None:
         return IN_MEMORY_REVIEW_RECORDER
-    _, session_factory = create_session_factory(database_url)
     return SqlAlchemyReviewRecorder(session_factory)
 
 

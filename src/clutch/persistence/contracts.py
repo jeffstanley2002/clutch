@@ -9,9 +9,11 @@ from pydantic import BaseModel, Field
 from clutch.schemas import (
     FindingCategory,
     FindingSeverity,
+    OutputOrigin,
     ReviewMode,
     ReviewRequest,
     ReviewResponse,
+    StageProvenance,
     SupportedLanguage,
 )
 
@@ -28,6 +30,7 @@ class PersistedFinding(BaseModel):
     line_start: int | None = None
     line_end: int | None = None
     citation_ids: list[str] = Field(default_factory=list)
+    origin: OutputOrigin = "deterministic_static"
 
 
 class PersistedQuestion(BaseModel):
@@ -39,6 +42,7 @@ class PersistedQuestion(BaseModel):
     intent: str
     difficulty: str
     citation_ids: list[str] = Field(default_factory=list)
+    origin: OutputOrigin = "template_generated"
 
 
 class ReviewPersistenceRecord(BaseModel):
@@ -55,6 +59,7 @@ class ReviewPersistenceRecord(BaseModel):
     latency_ms: float = Field(..., ge=0.0)
     findings: list[PersistedFinding] = Field(default_factory=list)
     questions: list[PersistedQuestion] = Field(default_factory=list)
+    provenance: list[StageProvenance] = Field(default_factory=list)
 
 
 def build_review_persistence_record(
@@ -73,6 +78,7 @@ def build_review_persistence_record(
         mode=response.mode,
         confidence=response.confidence,
         latency_ms=response.latency_ms,
+        provenance=response.provenance,
         findings=[
             PersistedFinding(
                 finding_id=finding.id,
@@ -86,6 +92,7 @@ def build_review_persistence_record(
                 citation_ids=[
                     citation.source_id for citation in finding.citations
                 ],
+                origin=finding.origin,
             )
             for finding in response.findings
         ],
@@ -99,6 +106,7 @@ def build_review_persistence_record(
                 citation_ids=[
                     citation.source_id for citation in question.citations
                 ],
+                origin=question.origin,
             )
             for question in response.questions
         ],

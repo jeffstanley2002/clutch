@@ -9,6 +9,7 @@ from typing import Any, Protocol, cast
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -27,7 +28,7 @@ from clutch.llm.spend import (
     embedding_cost_usd,
     spend_guard_from_env,
 )
-from clutch.persistence.database import create_session_factory, database_url_from_env
+from clutch.persistence.database import application_session_factory_from_env
 from clutch.persistence.models import KnowledgeBaseItemModel
 from clutch.schemas import Citation, FindingCategory
 
@@ -40,6 +41,16 @@ class EmbeddingProvider(Protocol):
     """Small boundary for whichever embedding model is configured later."""
 
     async def embed(self, text: str) -> list[float]: ...
+
+
+class KnowledgeSyncReport(BaseModel):
+    """Counts from one versioned corpus synchronization."""
+
+    inserted: int = Field(default=0, ge=0)
+    updated: int = Field(default=0, ge=0)
+    reembedded: int = Field(default=0, ge=0)
+    unchanged: int = Field(default=0, ge=0)
+    deactivated: int = Field(default=0, ge=0)
 
 
 class OpenAIEmbeddingProvider:
@@ -60,12 +71,23 @@ class OpenAIEmbeddingProvider:
         self._spend_guard = spend_guard or spend_guard_from_env()
 
     async def embed(self, text: str) -> list[float]:
-        estimated_tokens = conservative_token_estimate(text)
+        return (await self.embed_batch([text]))[0]
+
+    @property
+    def model_name(self) -> str:
+        return self._model
+
+    async def embed_batch(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed a bounded batch while reserving and reconciling one paid call."""
+
+        if not texts:
+            return []
+        estimated_tokens = sum(conservative_token_estimate(text) for text in texts)
         reservation = await self._spend_guard.reserve(
             embedding_cost_usd(self._model, input_tokens=estimated_tokens)
         )
         response = await self._client.embeddings.create(
-            input=text,
+            input=list(texts),
             model=self._model,
             dimensions=self._dimensions,
             encoding_format="float",
@@ -80,10 +102,16 @@ class OpenAIEmbeddingProvider:
                 )
             except ModelBudgetUnavailable:
                 pass
-        embedding = list(response.data[0].embedding)
-        if len(embedding) != self._dimensions:
+        ordered = sorted(
+            response.data,
+            key=lambda item: int(getattr(item, "index", 0)),
+        )
+        embeddings = [list(item.embedding) for item in ordered]
+        if len(embeddings) != len(texts) or any(
+            len(embedding) != self._dimensions for embedding in embeddings
+        ):
             raise ValueError("embedding dimensions do not match the database schema")
-        return embedding
+        return embeddings
 
 
 class CachedEmbeddingProvider:
@@ -241,29 +269,92 @@ class SqlAlchemyKnowledgeBase:
         self._session_factory = session_factory
         self._embedding_provider = embedding_provider
 
-    async def seed(self, principles: Sequence[CleanCodePrinciple]) -> int:
-        added = 0
+    async def seed(
+        self,
+        principles: Sequence[CleanCodePrinciple],
+    ) -> KnowledgeSyncReport:
+        """Synchronize only versioned seed rows and re-embed changed content."""
+
+        inserted = 0
+        updated = 0
+        unchanged = 0
+        deactivated = 0
+        reembedded = 0
+        desired_ids = {principle.id for principle in principles}
+        embedding_model = getattr(self._embedding_provider, "model_name", None)
+        embedding_targets: list[tuple[KnowledgeBaseItemModel, str]] = []
         async with self._session_factory() as session:
-            for principle in principles:
-                existing = await session.get(KnowledgeBaseItemModel, principle.id)
-                values = _principle_values(principle)
-                if existing is None:
-                    if self._embedding_provider is not None:
-                        values["embedding"] = await self._embedding_provider.embed(
-                            cast(str, values["search_text"])
-                        )
-                    session.add(KnowledgeBaseItemModel(**values))
-                    added += 1
-                    continue
-                values.pop("embedding")
-                for field, value in values.items():
-                    setattr(existing, field, value)
-                if existing.embedding is None and self._embedding_provider is not None:
-                    existing.embedding = await self._embedding_provider.embed(
-                        existing.search_text
+            rows = await session.scalars(
+                select(KnowledgeBaseItemModel).where(
+                    or_(
+                        KnowledgeBaseItemModel.is_seeded.is_(True),
+                        KnowledgeBaseItemModel.source_id.in_(desired_ids),
                     )
+                )
+            )
+            existing_by_id = {item.source_id: item for item in rows}
+            for principle in principles:
+                existing = existing_by_id.get(principle.id)
+                values = _principle_values(
+                    principle,
+                    embedding_model=embedding_model,
+                )
+                if existing is None:
+                    model = KnowledgeBaseItemModel(**values)
+                    session.add(model)
+                    inserted += 1
+                    if self._embedding_provider is not None:
+                        embedding_targets.append((model, model.search_text))
+                    continue
+                values.pop("embedding", None)
+                if self._embedding_provider is None:
+                    values.pop("embedding_model", None)
+                content_changed = existing.content_sha256 != principle.content_sha256
+                embedding_model_changed = existing.embedding_model != embedding_model
+                changed = False
+                for field, value in values.items():
+                    if getattr(existing, field) != value:
+                        setattr(existing, field, value)
+                        changed = True
+                needs_embedding = self._embedding_provider is not None and (
+                    existing.embedding is None
+                    or content_changed
+                    or embedding_model_changed
+                )
+                if needs_embedding:
+                    embedding_targets.append((existing, existing.search_text))
+                if changed:
+                    updated += 1
+                elif not needs_embedding:
+                    unchanged += 1
+
+            for obsolete in existing_by_id.values():
+                if obsolete.is_seeded and obsolete.source_id not in desired_ids:
+                    if obsolete.is_active:
+                        obsolete.is_active = False
+                        deactivated += 1
+
+            if embedding_targets:
+                embeddings = await _embed_batch(
+                    self._embedding_provider,
+                    [text for _, text in embedding_targets],
+                )
+                for (model, _), embedding in zip(
+                    embedding_targets,
+                    embeddings,
+                    strict=True,
+                ):
+                    model.embedding = embedding
+                    model.embedding_model = cast(str | None, embedding_model)
+                    reembedded += 1
             await session.commit()
-        return added
+        return KnowledgeSyncReport(
+            inserted=inserted,
+            updated=updated,
+            reembedded=reembedded,
+            unchanged=unchanged,
+            deactivated=deactivated,
+        )
 
 
 class SqlAlchemyHybridRetriever:
@@ -297,7 +388,10 @@ class SqlAlchemyHybridRetriever:
             func.to_tsvector("english", KnowledgeBaseItemModel.search_text),
             func.websearch_to_tsquery("english", _postgres_websearch_query(query)),
         ).label("lexical_rank")
-        statement = select(KnowledgeBaseItemModel, lexical_rank)
+        statement = select(KnowledgeBaseItemModel, lexical_rank).where(
+            KnowledgeBaseItemModel.is_active.is_(True),
+            KnowledgeBaseItemModel.is_seeded.is_(True),
+        )
         if categories:
             statement = statement.where(KnowledgeBaseItemModel.category.in_(categories))
 
@@ -370,7 +464,9 @@ class SqlAlchemyVectorRetriever:
             query_embedding
         )
         statement = select(KnowledgeBaseItemModel).where(
-            KnowledgeBaseItemModel.embedding.is_not(None)
+            KnowledgeBaseItemModel.is_active.is_(True),
+            KnowledgeBaseItemModel.is_seeded.is_(True),
+            KnowledgeBaseItemModel.embedding.is_not(None),
         )
         if categories:
             statement = statement.where(
@@ -390,11 +486,10 @@ def knowledge_retriever_from_env() -> KnowledgeRetriever:
 
     load_dotenv()
     cache = json_cache_from_env()
-    database_url = database_url_from_env()
-    if not database_url:
+    session_factory = application_session_factory_from_env()
+    if session_factory is None:
         local: KnowledgeRetriever = LocalKnowledgeRetriever()
         return CachedKnowledgeRetriever(local, cache) if cache.enabled else local
-    _, session_factory = create_session_factory(database_url)
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     embedding_provider: EmbeddingProvider | None = (
         OpenAIEmbeddingProvider(
@@ -439,7 +534,11 @@ def _postgres_websearch_query(query: str, *, max_terms: int = 64) -> str:
     return " OR ".join(terms) or "clutch"
 
 
-def _principle_values(principle: CleanCodePrinciple) -> dict[str, object]:
+def _principle_values(
+    principle: CleanCodePrinciple,
+    *,
+    embedding_model: str | None = None,
+) -> dict[str, object]:
     search_text = " ".join(
         [
             principle.id,
@@ -465,6 +564,15 @@ def _principle_values(principle: CleanCodePrinciple) -> dict[str, object]:
         "tags": principle.tags,
         "url": principle.citation.url,
         "search_text": search_text,
+        "source_family": principle.source_family,
+        "source_title": principle.citation.title,
+        "section_locator": principle.section_locator,
+        "corpus_version": principle.corpus_version,
+        "content_sha256": principle.content_sha256,
+        "derived_from_ids": principle.derived_from_ids,
+        "is_active": True,
+        "is_seeded": True,
+        "embedding_model": embedding_model,
         "embedding": None,
     }
 
@@ -485,12 +593,25 @@ def _to_principle(item: KnowledgeBaseItemModel) -> CleanCodePrinciple:
         seniority_levels=cast(list[SeniorityLevel], item.seniority_levels),
         citation=Citation(
             source_id=item.source_id,
-            title=item.title,
+            title=item.source_title or item.title,
             url=item.url,
         ),
-        source_family=provenance.source_family,
-        section_locator=provenance.section_locator,
-        corpus_version=provenance.corpus_version,
-        content_sha256=provenance.content_sha256,
-        derived_from_ids=provenance.derived_from_ids,
+        source_family=cast(Any, item.source_family or provenance.source_family),
+        section_locator=item.section_locator or provenance.section_locator,
+        corpus_version=item.corpus_version or provenance.corpus_version,
+        content_sha256=item.content_sha256 or provenance.content_sha256,
+        derived_from_ids=item.derived_from_ids or provenance.derived_from_ids,
     )
+
+
+async def _embed_batch(
+    provider: EmbeddingProvider | None,
+    texts: Sequence[str],
+) -> list[list[float]]:
+    if provider is None:
+        return []
+    batch_method = getattr(provider, "embed_batch", None)
+    if callable(batch_method):
+        result = await batch_method(texts)
+        return cast(list[list[float]], result)
+    return [await provider.embed(text) for text in texts]

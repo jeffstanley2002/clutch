@@ -6,7 +6,18 @@ from datetime import datetime
 from typing import Any
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -30,6 +41,7 @@ class ReviewSessionModel(Base):
     mode: Mapped[str] = mapped_column(String(32))
     confidence: Mapped[float] = mapped_column(Float)
     latency_ms: Mapped[float] = mapped_column(Float)
+    provenance: Mapped[list[dict[str, Any]]] = mapped_column(JSON_VALUE)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -57,6 +69,7 @@ class ReviewFindingModel(Base):
     line_start: Mapped[int | None] = mapped_column(Integer)
     line_end: Mapped[int | None] = mapped_column(Integer)
     citation_ids: Mapped[list[str]] = mapped_column(JSON_VALUE)
+    origin: Mapped[str] = mapped_column(String(40))
 
 
 class GeneratedQuestionModel(Base):
@@ -72,6 +85,7 @@ class GeneratedQuestionModel(Base):
     intent: Mapped[str] = mapped_column(Text)
     difficulty: Mapped[str] = mapped_column(String(16))
     citation_ids: Mapped[list[str]] = mapped_column(JSON_VALUE)
+    origin: Mapped[str] = mapped_column(String(40))
 
 
 class InterviewSessionModel(Base):
@@ -107,6 +121,7 @@ class InterviewTurnModel(Base):
     answer_sha256: Mapped[str] = mapped_column(String(64))
     answer_summary: Mapped[str] = mapped_column(Text)
     assessment: Mapped[dict[str, Any]] = mapped_column(JSON_VALUE)
+    assessment_origin: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -129,6 +144,9 @@ class ProgressSnapshotModel(Base):
 
 class KnowledgeBaseItemModel(Base):
     __tablename__ = "knowledge_base_items"
+    __table_args__ = (
+        Index("ix_knowledge_base_items_active_type", "is_active", "item_type"),
+    )
 
     source_id: Mapped[str] = mapped_column(String(160), primary_key=True)
     title: Mapped[str] = mapped_column(String(240))
@@ -142,6 +160,15 @@ class KnowledgeBaseItemModel(Base):
     tags: Mapped[list[str]] = mapped_column(JSON_VALUE)
     url: Mapped[str | None] = mapped_column(Text)
     search_text: Mapped[str] = mapped_column(Text)
+    source_family: Mapped[str | None] = mapped_column(String(64))
+    source_title: Mapped[str | None] = mapped_column(String(240))
+    section_locator: Mapped[str | None] = mapped_column(String(240))
+    corpus_version: Mapped[str | None] = mapped_column(String(64))
+    content_sha256: Mapped[str | None] = mapped_column(String(64))
+    derived_from_ids: Mapped[list[str]] = mapped_column(JSON_VALUE)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_seeded: Mapped[bool] = mapped_column(Boolean, default=False)
+    embedding_model: Mapped[str | None] = mapped_column(String(120))
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIMENSIONS))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -182,7 +209,10 @@ class AgentRunModel(Base):
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     estimated_cost_usd: Mapped[float | None] = mapped_column(Float)
     latency_ms: Mapped[float] = mapped_column(Float)
-    error_category: Mapped[str | None] = mapped_column(String(120))
+    prompt_version: Mapped[str | None] = mapped_column(String(64))
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    validation_failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    failure_category: Mapped[str | None] = mapped_column(String(120))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

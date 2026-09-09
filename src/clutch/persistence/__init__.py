@@ -4,7 +4,13 @@ from clutch.persistence.contracts import (
     ReviewPersistenceRecord,
     build_review_persistence_record,
 )
-from clutch.persistence.database import create_session_factory, database_url_from_env
+from clutch.persistence.database import (
+    application_session_factory_from_env,
+    close_application_database,
+    create_session_factory,
+    database_url_from_env,
+    migration_database_url_from_env,
+)
 from clutch.persistence.models import Base
 from clutch.persistence.repository import (
     IN_MEMORY_REVIEW_RECORDER,
@@ -27,8 +33,11 @@ __all__ = [
     "ReviewRecorder",
     "SqlAlchemyReviewRecorder",
     "build_review_persistence_record",
+    "application_session_factory_from_env",
+    "close_application_database",
     "create_session_factory",
     "database_url_from_env",
+    "migration_database_url_from_env",
     "review_finding_reader_from_env",
     "review_recorder_from_env",
 ]

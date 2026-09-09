@@ -8,17 +8,23 @@ import os
 from dotenv import load_dotenv
 
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
-from clutch.persistence import create_session_factory
-from clutch.rag import OpenAIEmbeddingProvider, SqlAlchemyKnowledgeBase
+from clutch.persistence import create_session_factory, migration_database_url_from_env
+from clutch.rag import (
+    KnowledgeSyncReport,
+    OpenAIEmbeddingProvider,
+    SqlAlchemyKnowledgeBase,
+)
 
 
-async def seed() -> int:
-    """Upsert seed principles and optionally add OpenAI embeddings."""
+async def seed() -> KnowledgeSyncReport:
+    """Synchronize versioned seed rows and optionally refresh embeddings."""
 
     load_dotenv()
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    database_url = migration_database_url_from_env()
     if not database_url:
-        raise RuntimeError("DATABASE_URL is required to seed the knowledge base")
+        raise RuntimeError(
+            "DIRECT_DATABASE_URL or DATABASE_URL is required to seed knowledge"
+        )
     engine, session_factory = create_session_factory(database_url)
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     embedding_provider = (
@@ -42,8 +48,13 @@ async def seed() -> int:
 
 
 def main() -> None:
-    added = asyncio.run(seed())
-    print(f"Knowledge base seeded; {added} new items added.")
+    report = asyncio.run(seed())
+    print(
+        "Knowledge synchronization complete: "
+        f"inserted={report.inserted} updated={report.updated} "
+        f"re-embedded={report.reembedded} unchanged={report.unchanged} "
+        f"deactivated={report.deactivated}."
+    )
 
 
 if __name__ == "__main__":

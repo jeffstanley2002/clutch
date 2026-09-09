@@ -1,4 +1,5 @@
 import asyncio
+from hashlib import sha256
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -34,7 +35,9 @@ class FakeEmbeddings:
     async def create(self, **kwargs: object) -> SimpleNamespace:
         self.calls.append(kwargs)
         dimensions = int(kwargs["dimensions"])
-        return SimpleNamespace(data=[SimpleNamespace(embedding=[0.25] * dimensions)])
+        return SimpleNamespace(
+            data=[SimpleNamespace(index=0, embedding=[0.25] * dimensions)]
+        )
 
 
 class FakeEmbeddingProvider:
@@ -44,6 +47,18 @@ class FakeEmbeddingProvider:
     async def embed(self, text: str) -> list[float]:
         self.queries.append(text)
         return [0.25] * 1536
+
+
+class FakeBatchEmbeddingProvider(FakeEmbeddingProvider):
+    model_name = "fake-embedding-v1"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.batches: list[list[str]] = []
+
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        self.batches.append(list(texts))
+        return [[float(index + 1)] * 1536 for index, _ in enumerate(texts)]
 
 
 class FakeScalarResult:
@@ -106,7 +121,7 @@ def test_openai_embedding_provider_requests_schema_dimensions() -> None:
     assert len(vector) == 1536
     assert embeddings.calls == [
         {
-            "input": "narrow error handling",
+            "input": ["narrow error handling"],
             "model": "text-embedding-3-small",
             "dimensions": 1536,
             "encoding_format": "float",
@@ -126,8 +141,8 @@ def test_seed_knowledge_base_is_idempotent() -> None:
             )
         knowledge_base = SqlAlchemyKnowledgeBase(session_factory)
 
-        first_added = await knowledge_base.seed(SEED_CLEAN_CODE_PRINCIPLES)
-        second_added = await knowledge_base.seed(SEED_CLEAN_CODE_PRINCIPLES)
+        first_report = await knowledge_base.seed(SEED_CLEAN_CODE_PRINCIPLES)
+        second_report = await knowledge_base.seed(SEED_CLEAN_CODE_PRINCIPLES)
 
         async with session_factory() as session:
             item_count = await session.scalar(
@@ -137,8 +152,9 @@ def test_seed_knowledge_base_is_idempotent() -> None:
                 KnowledgeBaseItemModel,
                 "seed.clean_code.parameterized_queries",
             )
-        assert first_added == 120
-        assert second_added == 0
+        assert first_report.inserted == 120
+        assert first_report.reembedded == 0
+        assert second_report.unchanged == 120
         assert item_count == 120
         assert sql_item is not None
         assert "security" in sql_item.tags
@@ -148,6 +164,75 @@ def test_seed_knowledge_base_is_idempotent() -> None:
         round_tripped = _to_principle(sql_item)
         assert round_tripped.item_type == "reference"
         assert "backend" in round_tripped.roles
+        await engine.dispose()
+
+    asyncio.run(exercise())
+
+
+def test_seed_sync_updates_reembeds_deactivates_and_preserves_unrelated_rows() -> None:
+    async def exercise() -> None:
+        engine, session_factory = create_session_factory("sqlite+aiosqlite://")
+        async with engine.begin() as connection:
+            await connection.run_sync(
+                lambda sync_connection: Base.metadata.create_all(
+                    sync_connection,
+                    tables=[KnowledgeBaseItemModel.__table__],
+                )
+            )
+
+        provider = FakeBatchEmbeddingProvider()
+        knowledge_base = SqlAlchemyKnowledgeBase(
+            session_factory,
+            embedding_provider=provider,
+        )
+        original = SEED_CLEAN_CODE_PRINCIPLES[:2]
+        first_report = await knowledge_base.seed(original)
+
+        changed_summary = f"{original[0].summary} Updated for a new corpus release."
+        changed = original[0].model_copy(
+            update={
+                "summary": changed_summary,
+                "content_sha256": sha256(
+                    f"{changed_summary}\n{original[0].guidance}".encode()
+                ).hexdigest(),
+            }
+        )
+        unrelated_values = _principle_values(original[1])
+        unrelated_values.update(
+            {
+                "source_id": "custom.user_owned",
+                "title": "User-owned item",
+                "is_seeded": False,
+            }
+        )
+        async with session_factory() as session:
+            session.add(KnowledgeBaseItemModel(**unrelated_values))
+            await session.commit()
+
+        second_report = await knowledge_base.seed([changed])
+
+        async with session_factory() as session:
+            changed_row = await session.get(KnowledgeBaseItemModel, changed.id)
+            obsolete_row = await session.get(
+                KnowledgeBaseItemModel,
+                original[1].id,
+            )
+            unrelated_row = await session.get(
+                KnowledgeBaseItemModel,
+                "custom.user_owned",
+            )
+
+        assert first_report.inserted == 2
+        assert first_report.reembedded == 2
+        assert second_report.updated == 1
+        assert second_report.reembedded == 1
+        assert second_report.deactivated == 1
+        assert len(provider.batches) == 2
+        assert changed_row is not None
+        assert changed_row.principle == changed_summary
+        assert changed_row.embedding_model == provider.model_name
+        assert obsolete_row is not None and obsolete_row.is_active is False
+        assert unrelated_row is not None and unrelated_row.is_active is True
         await engine.dispose()
 
     asyncio.run(exercise())

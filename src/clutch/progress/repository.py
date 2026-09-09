@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from clutch.persistence.contracts import PersistedFinding, ReviewPersistenceRecord
-from clutch.persistence.database import create_session_factory, database_url_from_env
+from clutch.persistence.database import application_session_factory_from_env
 from clutch.persistence.models import (
     ProgressSnapshotModel,
     ReviewFindingModel,
@@ -105,6 +105,7 @@ class SqlAlchemyProgressRepository:
                         "line_start": finding.line_start,
                         "line_end": finding.line_end,
                         "citation_ids": finding.citation_ids,
+                        "origin": finding.origin,
                     }
                 )
             )
@@ -126,10 +127,9 @@ class SqlAlchemyProgressRepository:
 
 
 def progress_repository_from_env() -> ProgressRepository:
-    database_url = database_url_from_env()
-    if not database_url:
+    session_factory = application_session_factory_from_env()
+    if session_factory is None:
         return InMemoryProgressRepository(IN_MEMORY_REVIEW_RECORDER)
-    _, session_factory = create_session_factory(database_url)
     return SqlAlchemyProgressRepository(session_factory)
 
 

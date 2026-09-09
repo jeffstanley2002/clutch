@@ -10,7 +10,7 @@ from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from clutch.persistence.database import (
-    database_url_from_env,
+    migration_database_url_from_env,
     normalize_async_database_url,
 )
 from clutch.persistence.models import Base
@@ -19,7 +19,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = database_url_from_env()
+database_url = migration_database_url_from_env()
 if database_url:
     config.set_main_option("sqlalchemy.url", normalize_async_database_url(database_url))
 
@@ -31,7 +31,7 @@ def run_migrations_offline() -> None:
 
     url = config.get_main_option("sqlalchemy.url")
     if not url:
-        raise RuntimeError("DATABASE_URL is required for Alembic migrations")
+        raise RuntimeError("DIRECT_DATABASE_URL or DATABASE_URL is required")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -57,7 +57,7 @@ async def run_migrations_online() -> None:
     """Run migrations through SQLAlchemy's async engine."""
 
     if not config.get_main_option("sqlalchemy.url"):
-        raise RuntimeError("DATABASE_URL is required for Alembic migrations")
+        raise RuntimeError("DIRECT_DATABASE_URL or DATABASE_URL is required")
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
