@@ -18,6 +18,7 @@
       "seed.rubric.maintainable_change_scope": 2,
       "seed.question.maintainability_change": 1,
       "seed.question.maintenance_incident": 1,
+      "seed.question.maintainability_split": 1,
       "seed.clean_code.externalized_configuration": 0,
       "seed.rubric.operational_maintainability": 1,
       "seed.clean_code.public_docstrings": 0
@@ -67,7 +68,8 @@
       "seed.rubric.correctness_failure_model": 2,
       "seed.question.correctness_counterexample": 2,
       "seed.question.correctness_concurrent_failure": 1,
-      "seed.clean_code.structured_concurrency": 1
+      "seed.clean_code.structured_concurrency": 1,
+      "seed.clean_code.bounded_async_timeout": 1
     }
   },
   {
@@ -160,7 +162,8 @@
       "seed.clean_code.abstract_behavior_contracts": 2,
       "seed.rubric.design_tradeoff": 2,
       "seed.question.design_second_requirement": 2,
-      "seed.question.design_replace_dependency": 1
+      "seed.question.design_replace_dependency": 1,
+      "seed.clean_code.review_system_context": 2
     }
   },
   {
@@ -178,6 +181,7 @@
       "seed.rubric.testing_failure_diagnosis": 1,
       "seed.rubric.maintainable_change_scope": 1,
       "seed.rubric.readable_explanation": 1,
+      "seed.clean_code.reviewable_names": 2,
       "seed.rubric.testing_evidence": 1,
       "seed.clean_code.public_module_surface": 0
     }
@@ -194,6 +198,8 @@
       "seed.rubric.design_tradeoff": 1,
       "seed.rubric.security_trust_boundary": 1,
       "seed.clean_code.parameterized_queries": 3,
+      "seed.clean_code.review_user_edge_cases": 1,
+      "seed.question.correctness_user_boundary": 1,
       "seed.clean_code.allowlist_validation": 2,
       "seed.clean_code.boundary_observability": 1,
       "seed.question.design_replace_dependency": 1
@@ -212,6 +218,7 @@
       "seed.rubric.security_trust_boundary": 1,
       "seed.clean_code.narrow_error_handling": 2,
       "seed.clean_code.exception_contract_tests": 2,
+      "seed.clean_code.pytest_exception_context": 2,
       "seed.clean_code.explicit_exception_assertions": 2,
       "seed.clean_code.structured_concurrency": 0
     }
@@ -274,6 +281,7 @@
     "retrieval_judgments": {
       "seed.clean_code.parameterized_queries": 3,
       "seed.clean_code.narrow_error_handling": 3,
+      "seed.clean_code.pytest_exception_context": 2,
       "seed.clean_code.allowlist_validation": 2,
       "seed.rubric.security_trust_boundary": 2,
       "seed.rubric.correctness_failure_model": 2,

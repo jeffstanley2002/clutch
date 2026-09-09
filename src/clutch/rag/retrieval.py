@@ -19,6 +19,7 @@ from clutch.knowledge_base import (
     SeniorityLevel,
     retrieve_clean_code_principles,
 )
+from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
 from clutch.llm.spend import (
     ModelBudgetUnavailable,
     SpendGuard,
@@ -29,6 +30,10 @@ from clutch.llm.spend import (
 from clutch.persistence.database import create_session_factory, database_url_from_env
 from clutch.persistence.models import KnowledgeBaseItemModel
 from clutch.schemas import Citation, FindingCategory
+
+_LOCAL_PROVENANCE_BY_ID = {
+    principle.id: principle for principle in SEED_CLEAN_CODE_PRINCIPLES
+}
 
 
 class EmbeddingProvider(Protocol):
@@ -465,6 +470,9 @@ def _principle_values(principle: CleanCodePrinciple) -> dict[str, object]:
 
 
 def _to_principle(item: KnowledgeBaseItemModel) -> CleanCodePrinciple:
+    provenance = _LOCAL_PROVENANCE_BY_ID.get(item.source_id)
+    if provenance is None:
+        raise ValueError("database knowledge item is absent from the versioned corpus")
     return CleanCodePrinciple(
         id=item.source_id,
         title=item.title,
@@ -480,4 +488,9 @@ def _to_principle(item: KnowledgeBaseItemModel) -> CleanCodePrinciple:
             title=item.title,
             url=item.url,
         ),
+        source_family=provenance.source_family,
+        section_locator=provenance.section_locator,
+        corpus_version=provenance.corpus_version,
+        content_sha256=provenance.content_sha256,
+        derived_from_ids=provenance.derived_from_ids,
     )

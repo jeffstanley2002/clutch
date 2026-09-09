@@ -5,14 +5,31 @@
     "category": "maintainability",
     "summary": "Unresolved TODOs and FIXMEs should communicate remaining scope, risk, ownership, or a tracked follow-up.",
     "guidance": "Interview reviewers should be able to tell whether unfinished work is intentional, acceptable for the current scope, and safely tracked.",
-    "tags": ["todo", "fixme", "scope", "maintainability", "tradeoff"],
+    "tags": [
+      "todo",
+      "fixme",
+      "scope",
+      "maintainability",
+      "tradeoff"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_incomplete_work",
-      "title": "Clutch clean-code reference: make incomplete work explicit"
-    }
+      "title": "Google Engineering Practices — Comments",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#comments"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#comments",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "6059213961dfee43652f53d2e843d99532cf50839bad197e460ea6bc4a056baa"
   },
   {
     "id": "seed.clean_code.boundary_observability",
@@ -20,15 +37,34 @@
     "category": "maintainability",
     "summary": "Production behavior should rely on intentional logs or traces rather than stray debug prints.",
     "guidance": "Prefer structured logging where behavior crosses an API, job, or user workflow boundary, and remove local debugging output before review.",
-    "tags": ["print", "logging", "observability", "debug", "boundary"],
+    "tags": [
+      "print",
+      "logging",
+      "observability",
+      "debug",
+      "boundary"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform", "general"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.boundary_observability",
       "title": "Python Logging HOWTO",
-      "url": "https://docs.python.org/3/howto/logging.html"
-    }
+      "url": "https://docs.python.org/3/howto/logging.html#logging-basic-tutorial"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#logging-basic-tutorial",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "8306cb3d839e5dfe12db88d731826d4a52775960be0c7d6c9be8139115547aa0"
   },
   {
     "id": "seed.clean_code.resource_lifetime",
@@ -36,15 +72,35 @@
     "category": "maintainability",
     "summary": "Files, locks, transactions, and connections should have an obvious owner and deterministic cleanup path.",
     "guidance": "Use context managers or an equivalent lifecycle boundary so cleanup also occurs during exceptions and early returns.",
-    "tags": ["resource", "cleanup", "context", "manager", "connection", "transaction"],
+    "tags": [
+      "resource",
+      "cleanup",
+      "context",
+      "manager",
+      "connection",
+      "transaction"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "general"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.resource_lifetime",
       "title": "Python contextlib documentation",
-      "url": "https://docs.python.org/3/library/contextlib.html"
-    }
+      "url": "https://docs.python.org/3/library/contextlib.html#utilities"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#utilities",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "5c5677214c9f56aab985223084ec30b2ce22bf7e6748b1d0f4e39cad31673957"
   },
   {
     "id": "seed.rubric.maintainable_change_scope",
@@ -52,14 +108,34 @@
     "category": "maintainability",
     "summary": "A strong junior-level review identifies future change points instead of labeling code as merely clean or messy.",
     "guidance": "Score the explanation higher when it names who will change the code, what must change together, and how drift would be detected.",
-    "tags": ["rubric", "maintainability", "change", "drift", "junior"],
+    "tags": [
+      "rubric",
+      "maintainability",
+      "scope",
+      "todo",
+      "fixme",
+      "incomplete"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.maintainable_change_scope",
-      "title": "Clutch interview rubric: maintainable change scope"
-    }
+      "title": "Google Engineering Practices — Comments",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#comments"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#comments",
+    "derived_from_ids": [
+      "seed.clean_code.explicit_incomplete_work"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "d14cf511bb246727761a2eb4bcdc9fdf2efa79e005055ef465a148cf4ccc195a"
   },
   {
     "id": "seed.question.maintainability_change",
@@ -67,14 +143,33 @@
     "category": "maintainability",
     "summary": "Ask which part of the implementation becomes hardest to change when a second caller or policy is added.",
     "guidance": "Look for a concrete change scenario, a named coupling point, and a proportionate refactoring rather than abstraction by default.",
-    "tags": ["question", "maintainability", "caller", "policy", "refactoring"],
+    "tags": [
+      "question",
+      "maintainability",
+      "caller",
+      "policy",
+      "refactoring"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.maintainability_change",
-      "title": "Clutch question bank: future change scenario"
-    }
+      "title": "Python Logging HOWTO",
+      "url": "https://docs.python.org/3/howto/logging.html#logging-basic-tutorial"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#logging-basic-tutorial",
+    "derived_from_ids": [
+      "seed.clean_code.boundary_observability"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7b3e19df61f14f9aac57998ec52e05f023ab59284bfbf91ac4b59332d72b97be"
   },
   {
     "id": "seed.clean_code.descriptive_names",
@@ -82,15 +177,31 @@
     "category": "readability",
     "summary": "Names should distinguish intent, domain meaning, and units without forcing a reader to reconstruct them from implementation details.",
     "guidance": "Prefer specific domain names over vague placeholders, while keeping local names proportionate to their scope.",
-    "tags": ["naming", "names", "intent", "domain", "readability"],
+    "tags": [
+      "naming",
+      "names",
+      "intent",
+      "domain",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.descriptive_names",
       "title": "PEP 8 — Naming Conventions",
       "url": "https://peps.python.org/pep-0008/#naming-conventions"
-    }
+    },
+    "source_family": "python_pep",
+    "section_locator": "#naming-conventions",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4da385760d09265ff9f0d7da6e5a09d1d92aabdf5e30dbff9e620e6392522e91"
   },
   {
     "id": "seed.clean_code.public_docstrings",
@@ -98,15 +209,32 @@
     "category": "readability",
     "summary": "Public modules, classes, and functions should describe their contract where names and types do not communicate enough.",
     "guidance": "Document observable behavior, parameters, returns, and meaningful exceptions; avoid narrating syntax already visible in the code.",
-    "tags": ["docstring", "documentation", "contract", "public", "readability"],
+    "tags": [
+      "docstring",
+      "documentation",
+      "contract",
+      "public",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.public_docstrings",
       "title": "PEP 257 — Docstring Conventions",
-      "url": "https://peps.python.org/pep-0257/"
-    }
+      "url": "https://peps.python.org/pep-0257/#what-is-a-docstring"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#what-is-a-docstring",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9e05bca69ed427e1f2b03931e55836dfc11d990b1e6b5680ce17aea76a765166"
   },
   {
     "id": "seed.clean_code.readable_conditionals",
@@ -114,15 +242,31 @@
     "category": "readability",
     "summary": "Conditional code should make the business decision visible without dense negation, unrelated side effects, or truthiness surprises.",
     "guidance": "Use direct comparisons where identity or sentinel behavior matters and extract a named predicate when the rule itself needs explanation.",
-    "tags": ["conditional", "predicate", "truthiness", "none", "readability"],
+    "tags": [
+      "conditional",
+      "predicate",
+      "truthiness",
+      "none",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.readable_conditionals",
       "title": "PEP 8 — Programming Recommendations",
       "url": "https://peps.python.org/pep-0008/#programming-recommendations"
-    }
+    },
+    "source_family": "python_pep",
+    "section_locator": "#programming-recommendations",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "23c96ac908506a0bb13639cac70fc5e85ced21bf7f26e3c66d4601ce18e004d6"
   },
   {
     "id": "seed.rubric.readable_explanation",
@@ -130,14 +274,33 @@
     "category": "readability",
     "summary": "A strong interview explanation maps important names and branches to the behavior a reviewer should notice.",
     "guidance": "Score higher when the candidate distinguishes readability from personal style and identifies the actual comprehension cost.",
-    "tags": ["rubric", "readability", "explanation", "branch", "comprehension"],
+    "tags": [
+      "rubric",
+      "readability",
+      "explanation",
+      "branch",
+      "comprehension"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.readable_explanation",
-      "title": "Clutch interview rubric: readable explanation"
-    }
+      "title": "PEP 8 — Naming Conventions",
+      "url": "https://peps.python.org/pep-0008/#naming-conventions"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#naming-conventions",
+    "derived_from_ids": [
+      "seed.clean_code.descriptive_names"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4583fc3e7bff1a41b5ebfd8e45259041749bfef740495c3484c1903a7665eccc"
   },
   {
     "id": "seed.question.readability_handoff",
@@ -145,14 +308,33 @@
     "category": "readability",
     "summary": "Ask what a teammate is most likely to misunderstand when they first modify this code.",
     "guidance": "Look for one concrete ambiguity, its consequence, and a small naming or control-flow improvement.",
-    "tags": ["question", "readability", "handoff", "ambiguity", "teammate"],
+    "tags": [
+      "question",
+      "readability",
+      "handoff",
+      "ambiguity",
+      "teammate"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.readability_handoff",
-      "title": "Clutch question bank: teammate handoff"
-    }
+      "title": "PEP 257 — Docstring Conventions",
+      "url": "https://peps.python.org/pep-0257/#what-is-a-docstring"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#what-is-a-docstring",
+    "derived_from_ids": [
+      "seed.clean_code.public_docstrings"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "03792100f47cbb9982e18fb02acf97a0cabad17f60069be44333b81df5cbea6a"
   },
   {
     "id": "seed.clean_code.narrow_error_handling",
@@ -160,15 +342,32 @@
     "category": "correctness",
     "summary": "Catch only exceptions the code can handle and keep enough context to debug unexpected failures.",
     "guidance": "A bare except can hide programmer errors, interrupts, and runtime details that interviewers expect candidates to reason about.",
-    "tags": ["except", "exception", "error", "failure", "correctness"],
+    "tags": [
+      "except",
+      "exception",
+      "error",
+      "failure",
+      "correctness"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.narrow_error_handling",
       "title": "Python tutorial — Handling Exceptions",
       "url": "https://docs.python.org/3/tutorial/errors.html#handling-exceptions"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#handling-exceptions",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a7a41b95a6c09ae449d9847b8bde824a9a5ed182a0f48dc8a720d98b3c779015"
   },
   {
     "id": "seed.clean_code.safe_python_defaults",
@@ -176,15 +375,33 @@
     "category": "correctness",
     "summary": "Mutable default arguments are created once at function definition time and can leak state between calls.",
     "guidance": "Use None as the default for lists, dictionaries, and sets, then create a fresh object inside the function.",
-    "tags": ["mutable", "default", "argument", "list", "dict", "python"],
+    "tags": [
+      "mutable",
+      "default",
+      "argument",
+      "list",
+      "dict",
+      "python"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.safe_python_defaults",
       "title": "Python tutorial — Default Argument Values",
       "url": "https://docs.python.org/3/tutorial/controlflow.html#default-argument-values"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#default-argument-values",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "c37ba86a1c8d7b704e4354704ab483618d1bfab5d4d86ad52d25105759c9731a"
   },
   {
     "id": "seed.clean_code.aware_datetimes",
@@ -192,15 +409,32 @@
     "category": "correctness",
     "summary": "Naive and aware date-time values represent different contracts and should not be mixed implicitly.",
     "guidance": "Choose a boundary convention, preserve zone information where required, and test daylight-saving or offset behavior relevant to the product.",
-    "tags": ["datetime", "timezone", "aware", "naive", "boundary"],
+    "tags": [
+      "datetime",
+      "timezone",
+      "aware",
+      "naive",
+      "boundary"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.aware_datetimes",
       "title": "Python datetime — Aware and Naive Objects",
       "url": "https://docs.python.org/3/library/datetime.html#aware-and-naive-objects"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#aware-and-naive-objects",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "519ecfda336c76d00e0f02f95d7399fe6cb205c7381df469ca3900ebfdaee15f"
   },
   {
     "id": "seed.rubric.correctness_failure_model",
@@ -208,14 +442,34 @@
     "category": "correctness",
     "summary": "A strong answer explains what can fail, which failures are expected, and what observable behavior follows.",
     "guidance": "Score higher when the candidate covers invariants and failure behavior instead of describing only the happy path.",
-    "tags": ["rubric", "correctness", "failure", "invariant", "behavior"],
+    "tags": [
+      "rubric",
+      "correctness",
+      "failure",
+      "invariant",
+      "behavior"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.correctness_failure_model",
-      "title": "Clutch interview rubric: correctness failure model"
-    }
+      "title": "Python tutorial — Handling Exceptions",
+      "url": "https://docs.python.org/3/tutorial/errors.html#handling-exceptions"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#handling-exceptions",
+    "derived_from_ids": [
+      "seed.clean_code.narrow_error_handling"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "6d69f4f3c453fb59a06b20609c0cbad27be02bb386e82b036da6455ec42258dc"
   },
   {
     "id": "seed.question.correctness_counterexample",
@@ -223,14 +477,33 @@
     "category": "correctness",
     "summary": "Ask for the smallest input or state transition that would make the implementation return the wrong result.",
     "guidance": "Look for an explicit invariant, a plausible counterexample, and a test that distinguishes the fix from the original behavior.",
-    "tags": ["question", "correctness", "counterexample", "invariant", "failure"],
+    "tags": [
+      "question",
+      "correctness",
+      "counterexample",
+      "invariant",
+      "failure"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.correctness_counterexample",
-      "title": "Clutch question bank: correctness counterexample"
-    }
+      "title": "Python tutorial — Default Argument Values",
+      "url": "https://docs.python.org/3/tutorial/controlflow.html#default-argument-values"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#default-argument-values",
+    "derived_from_ids": [
+      "seed.clean_code.safe_python_defaults"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2d5abd23f5b4258a60d0213f246139cff2fefa8494fc8c46cad8acc996632826"
   },
   {
     "id": "seed.clean_code.behavioral_test_boundaries",
@@ -238,15 +511,31 @@
     "category": "testing",
     "summary": "Tests should cover expected behavior, important edge cases, and boundaries where code collaborates with other systems.",
     "guidance": "Prefer assertions about observable behavior over tests coupled to private implementation steps.",
-    "tags": ["tests", "behavior", "edge", "boundary", "confidence"],
+    "tags": [
+      "tests",
+      "behavior",
+      "edge",
+      "boundary",
+      "confidence"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.behavioral_test_boundaries",
       "title": "Python unittest documentation",
-      "url": "https://docs.python.org/3/library/unittest.html"
-    }
+      "url": "https://docs.python.org/3/library/unittest.html#basic-example"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#basic-example",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3f865053f41c76e277b33b394f33b9bbce63ce0fb9f7f73f477b17aecf69bd9c"
   },
   {
     "id": "seed.clean_code.deterministic_tests",
@@ -254,15 +543,33 @@
     "category": "testing",
     "summary": "A test should control the state, time, randomness, and external dependencies that affect its result.",
     "guidance": "Use setup and cleanup boundaries that prevent one test from changing the outcome of another, and make nondeterminism injectable.",
-    "tags": ["tests", "deterministic", "isolation", "fixture", "randomness", "time"],
+    "tags": [
+      "tests",
+      "deterministic",
+      "isolation",
+      "fixture",
+      "randomness",
+      "time"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.deterministic_tests",
       "title": "Python unittest — Organizing Test Code",
       "url": "https://docs.python.org/3/library/unittest.html#organizing-test-code"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#organizing-test-code",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "5f1472b320298b84f50eb5255e7daf00a902cbba061288f623d96fbb818150ba"
   },
   {
     "id": "seed.clean_code.mock_boundaries",
@@ -270,15 +577,33 @@
     "category": "testing",
     "summary": "Mocks are most useful at a stable external boundary and become brittle when they mirror every private call.",
     "guidance": "Patch where a dependency is looked up, assert the behavior that matters, and avoid encoding an incidental call sequence unless it is the contract.",
-    "tags": ["tests", "mock", "patch", "dependency", "boundary", "behavior"],
+    "tags": [
+      "tests",
+      "mock",
+      "patch",
+      "dependency",
+      "boundary",
+      "behavior"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.mock_boundaries",
       "title": "Python unittest.mock — Where to Patch",
       "url": "https://docs.python.org/3/library/unittest.mock.html#where-to-patch"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#where-to-patch",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a37f5ab3a0917d38724a447cea49e202d12977413e5acf1c8c19ebd870520e4b"
   },
   {
     "id": "seed.rubric.testing_evidence",
@@ -286,14 +611,34 @@
     "category": "testing",
     "summary": "A strong answer explains why each proposed test could catch a meaningful defect.",
     "guidance": "Score higher when the candidate covers happy, failure, and boundary cases and states what each assertion proves.",
-    "tags": ["rubric", "testing", "risk", "assertion", "failure", "boundary"],
+    "tags": [
+      "rubric",
+      "testing",
+      "risk",
+      "assertion",
+      "failure",
+      "boundary"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.testing_evidence",
-      "title": "Clutch interview rubric: testing evidence"
-    }
+      "title": "Python unittest documentation",
+      "url": "https://docs.python.org/3/library/unittest.html#basic-example"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#basic-example",
+    "derived_from_ids": [
+      "seed.clean_code.behavioral_test_boundaries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2e457aec78c66b8d936e1870dfb02f9d5ed879340625d2339557fb7ce246a2d0"
   },
   {
     "id": "seed.question.testing_matrix",
@@ -301,14 +646,34 @@
     "category": "testing",
     "summary": "Ask for a compact matrix covering the happy path, one failure path, and one edge case.",
     "guidance": "Look for concrete inputs, observable outputs, and a reason each case protects against a distinct regression.",
-    "tags": ["question", "testing", "matrix", "happy", "failure", "edge"],
+    "tags": [
+      "question",
+      "testing",
+      "matrix",
+      "happy",
+      "failure",
+      "edge"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.testing_matrix",
-      "title": "Clutch question bank: verification matrix"
-    }
+      "title": "Python unittest — Organizing Test Code",
+      "url": "https://docs.python.org/3/library/unittest.html#organizing-test-code"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#organizing-test-code",
+    "derived_from_ids": [
+      "seed.clean_code.deterministic_tests"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "85014030c4d46f9e07ed7727aaa930e11920332d14d0582e96794d76260708be"
   },
   {
     "id": "seed.clean_code.small_reviewable_units",
@@ -316,14 +681,32 @@
     "category": "design",
     "summary": "Functions, classes, and snippets should be small enough that a reviewer can identify responsibilities and test boundaries.",
     "guidance": "Extract distinct decisions into named helpers when a unit grows large enough to obscure behavior, dependencies, or edge cases.",
-    "tags": ["large", "function", "class", "snippet", "extraction", "design"],
+    "tags": [
+      "large",
+      "function",
+      "class",
+      "snippet",
+      "extraction",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.small_reviewable_units",
-      "title": "Clutch clean-code reference: small reviewable units"
-    }
+      "title": "Google Engineering Practices — Why Write Small CLs?",
+      "url": "https://google.github.io/eng-practices/review/developer/small-cls.html#small-cls"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#small-cls",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "560aea2925f1ec368d34bc070c0e56aa46d33291f3846e967c97dc2e36bde8f6"
   },
   {
     "id": "seed.clean_code.single_source_of_behavior",
@@ -331,14 +714,32 @@
     "category": "design",
     "summary": "Equivalent logic should have one implementation so fixes and policy changes cannot drift between copies.",
     "guidance": "Extract duplicated behavior into a clearly named helper while leaving callers responsible for their genuinely different context.",
-    "tags": ["duplicate", "duplicated", "logic", "shared", "extraction", "design"],
+    "tags": [
+      "duplicate",
+      "duplicated",
+      "logic",
+      "shared",
+      "extraction",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.single_source_of_behavior",
-      "title": "Clutch clean-code reference: one source of shared behavior"
-    }
+      "title": "Google Engineering Practices — Design",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#design"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#design",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2c1a9eb0f9e3d0ecd5f1870acfa833496f94612f2311a846786551d5828ae0ad"
   },
   {
     "id": "seed.clean_code.explicit_dependency_boundaries",
@@ -346,15 +747,33 @@
     "category": "design",
     "summary": "Code is easier to test and replace when collaborators are passed through a narrow, typed protocol instead of discovered through global state.",
     "guidance": "Use the smallest interface the caller needs and keep construction separate from business behavior.",
-    "tags": ["dependency", "protocol", "interface", "injection", "boundary", "design"],
+    "tags": [
+      "dependency",
+      "protocol",
+      "interface",
+      "injection",
+      "boundary",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_dependency_boundaries",
       "title": "Python typing — Protocols",
       "url": "https://docs.python.org/3/library/typing.html#typing.Protocol"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#typing.Protocol",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "bad0b04bb688ad7c5e67044c50bd366e6f7db2b5e5502feba532e88ad512dd3e"
   },
   {
     "id": "seed.rubric.design_tradeoff",
@@ -362,14 +781,34 @@
     "category": "design",
     "summary": "A strong answer connects a boundary to a concrete change, test, ownership, or failure concern.",
     "guidance": "Score higher when the candidate names a rejected alternative and avoids abstractions that have no current pressure.",
-    "tags": ["rubric", "design", "boundary", "tradeoff", "alternative"],
+    "tags": [
+      "rubric",
+      "design",
+      "boundary",
+      "tradeoff",
+      "alternative"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.design_tradeoff",
-      "title": "Clutch interview rubric: design boundary tradeoff"
-    }
+      "title": "Google Engineering Practices — Why Write Small CLs?",
+      "url": "https://google.github.io/eng-practices/review/developer/small-cls.html#small-cls"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#small-cls",
+    "derived_from_ids": [
+      "seed.clean_code.small_reviewable_units"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "ce3fb2a6f75871e69fe57945f95944f5c2078aabd69a51d1298c27df85c76d3b"
   },
   {
     "id": "seed.question.design_second_requirement",
@@ -377,14 +816,35 @@
     "category": "design",
     "summary": "Ask how the design changes when a second caller, storage system, or policy arrives.",
     "guidance": "Look for what remains stable, what becomes a boundary, and why the proposed abstraction is no larger than needed.",
-    "tags": ["question", "design", "requirement", "caller", "storage", "policy"],
+    "tags": [
+      "question",
+      "design",
+      "requirement",
+      "caller",
+      "storage",
+      "policy"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.design_second_requirement",
-      "title": "Clutch question bank: second requirement"
-    }
+      "title": "Google Engineering Practices — Design",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#design"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#design",
+    "derived_from_ids": [
+      "seed.clean_code.single_source_of_behavior"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "405aa23008ff791c74a4ac493fa33fc06c1f818fe4d375063bbb09f16c20b720"
   },
   {
     "id": "seed.clean_code.parameterized_queries",
@@ -392,15 +852,33 @@
     "category": "security",
     "summary": "Database commands should use driver-supported parameter binding instead of interpolating values into SQL text.",
     "guidance": "Parameterization makes the trust boundary explicit and prevents input from changing the structure of a query.",
-    "tags": ["sql", "query", "parameter", "binding", "injection", "security"],
+    "tags": [
+      "sql",
+      "query",
+      "parameter",
+      "binding",
+      "injection",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.parameterized_queries",
       "title": "OWASP SQL Injection Prevention Cheat Sheet",
-      "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
-    }
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html#primary-defenses"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#primary-defenses",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "d0ab96d881115acb98f208d4805ee5b7cb06af4869eebd6b911272dcc073f2e2"
   },
   {
     "id": "seed.clean_code.allowlist_validation",
@@ -408,15 +886,35 @@
     "category": "security",
     "summary": "Input validation should define acceptable syntax, length, range, and structure before data crosses a sensitive boundary.",
     "guidance": "Prefer allowlists and typed parsing for structured values; rejection and error responses should not expose sensitive internals.",
-    "tags": ["input", "validation", "allowlist", "untrusted", "boundary", "security"],
+    "tags": [
+      "validation",
+      "allowlist",
+      "input",
+      "boundary",
+      "security",
+      "sql",
+      "identifier"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.allowlist_validation",
       "title": "OWASP Input Validation Cheat Sheet",
-      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
-    }
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html#allowlist-vs-denylist"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#allowlist-vs-denylist",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2fe9053152e359c8a96c0d23cef058c9957b0c8f058199766cb98eb77868ff6d"
   },
   {
     "id": "seed.clean_code.safe_subprocess_boundaries",
@@ -424,15 +922,33 @@
     "category": "security",
     "summary": "Passing untrusted text through a shell can turn data into commands or command arguments with unintended meaning.",
     "guidance": "Pass an argument sequence directly where possible, avoid shell execution, and validate any value that selects a program or path.",
-    "tags": ["subprocess", "shell", "command", "injection", "untrusted", "security"],
+    "tags": [
+      "subprocess",
+      "shell",
+      "command",
+      "injection",
+      "untrusted",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.safe_subprocess_boundaries",
       "title": "Python subprocess — Security Considerations",
       "url": "https://docs.python.org/3/library/subprocess.html#security-considerations"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#security-considerations",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "35af790222986b94e98ba022458cb857b120d26f4de4dcccc639a9c27bfbd776"
   },
   {
     "id": "seed.rubric.security_trust_boundary",
@@ -440,14 +956,39 @@
     "category": "security",
     "summary": "A strong answer identifies which value is untrusted, what privileged interpreter receives it, and what validation or separation prevents control transfer.",
     "guidance": "Score higher when the candidate explains the attack path and defense rather than naming a vulnerability category alone.",
-    "tags": ["rubric", "security", "trust", "boundary", "attack", "defense"],
+    "tags": [
+      "rubric",
+      "security",
+      "trust",
+      "boundary",
+      "sql",
+      "query",
+      "untrusted",
+      "parameter",
+      "binding"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.security_trust_boundary",
-      "title": "Clutch interview rubric: security trust boundary"
-    }
+      "title": "OWASP SQL Injection Prevention Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html#primary-defenses"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#primary-defenses",
+    "derived_from_ids": [
+      "seed.clean_code.parameterized_queries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "ceb4100f7d64a9a4e36462970225781e3e2d2e87e6d6aad862c5f42eefadb753"
   },
   {
     "id": "seed.question.security_attack_path",
@@ -455,14 +996,35 @@
     "category": "security",
     "summary": "Ask how an attacker-controlled value moves from input to a privileged operation and where it should be constrained.",
     "guidance": "Look for source, transformation, sink, impact, and a defense that remains effective for adversarial input.",
-    "tags": ["question", "security", "attacker", "source", "sink", "validation"],
+    "tags": [
+      "question",
+      "security",
+      "attacker",
+      "source",
+      "sink",
+      "validation"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.security_attack_path",
-      "title": "Clutch question bank: trace an attack path"
-    }
+      "title": "OWASP Input Validation Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html#allowlist-vs-denylist"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#allowlist-vs-denylist",
+    "derived_from_ids": [
+      "seed.clean_code.allowlist_validation"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e3946a1db45db4844cfd1ca6b066752ea26305e4be72b8038a94c3266fe05c15"
   },
   {
     "id": "seed.clean_code.actionable_warnings",
@@ -470,31 +1032,66 @@
     "category": "maintainability",
     "summary": "Deprecation and compatibility warnings should identify the affected behavior and the supported migration path.",
     "guidance": "Use a specific warning category, choose a useful caller-facing stack level, and remove obsolete paths on an explicit schedule.",
-    "tags": ["warning", "deprecation", "compatibility", "migration", "maintenance"],
+    "tags": [
+      "warning",
+      "deprecation",
+      "compatibility",
+      "migration",
+      "maintenance"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "library", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "library",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.actionable_warnings",
       "title": "Python warnings documentation",
-      "url": "https://docs.python.org/3/library/warnings.html"
-    }
+      "url": "https://docs.python.org/3/library/warnings.html#warning-categories"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#warning-categories",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e64ef5964c0100a86fbec165560932c65069121d8c10958273eb1c2830ec4a5e"
   },
   {
     "id": "seed.clean_code.externalized_configuration",
-    "title": "Keep deploy-specific configuration outside code",
+    "title": "Read deployment configuration through explicit interfaces",
     "category": "maintainability",
-    "summary": "Configuration that varies between deployments should not require source changes or expose secrets in the repository.",
-    "guidance": "Read configuration at the application boundary, validate it once, and pass typed settings to the code that needs them.",
-    "tags": ["configuration", "environment", "settings", "deployment", "secrets"],
+    "summary": "Process environment mappings provide deployment-specific configuration without embedding those values in program source.",
+    "guidance": "Centralize reads, validate required values at startup, and inject dependencies where tests need controlled configuration.",
+    "tags": [
+      "configuration",
+      "environment",
+      "deployment",
+      "startup"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.externalized_configuration",
-      "title": "The Twelve-Factor App — Config",
-      "url": "https://12factor.net/config"
-    }
+      "title": "Python os — os.environ",
+      "url": "https://docs.python.org/3/library/os.html#os.environ"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#os.environ",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "26cfd936949002a8cfe9d6a0742ef6f688f64c14719bc89ee85049ba75d753f5"
   },
   {
     "id": "seed.clean_code.compatible_public_versions",
@@ -502,15 +1099,33 @@
     "category": "maintainability",
     "summary": "A public interface needs an explicit compatibility contract so callers can understand breaking and additive changes.",
     "guidance": "Describe the public API, classify changes consistently, and avoid silently changing behavior relied on by downstream callers.",
-    "tags": ["version", "compatibility", "public", "api", "breaking", "caller"],
+    "tags": [
+      "version",
+      "compatibility",
+      "public",
+      "api",
+      "breaking",
+      "caller"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "library"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "library"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.compatible_public_versions",
-      "title": "Semantic Versioning 2.0.0",
-      "url": "https://semver.org/"
-    }
+      "title": "Python warnings — Updating code for new dependency versions",
+      "url": "https://docs.python.org/3/library/warnings.html#updating-code-for-new-versions-of-dependencies"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#updating-code-for-new-versions-of-dependencies",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "1a5ab3a6be6d91033f4d7a52faa820d754c20a576a7790c2f5976575d3e96492"
   },
   {
     "id": "seed.rubric.operational_maintainability",
@@ -518,14 +1133,34 @@
     "category": "maintainability",
     "summary": "Maintainable code makes configuration, diagnosis, ownership, and safe change procedures visible to the next engineer.",
     "guidance": "Score higher when the candidate connects a code choice to debugging or deployment rather than discussing formatting alone.",
-    "tags": ["rubric", "maintainability", "operations", "configuration", "debugging"],
+    "tags": [
+      "rubric",
+      "maintainability",
+      "operations",
+      "configuration",
+      "debugging"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.operational_maintainability",
-      "title": "Clutch interview rubric: operational maintainability"
-    }
+      "title": "Python contextlib documentation",
+      "url": "https://docs.python.org/3/library/contextlib.html#utilities"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#utilities",
+    "derived_from_ids": [
+      "seed.clean_code.resource_lifetime"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "115bfa4b083e6b806c0cc96da9c2cc3eda828f3224062400ae9b0d6671bf6120"
   },
   {
     "id": "seed.question.maintenance_incident",
@@ -533,14 +1168,34 @@
     "category": "maintainability",
     "summary": "Ask which evidence would help a new engineer diagnose an unexpected production result in this path.",
     "guidance": "Look for structured signals, ownership boundaries, reproducible inputs, and a change that improves diagnosis without logging sensitive data.",
-    "tags": ["question", "maintainability", "incident", "diagnosis", "evidence"],
+    "tags": [
+      "question",
+      "maintainability",
+      "incident",
+      "diagnosis",
+      "evidence"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.maintenance_incident",
-      "title": "Clutch question bank: production diagnosis"
-    }
+      "title": "Python warnings documentation",
+      "url": "https://docs.python.org/3/library/warnings.html#warning-categories"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#warning-categories",
+    "derived_from_ids": [
+      "seed.clean_code.actionable_warnings"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "efcce84106742c034d310e89395aba027574b845cbce1231fff830b137d46458"
   },
   {
     "id": "seed.clean_code.useful_type_annotations",
@@ -548,15 +1203,33 @@
     "category": "readability",
     "summary": "Type annotations should expose useful input, output, and callback contracts without restating what is already obvious.",
     "guidance": "Annotate public boundaries and complex shapes consistently; prefer a named protocol or model when a nested type obscures meaning.",
-    "tags": ["typing", "annotation", "contract", "protocol", "readability"],
+    "tags": [
+      "typing",
+      "annotation",
+      "contract",
+      "protocol",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.useful_type_annotations",
       "title": "PEP 484 — Type Hints",
-      "url": "https://peps.python.org/pep-0484/"
-    }
+      "url": "https://peps.python.org/pep-0484/#abstract"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#abstract",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "0d5ddd0da8caf7186a0ced64ac9ccde4f51d22a7f11d3d721fd7ef347e754b29"
   },
   {
     "id": "seed.clean_code.explicit_string_formatting",
@@ -564,15 +1237,31 @@
     "category": "readability",
     "summary": "String formatting should make inserted expressions and formatting rules easy to associate with the resulting text.",
     "guidance": "Use a formatting form appropriate to the boundary, but never confuse readable presentation formatting with safe query or command parameterization.",
-    "tags": ["formatting", "string", "fstring", "expression", "readability"],
+    "tags": [
+      "formatting",
+      "string",
+      "fstring",
+      "expression",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_string_formatting",
       "title": "PEP 498 — Literal String Interpolation",
-      "url": "https://peps.python.org/pep-0498/"
-    }
+      "url": "https://peps.python.org/pep-0498/#abstract"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#abstract",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "f7b07a9e052289951240a8f4935cf9904036664e36cb2b4239d248bdaefc840d"
   },
   {
     "id": "seed.clean_code.explicit_over_implicit",
@@ -580,15 +1269,31 @@
     "category": "readability",
     "summary": "A reader should be able to see the important decision and data transformation without relying on surprising implicit behavior.",
     "guidance": "Choose the simplest form that preserves the domain decision, and require a concrete benefit before using a denser idiom.",
-    "tags": ["explicit", "implicit", "simple", "clever", "readability"],
+    "tags": [
+      "explicit",
+      "implicit",
+      "simple",
+      "clever",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_over_implicit",
       "title": "PEP 20 — The Zen of Python",
-      "url": "https://peps.python.org/pep-0020/"
-    }
+      "url": "https://peps.python.org/pep-0020/#the-zen-of-python"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#the-zen-of-python",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "63b8e28f85baad6dabb1974490b8f7a2151fc3acd3f7b25d2cf951877bae1c32"
   },
   {
     "id": "seed.rubric.readability_cognitive_load",
@@ -596,14 +1301,34 @@
     "category": "readability",
     "summary": "A strong answer points to the exact name, branch, data shape, or side effect that forces unnecessary mental reconstruction.",
     "guidance": "Score higher when the proposed edit reduces a demonstrated comprehension cost instead of applying a style preference mechanically.",
-    "tags": ["rubric", "readability", "cognitive", "branch", "data", "sideeffect"],
+    "tags": [
+      "rubric",
+      "readability",
+      "cognitive",
+      "branch",
+      "data",
+      "sideeffect"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.readability_cognitive_load",
-      "title": "Clutch interview rubric: readability cognitive load"
-    }
+      "title": "PEP 8 — Programming Recommendations",
+      "url": "https://peps.python.org/pep-0008/#programming-recommendations"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#programming-recommendations",
+    "derived_from_ids": [
+      "seed.clean_code.readable_conditionals"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "67d2a779dc5414cb6d0167210995bb5e8ba6a6a2617edbbe616d3fcd7b77d088"
   },
   {
     "id": "seed.question.readability_rename",
@@ -611,14 +1336,33 @@
     "category": "readability",
     "summary": "Ask which single name would most improve a first-time reader's understanding and why.",
     "guidance": "Look for the hidden domain meaning, the misleading interpretation, and a replacement that remains proportionate to scope.",
-    "tags": ["question", "readability", "rename", "domain", "scope"],
+    "tags": [
+      "question",
+      "readability",
+      "rename",
+      "domain",
+      "scope"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.readability_rename",
-      "title": "Clutch question bank: justify one rename"
-    }
+      "title": "PEP 484 — Type Hints",
+      "url": "https://peps.python.org/pep-0484/#abstract"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#abstract",
+    "derived_from_ids": [
+      "seed.clean_code.useful_type_annotations"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "10988887c2bf1a2192d281e161b323304405d386d7464b8a81251db1f27dd5dd"
   },
   {
     "id": "seed.clean_code.decimal_money",
@@ -626,15 +1370,33 @@
     "category": "correctness",
     "summary": "Binary floating-point cannot represent many decimal fractions exactly and can violate monetary or fixed-precision expectations.",
     "guidance": "Choose Decimal when exact base-ten arithmetic is part of the contract, construct values deliberately, and make rounding policy explicit.",
-    "tags": ["decimal", "money", "currency", "float", "rounding", "precision"],
+    "tags": [
+      "decimal",
+      "money",
+      "currency",
+      "float",
+      "rounding",
+      "precision"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.decimal_money",
       "title": "Python decimal — Decimal fixed-point and floating-point arithmetic",
-      "url": "https://docs.python.org/3/library/decimal.html"
-    }
+      "url": "https://docs.python.org/3/library/decimal.html#decimal-objects"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#decimal-objects",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e8cd8548fb82bd8d4a76d435f0a78b598eb2e09e81d6b0005a6ee59f6c0f5fd8"
   },
   {
     "id": "seed.clean_code.explicit_copy_semantics",
@@ -642,15 +1404,33 @@
     "category": "correctness",
     "summary": "Copying a container does not necessarily copy the nested mutable objects it references.",
     "guidance": "State whether identity sharing is part of the contract, and test mutation behavior when copying nested or recursive structures.",
-    "tags": ["copy", "deepcopy", "shallow", "nested", "mutable", "identity"],
+    "tags": [
+      "copy",
+      "deepcopy",
+      "shallow",
+      "nested",
+      "mutable",
+      "identity"
+    ],
     "item_type": "reference",
-    "roles": ["general", "data"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "data"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_copy_semantics",
       "title": "Python copy — Shallow and deep copy operations",
-      "url": "https://docs.python.org/3/library/copy.html"
-    }
+      "url": "https://docs.python.org/3/library/copy.html#module-copy"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-copy",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e0d8f9066a8bd93a1fd081b7bbeaefdf64ab7963067d385a72b96fca805641e7"
   },
   {
     "id": "seed.clean_code.structured_concurrency",
@@ -658,15 +1438,34 @@
     "category": "correctness",
     "summary": "Concurrent child tasks need a bounded lifetime and a defined policy for cancellation and sibling failure.",
     "guidance": "Use structured task groups where appropriate so completion, exceptions, and cancellation cannot silently escape the owning scope.",
-    "tags": ["asyncio", "task", "taskgroup", "concurrency", "cancellation", "exception"],
+    "tags": [
+      "asyncio",
+      "task",
+      "taskgroup",
+      "concurrency",
+      "cancellation",
+      "exception"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid", "senior"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid",
+      "senior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.structured_concurrency",
       "title": "Python asyncio — Task Groups",
       "url": "https://docs.python.org/3/library/asyncio-task.html#task-groups"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#task-groups",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "6c441d41f3e8dd089e37431f007e4f050a43e2f9bd6cd4d50a91b7c27b7023a7"
   },
   {
     "id": "seed.rubric.correctness_state_transition",
@@ -674,14 +1473,35 @@
     "category": "correctness",
     "summary": "A strong answer tracks which invariants hold before, during, and after mutation or an external call.",
     "guidance": "Score higher when the candidate identifies partial failure, retry, or repeated-call behavior instead of checking one isolated output.",
-    "tags": ["rubric", "correctness", "state", "transition", "invariant", "retry"],
+    "tags": [
+      "rubric",
+      "correctness",
+      "state",
+      "transition",
+      "invariant",
+      "retry"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.correctness_state_transition",
-      "title": "Clutch interview rubric: correctness state transitions"
-    }
+      "title": "Python datetime — Aware and Naive Objects",
+      "url": "https://docs.python.org/3/library/datetime.html#aware-and-naive-objects"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#aware-and-naive-objects",
+    "derived_from_ids": [
+      "seed.clean_code.aware_datetimes"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e38cde1d23af02b143e4626cc19f20f355a0f2db5ede8d1812c595ca490079a4"
   },
   {
     "id": "seed.question.correctness_second_call",
@@ -689,14 +1509,35 @@
     "category": "correctness",
     "summary": "Ask what changes when the function is called twice with the same input or partially updated state.",
     "guidance": "Look for shared state, idempotency, duplicate effects, and a test that distinguishes the first call from the second.",
-    "tags": ["question", "correctness", "repeat", "idempotency", "state", "duplicate"],
+    "tags": [
+      "question",
+      "correctness",
+      "repeat",
+      "idempotency",
+      "state",
+      "duplicate"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.correctness_second_call",
-      "title": "Clutch question bank: repeat the operation"
-    }
+      "title": "Python decimal — Decimal fixed-point and floating-point arithmetic",
+      "url": "https://docs.python.org/3/library/decimal.html#decimal-objects"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#decimal-objects",
+    "derived_from_ids": [
+      "seed.clean_code.decimal_money"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "680aa6071f092e12a705b5247e213c8275c3bb6e6eea66f6fbe7c0b81cf9274c"
   },
   {
     "id": "seed.clean_code.table_driven_subtests",
@@ -704,15 +1545,32 @@
     "category": "testing",
     "summary": "Related cases can share setup while still reporting which specific input failed.",
     "guidance": "Use a compact case table when behavior is the same across variations; keep distinct workflows in separate tests with descriptive names.",
-    "tags": ["testing", "subtest", "table", "cases", "input", "variation"],
+    "tags": [
+      "testing",
+      "subtest",
+      "table",
+      "cases",
+      "input",
+      "variation"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.table_driven_subtests",
       "title": "Python unittest — Distinguishing test iterations using subtests",
       "url": "https://docs.python.org/3/library/unittest.html#distinguishing-test-iterations-using-subtests"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#distinguishing-test-iterations-using-subtests",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "ac7be4bfe86e6b3dddd4bed4e8c980c2951c7679c1530cad128a1d2920dd32e1"
   },
   {
     "id": "seed.clean_code.exception_contract_tests",
@@ -720,15 +1578,32 @@
     "category": "testing",
     "summary": "Failure tests should verify the expected exception type and, when contractual, the useful diagnostic detail.",
     "guidance": "Trigger the smallest failure condition and avoid assertions so broad that an unrelated error satisfies the test.",
-    "tags": ["testing", "assertraises", "exception", "failure", "contract"],
+    "tags": [
+      "testing",
+      "assertraises",
+      "exception",
+      "failure",
+      "contract"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.exception_contract_tests",
       "title": "Python unittest — assertRaises",
       "url": "https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.TestCase.assertRaises",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "485cadd79f701f40ffafb74dd39d5a3d2e9a2d1112a38e2a1a5a8924bd85802d"
   },
   {
     "id": "seed.clean_code.isolated_async_tests",
@@ -736,15 +1611,33 @@
     "category": "testing",
     "summary": "Async tests need lifecycle control so pending tasks and asynchronous cleanup do not leak between cases.",
     "guidance": "Use an async-aware test case or fixture, await the behavior under test, and clean up resources and background tasks deterministically.",
-    "tags": ["testing", "async", "eventloop", "cleanup", "isolation", "task"],
+    "tags": [
+      "testing",
+      "async",
+      "eventloop",
+      "cleanup",
+      "isolation",
+      "task"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.isolated_async_tests",
       "title": "Python unittest — IsolatedAsyncioTestCase",
       "url": "https://docs.python.org/3/library/unittest.html#unittest.IsolatedAsyncioTestCase"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.IsolatedAsyncioTestCase",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "d802320bfe3964d4b0ba79c47e85842dd0fc5bf2bc4b02b75efaa9bb1acb895d"
   },
   {
     "id": "seed.rubric.testing_failure_diagnosis",
@@ -752,14 +1645,34 @@
     "category": "testing",
     "summary": "A good test failure identifies which contract broke without requiring the reader to replay the entire implementation.",
     "guidance": "Score higher when assertions are specific, cases have meaningful names, and failure output separates setup problems from behavior defects.",
-    "tags": ["rubric", "testing", "failure", "diagnostic", "assertion", "name"],
+    "tags": [
+      "rubric",
+      "testing",
+      "failure",
+      "diagnostic",
+      "assertion",
+      "name"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.testing_failure_diagnosis",
-      "title": "Clutch interview rubric: diagnostic tests"
-    }
+      "title": "Python unittest.mock — Where to Patch",
+      "url": "https://docs.python.org/3/library/unittest.mock.html#where-to-patch"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#where-to-patch",
+    "derived_from_ids": [
+      "seed.clean_code.mock_boundaries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e92295e50895f53b8961ce21943586739368a96520b7e315c0a818dec298be6e"
   },
   {
     "id": "seed.question.testing_flake",
@@ -767,14 +1680,36 @@
     "category": "testing",
     "summary": "Ask which uncontrolled dependency could make this test pass locally and fail intermittently in CI.",
     "guidance": "Look for time, randomness, ordering, shared state, concurrency, or network boundaries and a way to control the chosen source.",
-    "tags": ["question", "testing", "flaky", "time", "randomness", "ordering", "ci"],
+    "tags": [
+      "question",
+      "testing",
+      "flaky",
+      "time",
+      "randomness",
+      "ordering",
+      "ci"
+    ],
     "item_type": "question_bank",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.testing_flake",
-      "title": "Clutch question bank: flaky test investigation"
-    }
+      "title": "Python unittest — Distinguishing test iterations using subtests",
+      "url": "https://docs.python.org/3/library/unittest.html#distinguishing-test-iterations-using-subtests"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#distinguishing-test-iterations-using-subtests",
+    "derived_from_ids": [
+      "seed.clean_code.table_driven_subtests"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "6da3202bfadb4be69dddce1232a2964b5a112b4b2e6413df2e5c0fe08a5b1092"
   },
   {
     "id": "seed.clean_code.data_focused_dataclasses",
@@ -782,15 +1717,34 @@
     "category": "design",
     "summary": "Data classes can make a record's fields, defaults, equality, and representation explicit without hiding a larger behavior object.",
     "guidance": "Use them when the abstraction is primarily data, validate important invariants at construction, and avoid treating mutable records as universal domain models.",
-    "tags": ["dataclass", "record", "data", "fields", "default", "design"],
+    "tags": [
+      "dataclass",
+      "record",
+      "data",
+      "fields",
+      "default",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.data_focused_dataclasses",
       "title": "Python dataclasses documentation",
-      "url": "https://docs.python.org/3/library/dataclasses.html"
-    }
+      "url": "https://docs.python.org/3/library/dataclasses.html#module-dataclasses"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-dataclasses",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "108422737aec421df53cf1dbfad4638170805f2de88ef114c642f8c7ca223a66"
   },
   {
     "id": "seed.clean_code.closed_choices_with_enum",
@@ -798,15 +1752,33 @@
     "category": "design",
     "summary": "An enumeration communicates that a value belongs to a finite named set instead of being an unconstrained string or number.",
     "guidance": "Use an enum when the set is genuinely closed and shared; preserve forward compatibility when external systems may add unknown values.",
-    "tags": ["enum", "choice", "state", "closed", "constant", "design"],
+    "tags": [
+      "enum",
+      "choice",
+      "state",
+      "closed",
+      "constant",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.closed_choices_with_enum",
       "title": "Python enum documentation",
-      "url": "https://docs.python.org/3/library/enum.html"
-    }
+      "url": "https://docs.python.org/3/library/enum.html#module-enum"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-enum",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2bf9877f15e0d937a7c93d982c639c357d08396df684d6d2d76caaf1a06087fa"
   },
   {
     "id": "seed.clean_code.abstract_behavior_contracts",
@@ -814,15 +1786,33 @@
     "category": "design",
     "summary": "An abstract base class can state required behavior where nominal membership and shared implementation are part of the design.",
     "guidance": "Keep the contract narrow, prefer structural protocols when inheritance is unnecessary, and avoid a hierarchy without multiple real implementations.",
-    "tags": ["abstract", "abc", "interface", "contract", "inheritance", "design"],
+    "tags": [
+      "abstract",
+      "abc",
+      "interface",
+      "contract",
+      "inheritance",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "library"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "library"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.abstract_behavior_contracts",
       "title": "Python abc — Abstract Base Classes",
-      "url": "https://docs.python.org/3/library/abc.html"
-    }
+      "url": "https://docs.python.org/3/library/abc.html#module-abc"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-abc",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a65f949fcba1698694e536d5c0f603b646acea0af675504028f8fd894cfab6cb"
   },
   {
     "id": "seed.rubric.design_cohesion",
@@ -830,14 +1820,35 @@
     "category": "design",
     "summary": "A cohesive unit groups behavior that changes for the same reason and keeps unrelated policy or infrastructure at a boundary.",
     "guidance": "Score higher when the candidate names the shared responsibility and the concrete pressure for splitting or retaining the unit.",
-    "tags": ["rubric", "design", "cohesion", "responsibility", "boundary", "change"],
+    "tags": [
+      "rubric",
+      "design",
+      "cohesion",
+      "responsibility",
+      "boundary",
+      "change"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.design_cohesion",
-      "title": "Clutch interview rubric: design cohesion"
-    }
+      "title": "Python typing — Protocols",
+      "url": "https://docs.python.org/3/library/typing.html#typing.Protocol"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#typing.Protocol",
+    "derived_from_ids": [
+      "seed.clean_code.explicit_dependency_boundaries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "febc1c66f906f825867d22ab15c42ffad5e1b049b17ed356ad13b74d9a8fd7b8"
   },
   {
     "id": "seed.question.design_replace_dependency",
@@ -845,14 +1856,35 @@
     "category": "design",
     "summary": "Ask what must change if a database, clock, queue, or third-party client is replaced.",
     "guidance": "Look for the current coupling, the smallest stable contract, construction ownership, and tests that work through the boundary.",
-    "tags": ["question", "design", "dependency", "replace", "database", "client"],
+    "tags": [
+      "question",
+      "design",
+      "dependency",
+      "replace",
+      "database",
+      "client"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.design_replace_dependency",
-      "title": "Clutch question bank: replace a dependency"
-    }
+      "title": "Python dataclasses documentation",
+      "url": "https://docs.python.org/3/library/dataclasses.html#module-dataclasses"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-dataclasses",
+    "derived_from_ids": [
+      "seed.clean_code.data_focused_dataclasses"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "54f039b028a4c08d4c75d814a7afb189ac8bb3023cd0f3551f33dabbb55f66dd"
   },
   {
     "id": "seed.clean_code.secure_randomness",
@@ -860,15 +1892,34 @@
     "category": "security",
     "summary": "Tokens, reset links, and authentication secrets require randomness designed to resist prediction.",
     "guidance": "Use the secrets module or an equivalent cryptographic source, choose enough entropy, and do not substitute general simulation randomness.",
-    "tags": ["security", "random", "secrets", "token", "entropy", "authentication"],
+    "tags": [
+      "security",
+      "random",
+      "secrets",
+      "token",
+      "entropy",
+      "authentication"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.secure_randomness",
       "title": "Python secrets — Generate secure random numbers",
-      "url": "https://docs.python.org/3/library/secrets.html"
-    }
+      "url": "https://docs.python.org/3/library/secrets.html#module-secrets"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-secrets",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "8b6425aaabe4b45e788a799e7cf32fcf65ed468a461f4c9dfd2ad82b4a69e5b5"
   },
   {
     "id": "seed.clean_code.constant_time_secret_comparison",
@@ -876,15 +1927,33 @@
     "category": "security",
     "summary": "Ordinary equality checks may reveal information about secret values through timing differences.",
     "guidance": "Use a constant-time comparison primitive for digests and authentication tokens, after normalizing types and lengths as the protocol requires.",
-    "tags": ["security", "timing", "compare", "digest", "token", "authentication"],
+    "tags": [
+      "security",
+      "timing",
+      "compare",
+      "digest",
+      "token",
+      "authentication"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "security"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "security"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.constant_time_secret_comparison",
       "title": "Python hmac.compare_digest documentation",
       "url": "https://docs.python.org/3/library/hmac.html#hmac.compare_digest"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#hmac.compare_digest",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "cbb164b26ebf8535e6ac34958633ccaec99567fa4055be1a58c129e445314deb"
   },
   {
     "id": "seed.clean_code.untrusted_deserialization",
@@ -892,15 +1961,35 @@
     "category": "security",
     "summary": "Pickle data can execute arbitrary code during deserialization and is not a safe interchange format for untrusted input.",
     "guidance": "Choose a non-executable format with explicit schema validation, or authenticate trusted serialized data before loading it.",
-    "tags": ["security", "pickle", "deserialize", "untrusted", "schema", "execution"],
+    "tags": [
+      "security",
+      "pickle",
+      "deserialize",
+      "untrusted",
+      "schema",
+      "execution"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.untrusted_deserialization",
       "title": "Python pickle warning",
       "url": "https://docs.python.org/3/library/pickle.html#module-pickle"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-pickle",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "36ab72a845ee1d7640e8b60711820b8c4ffb429baf7e6b1619a717d28edaf4e2"
   },
   {
     "id": "seed.rubric.security_least_privilege",
@@ -908,14 +1997,36 @@
     "category": "security",
     "summary": "A strong answer explains which capability the component needs and how damage is limited if its input or credential is compromised.",
     "guidance": "Score higher when permissions, secret scope, network reachability, and audit evidence are tied to the actual operation.",
-    "tags": ["rubric", "security", "privilege", "permission", "credential", "audit"],
+    "tags": [
+      "rubric",
+      "security",
+      "privilege",
+      "permission",
+      "credential",
+      "audit"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.security_least_privilege",
-      "title": "Clutch interview rubric: least privilege"
-    }
+      "title": "Python subprocess — Security Considerations",
+      "url": "https://docs.python.org/3/library/subprocess.html#security-considerations"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#security-considerations",
+    "derived_from_ids": [
+      "seed.clean_code.safe_subprocess_boundaries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "5e07ee1a638383c89e91ad4775a963c936188187349449f29f509e997cda2b7d"
   },
   {
     "id": "seed.question.security_secret_flow",
@@ -923,14 +2034,36 @@
     "category": "security",
     "summary": "Ask where a credential is created, transported, used, logged, rotated, and revoked.",
     "guidance": "Look for minimum scope, redaction, storage boundaries, rotation behavior, and a response when the secret is exposed.",
-    "tags": ["question", "security", "secret", "credential", "rotation", "redaction"],
+    "tags": [
+      "question",
+      "security",
+      "secret",
+      "credential",
+      "rotation",
+      "redaction"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.security_secret_flow",
-      "title": "Clutch question bank: secret lifecycle"
-    }
+      "title": "Python secrets — Generate secure random numbers",
+      "url": "https://docs.python.org/3/library/secrets.html#module-secrets"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-secrets",
+    "derived_from_ids": [
+      "seed.clean_code.secure_randomness"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3730b24b8871f78a2b3efdf8131e1ddccd33e9a0c0244c95173c672ca498ab40"
   },
   {
     "id": "seed.clean_code.contextual_log_records",
@@ -938,15 +2071,33 @@
     "category": "maintainability",
     "summary": "Log records are easier to correlate when request, job, or component context is attached consistently instead of interpolated ad hoc.",
     "guidance": "Use a logger adapter or structured fields at the boundary, keep field names stable, and avoid placing sensitive payloads in context.",
-    "tags": ["logging", "context", "request", "correlation", "adapter", "maintainability"],
+    "tags": [
+      "logging",
+      "context",
+      "request",
+      "correlation",
+      "adapter",
+      "maintainability"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.contextual_log_records",
       "title": "Python logging — LoggerAdapter objects",
       "url": "https://docs.python.org/3/library/logging.html#loggeradapter-objects"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#loggeradapter-objects",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a5504124964dfa5b748f2054f0cc94d500f455131f3b85c4aad3cfe01b19c186"
   },
   {
     "id": "seed.clean_code.public_module_surface",
@@ -954,15 +2105,34 @@
     "category": "maintainability",
     "summary": "An explicit public API distinguishes supported names from implementation details and reduces accidental coupling between modules.",
     "guidance": "Use documented exports and internal-name conventions consistently; do not make callers depend on names imported only as implementation details.",
-    "tags": ["module", "public", "api", "export", "all", "coupling"],
+    "tags": [
+      "module",
+      "public",
+      "api",
+      "export",
+      "all",
+      "coupling"
+    ],
     "item_type": "reference",
-    "roles": ["library", "backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "library",
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.public_module_surface",
       "title": "Python reference — public names and __all__",
       "url": "https://docs.python.org/3/reference/simple_stmts.html#the-import-statement"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#the-import-statement",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "5dc472d44fdd2dfe82b23f12963bc41f8c02844ffd51b25467b203078e8f8f11"
   },
   {
     "id": "seed.clean_code.executable_entry_points",
@@ -970,15 +2140,34 @@
     "category": "maintainability",
     "summary": "A named application entry point separates packaging and process startup from testable application behavior.",
     "guidance": "Point console metadata at a small function, keep import-time work minimal, and let that function own argument parsing and exit behavior.",
-    "tags": ["entry", "point", "console", "script", "packaging", "startup"],
+    "tags": [
+      "entry",
+      "point",
+      "console",
+      "script",
+      "packaging",
+      "startup"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform", "library"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "platform",
+      "library"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.executable_entry_points",
-      "title": "Python Packaging User Guide — Entry points specification",
-      "url": "https://packaging.python.org/en/latest/specifications/entry-points/"
-    }
+      "title": "Python __main__ — Idiomatic Usage",
+      "url": "https://docs.python.org/3/library/__main__.html#idiomatic-usage"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#idiomatic-usage",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "75b4cfd3fc4d9581543c6ed206cee981a968ac0daf50dfc1a02f369b4aa7398a"
   },
   {
     "id": "seed.clean_code.tested_deprecations",
@@ -986,15 +2175,34 @@
     "category": "maintainability",
     "summary": "Developer-facing deprecation warnings are often hidden by default, so upgrades can silently accumulate future breaking changes.",
     "guidance": "Make deprecation warnings visible or errors in CI, attribute warnings to the caller, and pair removal plans with a documented migration path.",
-    "tags": ["deprecation", "warning", "compatibility", "upgrade", "migration", "ci"],
+    "tags": [
+      "deprecation",
+      "warning",
+      "compatibility",
+      "upgrade",
+      "migration",
+      "ci"
+    ],
     "item_type": "reference",
-    "roles": ["library", "platform", "backend"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "library",
+      "platform",
+      "backend"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.tested_deprecations",
       "title": "Python warnings — updating code for new dependency versions",
       "url": "https://docs.python.org/3/library/warnings.html#updating-code-for-new-versions-of-dependencies"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#updating-code-for-new-versions-of-dependencies",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "fb94bf3dd76dc17b1480041e6887b99ea8a7b3f4afcd1aa60c6a14dc6d3f9fdb"
   },
   {
     "id": "seed.rubric.maintainability_change_safety",
@@ -1002,14 +2210,36 @@
     "category": "maintainability",
     "summary": "A strong answer connects a code change to compatibility, rollout, observation, and rollback rather than stopping at local readability.",
     "guidance": "Score higher when the candidate names the affected callers, migration sequence, release signal, and lowest-cost rollback.",
-    "tags": ["rubric", "maintainability", "release", "rollback", "compatibility", "migration"],
+    "tags": [
+      "rubric",
+      "maintainability",
+      "release",
+      "rollback",
+      "compatibility",
+      "migration"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.maintainability_change_safety",
-      "title": "Clutch interview rubric: change safety"
-    }
+      "title": "Python os — os.environ",
+      "url": "https://docs.python.org/3/library/os.html#os.environ"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#os.environ",
+    "derived_from_ids": [
+      "seed.clean_code.externalized_configuration"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "060a3a53fa74d3feef5a9927a97c35f2f30a366d11f933fd225da50c5c3970f4"
   },
   {
     "id": "seed.question.maintainability_dependency_upgrade",
@@ -1017,14 +2247,36 @@
     "category": "maintainability",
     "summary": "Ask how the candidate would discover and contain compatibility risk while upgrading a central dependency.",
     "guidance": "Look for release-note review, warning visibility, focused contract tests, incremental rollout, and an explicit rollback trigger.",
-    "tags": ["question", "maintainability", "dependency", "upgrade", "compatibility", "rollback"],
+    "tags": [
+      "question",
+      "maintainability",
+      "dependency",
+      "upgrade",
+      "compatibility",
+      "rollback"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.maintainability_dependency_upgrade",
-      "title": "Clutch question bank: dependency upgrade"
-    }
+      "title": "Python warnings — Updating code for new dependency versions",
+      "url": "https://docs.python.org/3/library/warnings.html#updating-code-for-new-versions-of-dependencies"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#updating-code-for-new-versions-of-dependencies",
+    "derived_from_ids": [
+      "seed.clean_code.compatible_public_versions"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "1e41b1ebfbfc6de610f0b542fdbc81b5cca7e149abf69da76f2ba3a04a553ab2"
   },
   {
     "id": "seed.clean_code.explicit_import_boundaries",
@@ -1032,15 +2284,34 @@
     "category": "readability",
     "summary": "Separated and deliberate imports make a module's dependencies visible and avoid names appearing through wildcard side effects.",
     "guidance": "Group standard, third-party, and local imports; prefer explicit names and choose absolute or explicit relative imports consistently for the package.",
-    "tags": ["import", "dependency", "wildcard", "module", "readability", "namespace"],
+    "tags": [
+      "import",
+      "dependency",
+      "wildcard",
+      "module",
+      "readability",
+      "namespace"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend", "data"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_import_boundaries",
       "title": "PEP 8 — Imports",
       "url": "https://peps.python.org/pep-0008/#imports"
-    }
+    },
+    "source_family": "python_pep",
+    "section_locator": "#imports",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9dc432c4d16c9e11c59d159f6a4cc29abf2f6b8d3ea80a972c2fb4bdb6eb759b"
   },
   {
     "id": "seed.clean_code.truthful_comments",
@@ -1048,15 +2319,32 @@
     "category": "readability",
     "summary": "A stale or syntax-narrating comment increases cognitive load because the reader must decide whether code or prose is authoritative.",
     "guidance": "Use comments for intent, constraints, and non-obvious decisions; update them with behavior and remove narration that the code already states.",
-    "tags": ["comment", "intent", "decision", "stale", "readability", "documentation"],
+    "tags": [
+      "comment",
+      "intent",
+      "decision",
+      "stale",
+      "readability",
+      "documentation"
+    ],
     "item_type": "reference",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.truthful_comments",
       "title": "PEP 8 — Comments",
       "url": "https://peps.python.org/pep-0008/#comments"
-    }
+    },
+    "source_family": "python_pep",
+    "section_locator": "#comments",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7ed3c809dbe20200911f3e0a03e874a42ee0a18ef67cf032ab9c7e01ce9ada12"
   },
   {
     "id": "seed.clean_code.domain_specific_newtypes",
@@ -1064,15 +2352,34 @@
     "category": "readability",
     "summary": "Domain-specific types make otherwise interchangeable primitive values such as user and order identifiers visible to readers and type checkers.",
     "guidance": "Use a lightweight distinct type when mixing equivalent primitives is a realistic bug; reserve aliases for simplifying a shape without changing identity.",
-    "tags": ["newtype", "identifier", "domain", "alias", "typing", "readability"],
+    "tags": [
+      "newtype",
+      "identifier",
+      "domain",
+      "alias",
+      "typing",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.domain_specific_newtypes",
       "title": "Python typing — NewType",
       "url": "https://docs.python.org/3/library/typing.html#newtype"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#newtype",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "d69727c13763b49c27937f3304b814459aa4480f4913a8f62e12e114e83467c1"
   },
   {
     "id": "seed.clean_code.complete_pattern_fallbacks",
@@ -1080,15 +2387,34 @@
     "category": "readability",
     "summary": "A match statement is easier to reason about when case order, guards, and the unmatched outcome make the decision boundary explicit.",
     "guidance": "Use patterns only when they clarify data shape, include a deliberate fallback where inputs can evolve, and avoid bindings whose later lifetime surprises readers.",
-    "tags": ["match", "pattern", "case", "fallback", "guard", "readability"],
+    "tags": [
+      "match",
+      "pattern",
+      "case",
+      "fallback",
+      "guard",
+      "readability"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.complete_pattern_fallbacks",
       "title": "Python reference — The match statement",
       "url": "https://docs.python.org/3/reference/compound_stmts.html#the-match-statement"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#the-match-statement",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "978bebeeed5c5cd894238c4927d6d27450d6f57dfee9ef5e044732b1fb31bc34"
   },
   {
     "id": "seed.rubric.readability_navigation_cost",
@@ -1096,14 +2422,34 @@
     "category": "readability",
     "summary": "A strong explanation identifies where a reader must jump between names, files, conditions, and comments to reconstruct one behavior.",
     "guidance": "Score higher when the candidate names a concrete navigation cost and proposes the smallest change that keeps related context together.",
-    "tags": ["rubric", "readability", "navigation", "context", "files", "cognitive"],
+    "tags": [
+      "rubric",
+      "readability",
+      "navigation",
+      "context",
+      "files",
+      "cognitive"
+    ],
     "item_type": "rubric",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.rubric.readability_navigation_cost",
-      "title": "Clutch interview rubric: navigation cost"
-    }
+      "title": "PEP 498 — Literal String Interpolation",
+      "url": "https://peps.python.org/pep-0498/#abstract"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#abstract",
+    "derived_from_ids": [
+      "seed.clean_code.explicit_string_formatting"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "dff4991285de7e8977f2fc92ffdeb02c9c9e74cbc9889da5a48cb9cc41409909"
   },
   {
     "id": "seed.question.readability_comment_removal",
@@ -1111,14 +2457,34 @@
     "category": "readability",
     "summary": "Ask which comment could be removed after making the underlying code communicate the same intent directly.",
     "guidance": "Look for a truthful mismatch, a naming or extraction improvement, and preservation of constraints that code alone cannot express.",
-    "tags": ["question", "readability", "comment", "intent", "naming", "extraction"],
+    "tags": [
+      "question",
+      "readability",
+      "comment",
+      "intent",
+      "naming",
+      "extraction"
+    ],
     "item_type": "question_bank",
-    "roles": ["general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.readability_comment_removal",
-      "title": "Clutch question bank: misleading comment"
-    }
+      "title": "PEP 20 — The Zen of Python",
+      "url": "https://peps.python.org/pep-0020/#the-zen-of-python"
+    },
+    "source_family": "python_pep",
+    "section_locator": "#the-zen-of-python",
+    "derived_from_ids": [
+      "seed.clean_code.explicit_over_implicit"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7b82f8933b0ec5401908cc1bbeb8bedadd8462ea59b8e6a87ad032f599c47de3"
   },
   {
     "id": "seed.clean_code.tolerant_float_comparison",
@@ -1126,15 +2492,34 @@
     "category": "correctness",
     "summary": "Direct floating-point equality can reject results that are numerically equivalent within the precision of the calculation.",
     "guidance": "Choose explicit relative and absolute tolerances from domain requirements, especially near zero, and test NaN and infinity behavior separately.",
-    "tags": ["float", "isclose", "tolerance", "numeric", "zero", "correctness"],
+    "tags": [
+      "float",
+      "isclose",
+      "tolerance",
+      "numeric",
+      "zero",
+      "correctness"
+    ],
     "item_type": "reference",
-    "roles": ["data", "backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "data",
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.tolerant_float_comparison",
       "title": "Python math.isclose documentation",
       "url": "https://docs.python.org/3/library/math.html#math.isclose"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#math.isclose",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a97ff603bcf4460b0877979e827db37644ae79b213f34d1cb01007f18cc0a24b"
   },
   {
     "id": "seed.clean_code.cancellation_propagation",
@@ -1142,15 +2527,34 @@
     "category": "correctness",
     "summary": "Swallowing task cancellation can break timeouts and structured-concurrency guarantees while leaving parent operations waiting.",
     "guidance": "Use finally for cleanup and normally re-raise CancelledError; only suppress it with an explicit contract that also handles cancellation state.",
-    "tags": ["asyncio", "cancelled", "cancellation", "timeout", "cleanup", "correctness"],
+    "tags": [
+      "asyncio",
+      "cancelled",
+      "cancellation",
+      "timeout",
+      "cleanup",
+      "correctness"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid", "senior"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid",
+      "senior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.cancellation_propagation",
       "title": "Python asyncio — Task cancellation",
       "url": "https://docs.python.org/3/library/asyncio-task.html#task-cancellation"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#task-cancellation",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "49c6ab55f698da28d2ee7eea749bb0dfe4a44af74de9a766bcfca79de7047bf6"
   },
   {
     "id": "seed.clean_code.atomic_file_replacement",
@@ -1158,15 +2562,34 @@
     "category": "correctness",
     "summary": "Writing a destination in place can expose partial content if a process fails or another reader observes the file mid-update.",
     "guidance": "Write and validate a temporary file on the same filesystem, flush it as durability requires, then replace the destination atomically.",
-    "tags": ["file", "atomic", "replace", "partial", "durability", "correctness"],
+    "tags": [
+      "file",
+      "atomic",
+      "replace",
+      "partial",
+      "durability",
+      "correctness"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.atomic_file_replacement",
       "title": "Python os.replace documentation",
       "url": "https://docs.python.org/3/library/os.html#os.replace"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#os.replace",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e0188c21669a34cb7b9660b1cf825e027b3f9bad4c8999f9cf464c795ba9311a"
   },
   {
     "id": "seed.clean_code.iterator_consumption_contract",
@@ -1174,15 +2597,34 @@
     "category": "correctness",
     "summary": "Iterators are stateful and may be single-pass, so inspecting or partially consuming one can change the result seen by later code.",
     "guidance": "Document ownership, avoid hidden preview passes, and materialize once only when repeated traversal and memory cost are both intentional.",
-    "tags": ["iterator", "consume", "exhausted", "single", "pass", "correctness"],
+    "tags": [
+      "iterator",
+      "consume",
+      "exhausted",
+      "single",
+      "pass",
+      "correctness"
+    ],
     "item_type": "reference",
-    "roles": ["data", "backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "data",
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.iterator_consumption_contract",
       "title": "Python itertools — iterator building blocks",
-      "url": "https://docs.python.org/3/library/itertools.html"
-    }
+      "url": "https://docs.python.org/3/library/itertools.html#itertools-recipes"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#itertools-recipes",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "0fed71addc9b92627a983c66508273527453e3f34667ae1ca0aa6264e84b04b2"
   },
   {
     "id": "seed.rubric.correctness_boundary_invariants",
@@ -1190,14 +2632,36 @@
     "category": "correctness",
     "summary": "A strong answer names what must be true before and after a file, network, concurrency, or numeric boundary is crossed.",
     "guidance": "Score higher when invariants cover failure and retry paths, not only the successful example, and map to an enforceable check.",
-    "tags": ["rubric", "correctness", "invariant", "boundary", "failure", "retry"],
+    "tags": [
+      "rubric",
+      "correctness",
+      "invariant",
+      "boundary",
+      "failure",
+      "retry"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "data", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "data",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.correctness_boundary_invariants",
-      "title": "Clutch interview rubric: boundary invariants"
-    }
+      "title": "Python copy — Shallow and deep copy operations",
+      "url": "https://docs.python.org/3/library/copy.html#module-copy"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-copy",
+    "derived_from_ids": [
+      "seed.clean_code.explicit_copy_semantics"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "583d48a1fbbe8c28353f5ad42c22a0cf0d631175688a96cc1bd6ea2749e511b9"
   },
   {
     "id": "seed.question.correctness_concurrent_failure",
@@ -1205,14 +2669,35 @@
     "category": "correctness",
     "summary": "Ask what happens to sibling work, partial results, cleanup, and the caller when one concurrent operation fails or is cancelled.",
     "guidance": "Look for explicit ownership, cancellation propagation, exception aggregation, bounded cleanup, and a clear result contract.",
-    "tags": ["question", "correctness", "concurrent", "failure", "cancellation", "cleanup"],
+    "tags": [
+      "question",
+      "correctness",
+      "concurrent",
+      "failure",
+      "cancellation",
+      "cleanup"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.correctness_concurrent_failure",
-      "title": "Clutch question bank: concurrent failure"
-    }
+      "title": "Python asyncio — Task Groups",
+      "url": "https://docs.python.org/3/library/asyncio-task.html#task-groups"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#task-groups",
+    "derived_from_ids": [
+      "seed.clean_code.structured_concurrency"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "f7b927287af0e1e3c9433ea242f9816be807331fd878b0ca728986af220e0b1a"
   },
   {
     "id": "seed.question.correctness_numeric_edges",
@@ -1220,14 +2705,36 @@
     "category": "correctness",
     "summary": "Ask which zero, sign, magnitude, rounding, infinity, or missing-value case is most likely to break the calculation.",
     "guidance": "Look for domain-driven bounds, a concrete counterexample, explicit tolerance or precision, and an assertion tied to the contract.",
-    "tags": ["question", "correctness", "numeric", "edge", "rounding", "tolerance"],
+    "tags": [
+      "question",
+      "correctness",
+      "numeric",
+      "edge",
+      "rounding",
+      "tolerance"
+    ],
     "item_type": "question_bank",
-    "roles": ["data", "backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "data",
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.correctness_numeric_edges",
-      "title": "Clutch question bank: numeric edge cases"
-    }
+      "title": "Python math.isclose documentation",
+      "url": "https://docs.python.org/3/library/math.html#math.isclose"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#math.isclose",
+    "derived_from_ids": [
+      "seed.clean_code.tolerant_float_comparison"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "ae2ca0c76a4bed73f91cabe966c5cf8c8d0f4cda8239b4ccd8df89551d5b8222"
   },
   {
     "id": "seed.clean_code.autospecced_test_doubles",
@@ -1235,15 +2742,33 @@
     "category": "testing",
     "summary": "An unconstrained mock can accept methods or call signatures that production dependencies do not provide, allowing tests to pass against fiction.",
     "guidance": "Use a spec or autospec at a collaboration boundary and assert behavior that matters without mirroring every internal call.",
-    "tags": ["mock", "autospec", "interface", "signature", "double", "testing"],
+    "tags": [
+      "mock",
+      "autospec",
+      "interface",
+      "signature",
+      "double",
+      "testing"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.autospecced_test_doubles",
       "title": "Python unittest.mock — Autospeccing",
       "url": "https://docs.python.org/3/library/unittest.mock.html#autospeccing"
-    }
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#autospeccing",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9a88eb3442a14e90616529df71f412ebcece1eb0cb23589af084f6e5e43d51a6"
   },
   {
     "id": "seed.clean_code.explicit_exception_assertions",
@@ -1251,15 +2776,33 @@
     "category": "testing",
     "summary": "A test that accepts any failure cannot distinguish the documented rejection from an unrelated implementation bug.",
     "guidance": "Assert the narrow exception type and meaningful message or attributes, then keep the action inside the smallest failure context.",
-    "tags": ["exception", "assert", "raises", "message", "contract", "testing"],
+    "tags": [
+      "exception",
+      "assert",
+      "raises",
+      "message",
+      "contract",
+      "testing"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.explicit_exception_assertions",
       "title": "Python unittest — testing for exceptions",
-      "url": "https://docs.python.org/3/library/unittest.html#testing-for-exceptions-warnings-and-log-messages"
-    }
+      "url": "https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.TestCase.assertRaises",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "1dd508ae564d30fcdcac344c0315a91eb7fd298358744f5cf4193c72ceb2ae79"
   },
   {
     "id": "seed.clean_code.parameterized_edge_cases",
@@ -1267,15 +2810,34 @@
     "category": "testing",
     "summary": "Parameterization keeps many input-output examples under one visible contract while preserving a distinct failing case for each value set.",
     "guidance": "Give cases descriptive identifiers, avoid conditional logic inside the test, and split scenarios when setup or expected behavior differs materially.",
-    "tags": ["pytest", "parametrize", "case", "input", "output", "testing"],
+    "tags": [
+      "pytest",
+      "parametrize",
+      "case",
+      "input",
+      "output",
+      "testing"
+    ],
     "item_type": "reference",
-    "roles": ["general", "backend", "data"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "general",
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.parameterized_edge_cases",
       "title": "pytest — How to parametrize fixtures and test functions",
-      "url": "https://docs.pytest.org/en/stable/how-to/parametrize.html"
-    }
+      "url": "https://docs.pytest.org/en/stable/how-to/parametrize.html#pytest-mark-parametrize-parametrizing-test-functions"
+    },
+    "source_family": "pytest_docs",
+    "section_locator": "#pytest-mark-parametrize-parametrizing-test-functions",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "e9f7aaaf620fc0e171fa5c2dd026a0ca53f462cf2d0882b158e8faab0287074f"
   },
   {
     "id": "seed.clean_code.isolated_temporary_paths",
@@ -1283,15 +2845,34 @@
     "category": "testing",
     "summary": "A unique temporary directory prevents filesystem tests from sharing artifacts, depending on developer paths, or deleting unrelated files.",
     "guidance": "Request a per-test path, create only the structure the scenario needs, and assert observable files without relying on execution order.",
-    "tags": ["pytest", "temporary", "path", "filesystem", "isolation", "testing"],
+    "tags": [
+      "pytest",
+      "temporary",
+      "path",
+      "filesystem",
+      "isolation",
+      "testing"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "data", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.isolated_temporary_paths",
       "title": "pytest — Temporary directories and files",
-      "url": "https://docs.pytest.org/en/stable/how-to/tmp_path.html"
-    }
+      "url": "https://docs.pytest.org/en/stable/how-to/tmp_path.html#the-tmp-path-fixture"
+    },
+    "source_family": "pytest_docs",
+    "section_locator": "#the-tmp-path-fixture",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "52fe9764d07f7450cbd7e6f70fe96931c5892c14a72c1c6086c000b32f107049"
   },
   {
     "id": "seed.rubric.testing_double_fidelity",
@@ -1299,14 +2880,35 @@
     "category": "testing",
     "summary": "A strong answer explains which dependency behavior the double must preserve and which details should remain outside the test.",
     "guidance": "Score higher when the candidate names contract drift risk, chooses a realistic boundary, and retains at least one integration check.",
-    "tags": ["rubric", "testing", "double", "mock", "contract", "integration"],
+    "tags": [
+      "rubric",
+      "testing",
+      "double",
+      "mock",
+      "contract",
+      "integration"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.testing_double_fidelity",
-      "title": "Clutch interview rubric: test-double fidelity"
-    }
+      "title": "Python unittest — assertRaises",
+      "url": "https://docs.python.org/3/library/unittest.html#unittest.TestCase.assertRaises"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.TestCase.assertRaises",
+    "derived_from_ids": [
+      "seed.clean_code.exception_contract_tests"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "d18dfa4607154660e789edc450bb7f21d3594e80980b28f9dbdd7150fe4bf1ff"
   },
   {
     "id": "seed.question.testing_property_invariant",
@@ -1314,14 +2916,36 @@
     "category": "testing",
     "summary": "Ask which property should remain true across a broad generated input space even when exact expected outputs vary.",
     "guidance": "Look for a domain invariant, constrained generators, minimal counterexamples, and examples retained for important named boundaries.",
-    "tags": ["question", "testing", "property", "invariant", "generated", "counterexample"],
+    "tags": [
+      "question",
+      "testing",
+      "property",
+      "invariant",
+      "generated",
+      "counterexample"
+    ],
     "item_type": "question_bank",
-    "roles": ["data", "backend", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "data",
+      "backend",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.testing_property_invariant",
-      "title": "Clutch question bank: property invariant"
-    }
+      "title": "Python unittest — IsolatedAsyncioTestCase",
+      "url": "https://docs.python.org/3/library/unittest.html#unittest.IsolatedAsyncioTestCase"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.IsolatedAsyncioTestCase",
+    "derived_from_ids": [
+      "seed.clean_code.isolated_async_tests"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "8a8772625e13aa9c855804b9961779210d18b8fdf209feee4ba27af51ece908e"
   },
   {
     "id": "seed.question.testing_integration_seam",
@@ -1329,14 +2953,36 @@
     "category": "testing",
     "summary": "Ask which collaboration should be exercised with a real implementation because a mock would hide the most damaging contract drift.",
     "guidance": "Look for serialization, query, network, or configuration behavior and a bounded test environment with diagnostic failure output.",
-    "tags": ["question", "testing", "integration", "seam", "contract", "drift"],
+    "tags": [
+      "question",
+      "testing",
+      "integration",
+      "seam",
+      "contract",
+      "drift"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform", "data"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "data"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.testing_integration_seam",
-      "title": "Clutch question bank: integration seam"
-    }
+      "title": "Python unittest.mock — Autospeccing",
+      "url": "https://docs.python.org/3/library/unittest.mock.html#autospeccing"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#autospeccing",
+    "derived_from_ids": [
+      "seed.clean_code.autospecced_test_doubles"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7eee38347d0987fb49596b392cb7b0548f81872a55213c39457978ecff9104e6"
   },
   {
     "id": "seed.clean_code.structural_protocols",
@@ -1344,15 +2990,34 @@
     "category": "design",
     "summary": "A protocol can describe the behavior a consumer needs without forcing implementations into an inheritance hierarchy.",
     "guidance": "Keep protocols consumer-owned and small, use runtime checks only when required, and avoid copying the full surface of a concrete dependency.",
-    "tags": ["protocol", "structural", "typing", "interface", "dependency", "design"],
+    "tags": [
+      "protocol",
+      "structural",
+      "typing",
+      "interface",
+      "dependency",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform", "library"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "library"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.structural_protocols",
       "title": "Python typing — Protocols",
       "url": "https://docs.python.org/3/library/typing.html#typing.Protocol"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#typing.Protocol",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4e75a3890ca39468454992bef100407bbfe9ef03634826e3eba9c483e9462e3a"
   },
   {
     "id": "seed.clean_code.single_dispatch_extension",
@@ -1360,15 +3025,34 @@
     "category": "design",
     "summary": "Single dispatch can keep type-specific behavior in registered implementations while preserving one explicit generic operation.",
     "guidance": "Use it when dispatch truly depends on the first argument's type, provide a safe base implementation, and keep registrations discoverable.",
-    "tags": ["singledispatch", "dispatch", "extension", "type", "generic", "design"],
+    "tags": [
+      "singledispatch",
+      "dispatch",
+      "extension",
+      "type",
+      "generic",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["library", "backend", "data"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "library",
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.single_dispatch_extension",
       "title": "Python functools.singledispatch documentation",
       "url": "https://docs.python.org/3/library/functools.html#functools.singledispatch"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#functools.singledispatch",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4e4fb70902bac89702929ee44fb7ffb3c41617a9e2b231606c26d53fc6f34a0a"
   },
   {
     "id": "seed.clean_code.minimal_collection_contracts",
@@ -1376,15 +3060,35 @@
     "category": "design",
     "summary": "Accepting a narrow sequence, mapping, iterable, or callable contract preserves more valid implementations than requiring one concrete container.",
     "guidance": "Choose the operations the consumer actually needs, account for iterator single-pass behavior, and avoid a mutable contract for read-only use.",
-    "tags": ["collection", "abc", "iterable", "mapping", "sequence", "design"],
+    "tags": [
+      "collection",
+      "abc",
+      "iterable",
+      "mapping",
+      "sequence",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["library", "backend", "data", "general"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "library",
+      "backend",
+      "data",
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.minimal_collection_contracts",
       "title": "Python collections.abc documentation",
-      "url": "https://docs.python.org/3/library/collections.abc.html"
-    }
+      "url": "https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#collections-abstract-base-classes",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "70d45fd556c8feeec6e14288d57ffb974c87e1f0cbe1d2aee3382c3752a70d1e"
   },
   {
     "id": "seed.clean_code.readonly_mapping_views",
@@ -1392,15 +3096,34 @@
     "category": "design",
     "summary": "A read-only mapping view communicates that callers may observe current values but do not own mutation of the underlying state.",
     "guidance": "Use an immutable copy when snapshots are required and a proxy only when a live view is intentional and documented.",
-    "tags": ["mapping", "readonly", "proxy", "mutation", "ownership", "design"],
+    "tags": [
+      "mapping",
+      "readonly",
+      "proxy",
+      "mutation",
+      "ownership",
+      "design"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "library", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "library",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.readonly_mapping_views",
       "title": "Python types.MappingProxyType documentation",
       "url": "https://docs.python.org/3/library/types.html#types.MappingProxyType"
-    }
+    },
+    "source_family": "python_docs",
+    "section_locator": "#types.MappingProxyType",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4e97cf337aaeca9c5896e9cb24fa013fe09d50e1ce602e9b636cd3ceae9d7ba5"
   },
   {
     "id": "seed.rubric.design_extension_pressure",
@@ -1408,14 +3131,36 @@
     "category": "design",
     "summary": "A strong answer chooses inheritance, registration, composition, or a protocol from a concrete change pressure rather than habit.",
     "guidance": "Score higher when the candidate names expected variants, ownership of extension, compatibility constraints, and the simplest adequate mechanism.",
-    "tags": ["rubric", "design", "extension", "protocol", "composition", "inheritance"],
+    "tags": [
+      "rubric",
+      "design",
+      "extension",
+      "protocol",
+      "composition",
+      "inheritance"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform", "library"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "library"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.design_extension_pressure",
-      "title": "Clutch interview rubric: extension pressure"
-    }
+      "title": "Python enum documentation",
+      "url": "https://docs.python.org/3/library/enum.html#module-enum"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-enum",
+    "derived_from_ids": [
+      "seed.clean_code.closed_choices_with_enum"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "64f117261da31ff21a220fb82553f24f2fddef3d1987c639fe2e8034c6d83848"
   },
   {
     "id": "seed.question.design_data_shape_growth",
@@ -1423,14 +3168,35 @@
     "category": "design",
     "summary": "Ask what changes when a record gains optional fields, versioned variants, or values from an external producer.",
     "guidance": "Look for construction invariants, backward compatibility, parsing ownership, unknown-value behavior, and migration tests.",
-    "tags": ["question", "design", "data", "shape", "version", "compatibility"],
+    "tags": [
+      "question",
+      "design",
+      "data",
+      "shape",
+      "version",
+      "compatibility"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "data"],
-    "seniority_levels": ["intern", "junior"],
+    "roles": [
+      "backend",
+      "data"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
     "citation": {
       "source_id": "seed.question.design_data_shape_growth",
-      "title": "Clutch question bank: data-shape evolution"
-    }
+      "title": "Python abc — Abstract Base Classes",
+      "url": "https://docs.python.org/3/library/abc.html#module-abc"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-abc",
+    "derived_from_ids": [
+      "seed.clean_code.abstract_behavior_contracts"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "f2ea3fb60e34d3dc330b3ea4f9df60a86268094000e13fb132cb3719598f52fc"
   },
   {
     "id": "seed.question.design_ownership_boundary",
@@ -1438,14 +3204,36 @@
     "category": "design",
     "summary": "Ask which component owns creating, changing, and publishing a shared piece of state when multiple callers need to observe it.",
     "guidance": "Look for one authoritative owner, explicit read and write contracts, concurrency implications, and tests around state transitions.",
-    "tags": ["question", "design", "ownership", "mutation", "state", "boundary"],
+    "tags": [
+      "question",
+      "design",
+      "ownership",
+      "mutation",
+      "state",
+      "boundary"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform", "general"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "general"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.design_ownership_boundary",
-      "title": "Clutch question bank: mutation ownership"
-    }
+      "title": "Python typing — Protocols",
+      "url": "https://docs.python.org/3/library/typing.html#typing.Protocol"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#typing.Protocol",
+    "derived_from_ids": [
+      "seed.clean_code.structural_protocols"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "37244f86f444c6ddb20f4002c16e1c7bfbb5c0b909e31edd7a0985745135053a"
   },
   {
     "id": "seed.clean_code.password_hashing",
@@ -1453,15 +3241,34 @@
     "category": "security",
     "summary": "Passwords require salted, deliberately expensive password-hashing algorithms rather than plaintext, reversible encryption, or fast general hashes.",
     "guidance": "Use a maintained Argon2id, scrypt, bcrypt, or PBKDF2 implementation with current parameters and plan how work factors are upgraded.",
-    "tags": ["password", "hash", "argon2", "salt", "work", "security"],
+    "tags": [
+      "password",
+      "hash",
+      "argon2",
+      "salt",
+      "work",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.password_hashing",
       "title": "OWASP Password Storage Cheat Sheet",
-      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
-    }
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#password-hashing-algorithms"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#password-hashing-algorithms",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9d6b8fa2750ff15dcffb6c676d47a6a911c4766a6af6c48b6ae8c25e7da7cccd"
   },
   {
     "id": "seed.clean_code.ssrf_destination_policy",
@@ -1469,15 +3276,35 @@
     "category": "security",
     "summary": "A server that fetches a user-controlled destination can become a proxy to internal services, metadata endpoints, or unintended protocols.",
     "guidance": "Prefer an allowlist of required destinations, validate resolved addresses and schemes, disable redirects when they bypass validation, and add network controls.",
-    "tags": ["ssrf", "url", "network", "destination", "allowlist", "security"],
+    "tags": [
+      "ssrf",
+      "url",
+      "network",
+      "destination",
+      "allowlist",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["junior", "mid", "senior"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid",
+      "senior"
+    ],
     "citation": {
       "source_id": "seed.clean_code.ssrf_destination_policy",
       "title": "OWASP Server Side Request Forgery Prevention Cheat Sheet",
-      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
-    }
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html#application-layer"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#application-layer",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3f49e11d0811b77417e25c91e4ba1f67e0f43ceaf43e9e79bbc805f72a093704"
   },
   {
     "id": "seed.clean_code.sensitive_log_exclusion",
@@ -1485,15 +3312,35 @@
     "category": "security",
     "summary": "Logs often outlive requests and reach broader audiences, so source code, tokens, passwords, keys, and sensitive personal data should not be recorded directly.",
     "guidance": "Log only necessary metadata, mask or hash identifiers when appropriate, sanitize delimiter characters, and test redaction at every logging boundary.",
-    "tags": ["logging", "secret", "redaction", "token", "source", "security"],
+    "tags": [
+      "logging",
+      "secret",
+      "redaction",
+      "token",
+      "source",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.sensitive_log_exclusion",
       "title": "OWASP Logging Cheat Sheet — Data to exclude",
       "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#data-to-exclude"
-    }
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#data-to-exclude",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2c4850e0eef163c18ba53c863614bf8fa679a97b14c16e64db9dc00e3a625638"
   },
   {
     "id": "seed.clean_code.upload_filename_isolation",
@@ -1501,15 +3348,34 @@
     "category": "security",
     "summary": "An uploaded filename, extension, and content type are attacker-controlled and can create traversal, overwrite, executable-content, or resource-exhaustion risks.",
     "guidance": "Generate storage names, allowlist extensions and signatures, cap size, store outside executable paths, and scan or transform content as the use case requires.",
-    "tags": ["upload", "file", "filename", "path", "extension", "security"],
+    "tags": [
+      "upload",
+      "file",
+      "filename",
+      "path",
+      "extension",
+      "security"
+    ],
     "item_type": "reference",
-    "roles": ["backend", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.clean_code.upload_filename_isolation",
       "title": "OWASP File Upload Cheat Sheet",
-      "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html"
-    }
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html#file-upload-protection"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#file-upload-protection",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "4c13a3aad822252dc05db0ae7cdfc16b6caa3e0956716aaa208aae502b493d9d"
   },
   {
     "id": "seed.rubric.security_abuse_case",
@@ -1517,14 +3383,36 @@
     "category": "security",
     "summary": "A strong answer follows one attacker-controlled value through parsing, authorization, side effects, storage, and observation.",
     "guidance": "Score higher when the candidate names a realistic attacker goal, trust transition, layered controls, residual risk, and a verification method.",
-    "tags": ["rubric", "security", "abuse", "attacker", "trust", "verification"],
+    "tags": [
+      "rubric",
+      "security",
+      "abuse",
+      "attacker",
+      "trust",
+      "verification"
+    ],
     "item_type": "rubric",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.rubric.security_abuse_case",
-      "title": "Clutch interview rubric: abuse-case reasoning"
-    }
+      "title": "Python hmac.compare_digest documentation",
+      "url": "https://docs.python.org/3/library/hmac.html#hmac.compare_digest"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#hmac.compare_digest",
+    "derived_from_ids": [
+      "seed.clean_code.constant_time_secret_comparison"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7a824df14827a90ba8a9460ffa462e80af6ab24385e6a7257afdf42352f1546f"
   },
   {
     "id": "seed.question.security_credential_compromise",
@@ -1532,14 +3420,36 @@
     "category": "security",
     "summary": "Ask what an attacker can reach with one exposed credential and how the system detects, revokes, rotates, and recovers from that exposure.",
     "guidance": "Look for least privilege, short lifetime, audit evidence, dependent-secret rotation, incident ownership, and a rehearsed recovery path.",
-    "tags": ["question", "security", "credential", "compromise", "revoke", "rotate"],
+    "tags": [
+      "question",
+      "security",
+      "credential",
+      "compromise",
+      "revoke",
+      "rotate"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "platform", "security"],
-    "seniority_levels": ["junior", "mid"],
+    "roles": [
+      "backend",
+      "platform",
+      "security"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.security_credential_compromise",
-      "title": "Clutch question bank: credential compromise"
-    }
+      "title": "Python pickle warning",
+      "url": "https://docs.python.org/3/library/pickle.html#module-pickle"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#module-pickle",
+    "derived_from_ids": [
+      "seed.clean_code.untrusted_deserialization"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "31b0ba75553dd60fa59b9763fec8c2ede051f8ef0a975c8f45f45fb27c4a52ba"
   },
   {
     "id": "seed.question.security_malicious_file",
@@ -1547,13 +3457,716 @@
     "category": "security",
     "summary": "Ask how a crafted filename or file body could cross validation, storage, parser, preview, and download boundaries.",
     "guidance": "Look for independent name and content validation, bounded resources, isolated storage and processing, safe serving, and observable rejection.",
-    "tags": ["question", "security", "upload", "file", "malicious", "validation"],
+    "tags": [
+      "question",
+      "security",
+      "upload",
+      "file",
+      "malicious",
+      "validation"
+    ],
     "item_type": "question_bank",
-    "roles": ["backend", "security"],
-    "seniority_levels": ["intern", "junior", "mid"],
+    "roles": [
+      "backend",
+      "security"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
     "citation": {
       "source_id": "seed.question.security_malicious_file",
-      "title": "Clutch question bank: malicious upload"
-    }
+      "title": "OWASP Password Storage Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#password-hashing-algorithms"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#password-hashing-algorithms",
+    "derived_from_ids": [
+      "seed.clean_code.password_hashing"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9d721cac1b873579cbfd8d61d1a369498b6aa315002bafc6a9923c3d0da9f082"
+  },
+  {
+    "id": "seed.clean_code.informative_change_context",
+    "title": "Record why a change exists",
+    "category": "maintainability",
+    "summary": "Change descriptions should preserve the problem, rationale, and relevant tradeoffs for future maintainers.",
+    "guidance": "Ask whether someone reading history later could understand why the implementation and its constraints were chosen.",
+    "tags": [
+      "history",
+      "rationale",
+      "tradeoff",
+      "change",
+      "maintenance"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Body is Informative",
+      "url": "https://google.github.io/eng-practices/review/developer/cl-descriptions.html#informative",
+      "source_id": "seed.clean_code.informative_change_context"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#informative",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "0b02b21a0965175977273faf9fe41d4a1e9db5dde896dc5fa91b67841c6696b8"
+  },
+  {
+    "id": "seed.clean_code.focused_change_scope",
+    "title": "Keep changes focused and independently reviewable",
+    "category": "maintainability",
+    "summary": "A self-contained change that addresses one concern is easier to understand, test, merge, and reverse.",
+    "guidance": "Prefer a sequence of working increments whose implications can each be reviewed without hidden follow-up work.",
+    "tags": [
+      "scope",
+      "change",
+      "review",
+      "rollback",
+      "increment"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — What is Small?",
+      "url": "https://google.github.io/eng-practices/review/developer/small-cls.html#what-is-small",
+      "source_id": "seed.clean_code.focused_change_scope"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#what-is-small",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "c04b61dedcab978b43d5e52b38254d774962db6b8580b50cfc90fa2080940c7b"
+  },
+  {
+    "id": "seed.clean_code.reviewable_names",
+    "title": "Choose names that communicate behavior",
+    "category": "readability",
+    "summary": "A useful name communicates what an item does without becoming difficult to scan.",
+    "guidance": "Evaluate names in their calling context and prefer domain meaning over implementation shorthand.",
+    "tags": [
+      "name",
+      "naming",
+      "domain",
+      "readability",
+      "handoff"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Naming",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#naming",
+      "source_id": "seed.clean_code.reviewable_names"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#naming",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3aed0645c0aed8545ddacaa10d2e92986cb77fb68745c7abc4292137d982c87b"
+  },
+  {
+    "id": "seed.clean_code.comments_explain_why",
+    "title": "Use comments for reasoning the code cannot express",
+    "category": "readability",
+    "summary": "Comments are most useful when they explain intent or constraints rather than narrating straightforward operations.",
+    "guidance": "Simplify unclear code first, then keep comments that preserve decisions, caveats, or non-obvious algorithms.",
+    "tags": [
+      "comment",
+      "why",
+      "intent",
+      "constraint",
+      "readability"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Comments",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#comments",
+      "source_id": "seed.clean_code.comments_explain_why"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#comments",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "1f52ad57e06c32d346b67100f18a6a35e15c861711d6cf8c178e7256c82c2eb1"
+  },
+  {
+    "id": "seed.clean_code.review_user_edge_cases",
+    "title": "Review functionality from the user's boundary",
+    "category": "correctness",
+    "summary": "Correctness review should test intended behavior against user impact, edge cases, and concurrency risks.",
+    "guidance": "State the observable contract and search for inputs or interleavings that violate it before accepting the happy path.",
+    "tags": [
+      "edge",
+      "user",
+      "contract",
+      "concurrency",
+      "correctness"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Functionality",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#functionality",
+      "source_id": "seed.clean_code.review_user_edge_cases"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#functionality",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "7495731a2c89268205499b23bf90fed807d8894c2906166da0bc97821122e9dc"
+  },
+  {
+    "id": "seed.clean_code.bounded_async_timeout",
+    "title": "Bound asynchronous waiting",
+    "category": "correctness",
+    "summary": "A timeout makes an asynchronous wait's cancellation and failure boundary explicit.",
+    "guidance": "Choose a timeout at the owning boundary and handle timeout or cancellation without leaving partial work behind.",
+    "tags": [
+      "async",
+      "timeout",
+      "cancel",
+      "failure",
+      "boundary"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Python asyncio — Timeouts",
+      "url": "https://docs.python.org/3/library/asyncio-task.html#timeouts",
+      "source_id": "seed.clean_code.bounded_async_timeout"
+    },
+    "source_family": "python_docs",
+    "section_locator": "#timeouts",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "40c515431cc968a12b73fa15d3bcaa12f2a21f913bc85b95ab93d4369df7663c"
+  },
+  {
+    "id": "seed.clean_code.pytest_exception_context",
+    "title": "Assert the relevant exception contract",
+    "category": "testing",
+    "summary": "Exception tests should assert the expected exception type and, when meaningful, the relevant error context.",
+    "guidance": "Keep the raising operation narrow so an unrelated earlier failure cannot make the test pass accidentally.",
+    "tags": [
+      "pytest",
+      "raises",
+      "exception",
+      "contract",
+      "assertion"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "pytest — Assertions about expected exceptions",
+      "url": "https://docs.pytest.org/en/stable/how-to/assert.html#assertions-about-expected-exceptions",
+      "source_id": "seed.clean_code.pytest_exception_context"
+    },
+    "source_family": "pytest_docs",
+    "section_locator": "#assertions-about-expected-exceptions",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "97abbd2faee450ed66cc2f7fb04de9020283b097748330d0fbd873b6e3e42e91"
+  },
+  {
+    "id": "seed.clean_code.mock_interaction_contract",
+    "title": "Assert only meaningful collaborator interactions",
+    "category": "testing",
+    "summary": "Mock assertions can verify a collaborator boundary when the interaction itself is part of the behavior contract.",
+    "guidance": "Avoid mirroring implementation detail; assert calls only where their arguments or count are observable obligations.",
+    "tags": [
+      "mock",
+      "call",
+      "contract",
+      "interaction",
+      "test-double"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "Python unittest.mock — assert_called_once_with",
+      "url": "https://docs.python.org/3/library/unittest.mock.html#unittest.mock.Mock.assert_called_once_with",
+      "source_id": "seed.clean_code.mock_interaction_contract"
+    },
+    "source_family": "unittest_docs",
+    "section_locator": "#unittest.mock.Mock.assert_called_once_with",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a8d088ddd5587d3f7500f437acd7ee36c9f5b4eedca4d5816e2cc94a3cd8b12c"
+  },
+  {
+    "id": "seed.clean_code.avoid_speculative_generality",
+    "title": "Avoid complexity for hypothetical requirements",
+    "category": "design",
+    "summary": "Generalization without a present requirement increases reading and modification cost before its value is known.",
+    "guidance": "Solve the current requirement with the smallest coherent design and name the evidence that would justify extension.",
+    "tags": [
+      "complexity",
+      "over-engineering",
+      "generality",
+      "requirement",
+      "design"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid",
+      "senior"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Complexity",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity",
+      "source_id": "seed.clean_code.avoid_speculative_generality"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#complexity",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "2d6a9e698b261c2d3ef34fa13908ef60154ead53a9112c27ae5aa2e677de51b2"
+  },
+  {
+    "id": "seed.clean_code.review_system_context",
+    "title": "Evaluate a change in its system context",
+    "category": "design",
+    "summary": "A locally plausible change can still weaken the surrounding module or system through accumulated complexity.",
+    "guidance": "Review the whole owner, neighboring behavior, and system-level code health rather than only the changed lines.",
+    "tags": [
+      "context",
+      "system",
+      "cohesion",
+      "complexity",
+      "design"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "general",
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "junior",
+      "mid",
+      "senior"
+    ],
+    "citation": {
+      "title": "Google Engineering Practices — Context",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#context",
+      "source_id": "seed.clean_code.review_system_context"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#context",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "a051196be900564b456cbea0d953d340352752efc1b0c0ec69ea00e96522bb75"
+  },
+  {
+    "id": "seed.clean_code.secret_lifecycle_controls",
+    "title": "Control the complete secret lifecycle",
+    "category": "security",
+    "summary": "Secrets need controlled creation, storage, distribution, rotation, revocation, and expiration.",
+    "guidance": "Trace which identities can access a secret, where it can leak, and how compromise can be contained without source changes.",
+    "tags": [
+      "secret",
+      "credential",
+      "rotation",
+      "revocation",
+      "lifecycle"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "OWASP Secrets Management Cheat Sheet — Introduction",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html#1-introduction",
+      "source_id": "seed.clean_code.secret_lifecycle_controls"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#1-introduction",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "55953de62b6fd1f4c936a638449948d71a5ded8a4ae1fb4db210f1d36faba575"
+  },
+  {
+    "id": "seed.clean_code.authentication_error_boundaries",
+    "title": "Keep authentication failures non-enumerating",
+    "category": "security",
+    "summary": "Authentication errors should not reveal whether a specific account, secret, or factor was valid.",
+    "guidance": "Use consistent public errors while retaining privacy-safe internal diagnostics for operators.",
+    "tags": [
+      "authentication",
+      "error",
+      "enumeration",
+      "identity",
+      "boundary"
+    ],
+    "item_type": "reference",
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior",
+      "mid"
+    ],
+    "citation": {
+      "title": "OWASP Authentication Cheat Sheet — Authentication Responses",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#authentication-responses",
+      "source_id": "seed.clean_code.authentication_error_boundaries"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#authentication-responses",
+    "derived_from_ids": [],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "f9e9a40c70a3f05ee7eed5b42aafb527ac60cfbcd25eab8877c3d7af2a4a444c"
+  },
+  {
+    "id": "seed.question.maintainability_history",
+    "title": "Explain the maintenance history",
+    "category": "maintainability",
+    "summary": "Ask what a future maintainer must learn from the change record that code alone cannot show.",
+    "guidance": "Require a concrete rationale, constraint, and known limitation rather than a generic description.",
+    "tags": [
+      "question",
+      "history",
+      "rationale",
+      "maintainability"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.maintainability_history",
+      "title": "Google Engineering Practices — Body is Informative",
+      "url": "https://google.github.io/eng-practices/review/developer/cl-descriptions.html#informative"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#informative",
+    "derived_from_ids": [
+      "seed.clean_code.informative_change_context"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3a38db4afa02fe0b481446b19673b00923e9e73fddd19da052705aeadcfcaaa6"
+  },
+  {
+    "id": "seed.question.maintainability_split",
+    "title": "Split the change safely",
+    "category": "maintainability",
+    "summary": "Ask how to divide the work into reviewable increments without leaving the system broken between steps.",
+    "guidance": "Look for coherent boundaries, related tests, dependency order, and rollback safety.",
+    "tags": [
+      "question",
+      "scope",
+      "increment",
+      "rollback",
+      "maintainability"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.maintainability_split",
+      "title": "Google Engineering Practices — What is Small?",
+      "url": "https://google.github.io/eng-practices/review/developer/small-cls.html#what-is-small"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#what-is-small",
+    "derived_from_ids": [
+      "seed.clean_code.focused_change_scope"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "489d308e5dfcb4949553f8f186c30152977183888efa2db53d4f10da99cc8cd1"
+  },
+  {
+    "id": "seed.question.readability_name_context",
+    "title": "Defend a name in calling context",
+    "category": "readability",
+    "summary": "Ask the candidate to compare a proposed name at its declaration and at representative call sites.",
+    "guidance": "A strong answer connects the name to domain behavior and scanning cost.",
+    "tags": [
+      "question",
+      "naming",
+      "context",
+      "readability"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.readability_name_context",
+      "title": "Google Engineering Practices — Naming",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#naming"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#naming",
+    "derived_from_ids": [
+      "seed.clean_code.reviewable_names"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "fc19b10065c3381980ae3291bd0d6e87aa7d0e0e9ec1e5de30ed817983780916"
+  },
+  {
+    "id": "seed.question.readability_comment_why",
+    "title": "Separate useful intent from narration",
+    "category": "readability",
+    "summary": "Ask which comment should be removed, converted into clearer code, or retained as design rationale.",
+    "guidance": "Require the candidate to explain what information cannot be expressed by names and structure alone.",
+    "tags": [
+      "question",
+      "comment",
+      "intent",
+      "readability"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.readability_comment_why",
+      "title": "Google Engineering Practices — Comments",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#comments"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#comments",
+    "derived_from_ids": [
+      "seed.clean_code.comments_explain_why"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "3fc24c18abf10a49afa33914ccfdbfa0b9a475e6b48334a9f4b7d2d90837c25f"
+  },
+  {
+    "id": "seed.question.correctness_user_boundary",
+    "title": "Find a user-visible counterexample",
+    "category": "correctness",
+    "summary": "Ask for an input or interleaving that violates the claimed behavior at a user-observable boundary.",
+    "guidance": "A strong answer states the invariant, counterexample, and a test that would expose it.",
+    "tags": [
+      "question",
+      "edge",
+      "counterexample",
+      "contract",
+      "correctness"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.correctness_user_boundary",
+      "title": "Google Engineering Practices — Functionality",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#functionality"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#functionality",
+    "derived_from_ids": [
+      "seed.clean_code.review_user_edge_cases"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "9667df00a9ec29d8d99611710c9b093b25cf57ae3f08e0c7cb66d05015af1257"
+  },
+  {
+    "id": "seed.question.testing_false_positive",
+    "title": "Show that a test can fail for the right reason",
+    "category": "testing",
+    "summary": "Ask how the candidate would prove a test detects the intended regression instead of passing accidentally.",
+    "guidance": "Look for mutation of the relevant behavior, narrow assertions, and control of unrelated failure paths.",
+    "tags": [
+      "question",
+      "test",
+      "false-positive",
+      "assertion",
+      "testing"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.testing_false_positive",
+      "title": "pytest — Assertions about expected exceptions",
+      "url": "https://docs.pytest.org/en/stable/how-to/assert.html#assertions-about-expected-exceptions"
+    },
+    "source_family": "pytest_docs",
+    "section_locator": "#assertions-about-expected-exceptions",
+    "derived_from_ids": [
+      "seed.clean_code.pytest_exception_context"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "1cb307fbe16d0d7d08507f447bc0707c3e8a6665bec19d25ad4adb5bf20b6e60"
+  },
+  {
+    "id": "seed.question.design_current_requirement",
+    "title": "Remove speculative flexibility",
+    "category": "design",
+    "summary": "Ask which abstraction can be removed until a concrete second requirement exists.",
+    "guidance": "A strong answer distinguishes current variation from hypothetical future variation and preserves a clean extension seam.",
+    "tags": [
+      "question",
+      "complexity",
+      "abstraction",
+      "requirement",
+      "design"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "general",
+      "backend"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.design_current_requirement",
+      "title": "Google Engineering Practices — Complexity",
+      "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html#complexity"
+    },
+    "source_family": "google_engineering_practices",
+    "section_locator": "#complexity",
+    "derived_from_ids": [
+      "seed.clean_code.avoid_speculative_generality"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "b2a0b696b307019abb56948208499d13cf0b938fc53c904b10d93f074bac3d5c"
+  },
+  {
+    "id": "seed.question.security_generic_error",
+    "title": "Design a safe authentication failure",
+    "category": "security",
+    "summary": "Ask what the caller and operator should each learn when authentication fails.",
+    "guidance": "Require non-enumerating public feedback plus bounded internal diagnostics with no secret material.",
+    "tags": [
+      "question",
+      "authentication",
+      "enumeration",
+      "error",
+      "security"
+    ],
+    "item_type": "question_bank",
+    "roles": [
+      "backend",
+      "platform"
+    ],
+    "seniority_levels": [
+      "intern",
+      "junior"
+    ],
+    "citation": {
+      "source_id": "seed.question.security_generic_error",
+      "title": "OWASP Authentication Cheat Sheet — Authentication Responses",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#authentication-responses"
+    },
+    "source_family": "owasp_cheat_sheet",
+    "section_locator": "#authentication-responses",
+    "derived_from_ids": [
+      "seed.clean_code.authentication_error_boundaries"
+    ],
+    "corpus_version": "2026-09-09.v1",
+    "content_sha256": "8b17ad37bad7d1dfbe35f552dabc5e48ad2f0ee912092c82571955e3d1c631b1"
   }
 ]

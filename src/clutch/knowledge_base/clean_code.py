@@ -1,17 +1,38 @@
 """Validated local knowledge corpus and deterministic lexical retrieval."""
 
+import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from clutch.schemas import Citation, FindingCategory
 
 KnowledgeItemKind = Literal["reference", "rubric", "question_bank"]
 SeniorityLevel = Literal["intern", "junior", "mid", "senior"]
+SourceFamily = Literal[
+    "python_docs",
+    "python_pep",
+    "owasp_cheat_sheet",
+    "pytest_docs",
+    "unittest_docs",
+    "google_engineering_practices",
+    "google_python_style",
+]
 CORPUS_PATH = Path(__file__).with_name("corpus.json")
+EXPECTED_CORPUS_VERSION = "2026-09-09.v1"
+EXPECTED_TYPE_COUNTS = {"reference": 72, "rubric": 18, "question_bank": 30}
+ALLOWED_SOURCE_HOSTS = {
+    "docs.python.org",
+    "peps.python.org",
+    "cheatsheetseries.owasp.org",
+    "docs.pytest.org",
+    "google.github.io",
+}
 _STOP_WORDS = {
     "a",
     "an",
@@ -75,6 +96,35 @@ class CleanCodePrinciple(BaseModel):
         default_factory=_default_seniority_levels
     )
     citation: Citation
+    source_family: SourceFamily
+    section_locator: str = Field(..., pattern=r"^#[A-Za-z0-9._:-]+$")
+    corpus_version: str = Field(..., min_length=1)
+    content_sha256: str = Field(..., pattern=r"^[a-f0-9]{64}$")
+    derived_from_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_source_provenance(self) -> "CleanCodePrinciple":
+        if self.corpus_version != EXPECTED_CORPUS_VERSION:
+            raise ValueError("knowledge item uses an unexpected corpus version")
+        if not self.citation.url:
+            raise ValueError("knowledge item citation requires an anchored URL")
+        parsed = urlparse(self.citation.url)
+        if parsed.scheme != "https" or parsed.netloc not in ALLOWED_SOURCE_HOSTS:
+            raise ValueError("knowledge item citation source is not allowlisted")
+        if f"#{parsed.fragment}" != self.section_locator:
+            raise ValueError("section locator must match the citation URL anchor")
+        expected_hash = hashlib.sha256(
+            f"{self.summary}\n{self.guidance}".encode()
+        ).hexdigest()
+        if self.content_sha256 != expected_hash:
+            raise ValueError("knowledge item content hash is stale")
+        if self.item_type == "reference" and self.derived_from_ids:
+            raise ValueError("authoritative references cannot derive from corpus items")
+        if self.item_type != "reference" and not self.derived_from_ids:
+            raise ValueError("rubrics and questions require an authoritative derivation")
+        if len(self.derived_from_ids) != len(set(self.derived_from_ids)):
+            raise ValueError("derived knowledge IDs must be unique")
+        return self
 
 
 def load_clean_code_corpus(path: Path = CORPUS_PATH) -> tuple[CleanCodePrinciple, ...]:
@@ -96,6 +146,30 @@ def load_clean_code_corpus(path: Path = CORPUS_PATH) -> tuple[CleanCodePrinciple
         raise ValueError(
             "knowledge corpus citation IDs must match item IDs: "
             + ", ".join(mismatches)
+        )
+    type_counts = Counter(principle.item_type for principle in principles)
+    if type_counts != EXPECTED_TYPE_COUNTS:
+        raise ValueError(
+            f"knowledge corpus item-type balance must be {EXPECTED_TYPE_COUNTS}"
+        )
+    category_counts = Counter(principle.category for principle in principles)
+    if any(category_counts[category] != 20 for category in category_counts):
+        raise ValueError("knowledge corpus must contain 20 items per category")
+    by_id = {principle.id: principle for principle in principles}
+    invalid_derivations = []
+    for principle in principles:
+        for source_id in principle.derived_from_ids:
+            source = by_id.get(source_id)
+            if (
+                source is None
+                or source.item_type != "reference"
+                or source.category != principle.category
+            ):
+                invalid_derivations.append(f"{principle.id}->{source_id}")
+    if invalid_derivations:
+        raise ValueError(
+            "knowledge derivations must target same-category references: "
+            + ", ".join(invalid_derivations)
         )
     return principles
 

@@ -1,4 +1,5 @@
 import asyncio
+from hashlib import sha256
 
 from clutch.cache import InMemoryJsonCache, cache_key
 from clutch.knowledge_base import CleanCodePrinciple
@@ -18,18 +19,27 @@ class CountingRetriever:
         limit: int = 3,
     ) -> list[CleanCodePrinciple]:
         self.calls += 1
+        summary = "Cache safe derived knowledge."
+        guidance = "Never use raw source in a cache key."
         return [
             CleanCodePrinciple(
                 id="cache.principle",
                 title="Cache principle",
                 category="testing",
-                summary="Cache safe derived knowledge.",
-                guidance="Never use raw source in a cache key.",
+                summary=summary,
+                guidance=guidance,
                 tags=["cache"],
                 citation=Citation(
                     source_id="cache.principle",
                     title="Cache principle",
+                    url="https://docs.python.org/3/library/hashlib.html#hash-algorithms",
                 ),
+                source_family="python_docs",
+                section_locator="#hash-algorithms",
+                corpus_version="2026-09-09.v1",
+                content_sha256=sha256(
+                    f"{summary}\n{guidance}".encode()
+                ).hexdigest(),
             )
         ][:limit]
 

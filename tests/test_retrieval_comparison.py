@@ -17,7 +17,7 @@ def test_local_retrieval_comparison_matches_v5_baseline_without_raw_text() -> No
     )
 
     assert report.dataset_version == "2026-09-08.v5"
-    assert report.corpus_size == 100
+    assert report.corpus_size == 120
     assert report.all_strategies_available is False
     assert set(report.unavailable_strategies) == {
         "postgres_lexical",
@@ -27,12 +27,12 @@ def test_local_retrieval_comparison_matches_v5_baseline_without_raw_text() -> No
     strategy = report.strategies[0]
     assert strategy.strategy == "local_lexical"
     assert strategy.case_count == 15
-    assert strategy.precision_at_3 == 0.7857142857142857
-    assert strategy.recall_at_3 == 0.559322033898305
+    assert strategy.precision_at_3 == 0.8
+    assert strategy.recall_at_3 == 0.5625
     assert strategy.mrr == 1.0
-    assert strategy.ndcg_at_3 == 0.9344318390318389
+    assert strategy.ndcg_at_3 == 0.9703499108635533
     assert strategy.judgment_coverage_at_3 == 1.0
-    assert strategy.irrelevant_at_3 == 0.044444444444444446
+    assert strategy.irrelevant_at_3 == 0.0
     assert strategy.estimated_query_cost_usd == 0.0
     assert strategy.meets_current_gate is True
 
