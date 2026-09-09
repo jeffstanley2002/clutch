@@ -9,10 +9,11 @@
 - `terraform/`: AWS Budget, VPC/subnets/security groups, ECR, ECS/Fargate, ALB,
   Cloud Map, RDS, TLS ElastiCache, CloudWatch, managed-secret IAM, and outputs.
 
-All three images built locally. The full Compose stack migrated and passed
-health/review/persistence/cache smoke checks. Terraform was formatted and
-validated with Terraform 1.16.1 and AWS provider 6.63.0; it was not planned
-against an account or applied.
+All three images were rebuilt on 2026-09-09. The full Compose stack migrated,
+all five services became healthy, and review/interview/feedback/progress passed
+through real HTTP/UI boundaries. Terraform was formatted and validated with
+Terraform 1.16.x and AWS provider 6.63.0; it was not planned against an account
+or applied.
 
 ## Decisions
 

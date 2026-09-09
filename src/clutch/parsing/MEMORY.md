@@ -14,8 +14,8 @@ The parser currently emits:
 
 ## Decisions
 
-- Parsing is internal backend context for now; `/review` still returns only
-  `list[CodeFinding]`.
+- Parsing is internal backend context; `/review` returns a `ReviewResponse` with
+  findings, questions, mode, confidence, citations, request ID, and latency.
 - Tree-sitter dependencies are core runtime dependencies because `/review`
   now calls the parser on every request.
 - The parser preserves line ranges so review findings, retrieval, and future
@@ -24,5 +24,6 @@ The parser currently emits:
 ## Known Gaps
 
 - Python is the only supported language.
-- There is no repository/multi-file parser entry point yet.
+- Multi-file GitHub ingestion composes bounded files before the existing parser;
+  there is no separate public multi-file parser API.
 - Syntax errors are detected but not yet surfaced as a dedicated finding.

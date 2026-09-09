@@ -17,6 +17,10 @@
   PostgreSQL lexical, PostgreSQL vector-only, and PostgreSQL hybrid strategies
   over the same 15 privacy-bounded queries and judgments. Reports contain only
   query hashes, categories, retrieved source IDs, metrics, latency, and cost.
+- `src/clutch/evals/live_model.py`: manually runs six representative review
+  cases and all three injection cases through the production graph. It has an
+  isolated $0.50 default cap, reports model/fallback/validation/quality/latency/
+  token/cost metrics, and never serializes fixture source or prompts.
 - Dataset `2026-09-08.v5` passes every deterministic gate. Finding, citation,
   question, severity, clean-negative, mixed recall, interview, feedback,
   privacy, ingestion, and injection metrics are 1.0. Graded retrieval is
@@ -28,6 +32,8 @@
 
 - CI forces static fallback so it is deterministic, fast, secret-free, and
   zero-cost.
+- Live evaluation is manual and fails closed: no key returns typed unavailable
+  output without a client call; any configured fallback returns nonzero.
 - Static execution reports model schema-validity as unmeasured.
 - Perfect scores describe only named fixture coverage, never general quality.
 - Expected findings are atomic objects so an ID from one finding cannot be
@@ -49,4 +55,5 @@
 - Measure PostgreSQL vector-only and hybrid retrieval on these same judgments
   after the user configures an OpenAI key and the corpus embeddings are seeded.
 - Live OpenAI accuracy, invalid-output, fallback, latency, token, and cost
-  baselines require a user-provided key.
+  baselines require a user-provided key; the harness itself is complete and
+  fake-provider tested.

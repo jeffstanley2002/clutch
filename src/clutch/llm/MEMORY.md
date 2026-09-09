@@ -7,8 +7,9 @@ Responses provider, deterministic fallback, and `ModelRouter`. The OpenAI path
 uses `responses.parse`, strict Pydantic output, `store=False`, a bounded output
 cap, no SDK retries, and exactly one application validation retry.
 
-`ProviderReview` carries safe model name, input/output token counts, and a
-category-only fallback reason. The graph records these in redacted spans; raw
+`ProviderReview` carries safe model name, input/output token counts, attempt
+count, validation-failure count, and a category-only fallback reason. Pydantic
+enforces failures <= attempts. The graph records these in redacted spans; raw
 provider payloads and prompts are never logged.
 
 `spend.py` conservatively reserves completion and embedding costs before calls.
@@ -32,6 +33,8 @@ calls so the review router can fall back safely.
 
 ## Known gaps
 
-- No credentialed accuracy/schema-failure/latency/token/cost baseline yet.
-- The planned OpenAI-vs-Claude comparison waits for the same expanded eval set
-  and a later `ModelProvider` implementation for Claude.
+- The provider path and spend-capped live harness are complete, but the first
+  credentialed accuracy/schema-failure/latency/token/cost baseline still needs
+  the user's OpenAI key.
+- Claude remains outside v1; the provider-neutral boundary allows a later
+  controlled comparison if product evidence justifies it.

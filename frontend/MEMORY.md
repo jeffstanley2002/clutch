@@ -14,7 +14,9 @@ The Streamlit app implements a three-stage workflow rail:
   tasks, and can save a snapshot.
 
 The full flow and a public GitHub review were browser-verified at desktop. The
-new final report was rechecked at 390px without horizontal overflow.
+new final report was rechecked at 390px without horizontal overflow. Fresh
+review, interview-assessment, and progress screenshots from the five-service
+Compose stack live under `docs/images/` and are embedded in the README.
 `DESIGN.md` passes its strict audit/linter.
 
 ## Decisions

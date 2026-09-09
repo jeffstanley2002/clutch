@@ -11,7 +11,8 @@ parse_code -> static_review -> retrieve_principles -> synthesize_review
 
 Each node/tool/retriever/generation/guardrail stage has an explicit observation
 span. Final state carries findings, questions, mode, confidence, model/tokens,
-and safe fallback metadata to `ReviewService`.
+attempt/validation-failure counts, and safe fallback metadata to
+`ReviewService`.
 
 `mcp_server/` is the separate read-only GitHub boundary and is not another
 agent. It exposes three tools over stdio or stateless Streamable HTTP.
@@ -29,4 +30,5 @@ agent. It exposes three tools over stdio or stateless Streamable HTTP.
 
 - Interview orchestration is a separate deterministic service, not yet an
   adaptive LangGraph flow.
-- Live OpenAI and Langfuse behavior remains unverified without credentials.
+- Live OpenAI and Langfuse behavior remains unverified without credentials;
+  the capped model-eval path and redacted diagnostics are implemented.

@@ -664,3 +664,71 @@ Next up:
   `--require-all` under the existing spend guard.
 - Then capture a controlled live OpenAI structured-output baseline and optional
   privacy-reduced Langfuse trace before requesting private-GitHub or AWS access.
+
+## 2026-09-09 (Day 12)
+
+Phase: 3–4 local completion and deployment handoff
+
+Did:
+
+- Extracted shared review-output scoring so deterministic and live-model evals
+  use the same finding, grounding, question, and line-range logic.
+- Added privacy-safe provider attempt and validation-failure counters, including
+  Pydantic invariants, redacted graph/span propagation, retry/fallback tests,
+  and no raw provider error text.
+- Added a manual live-model runner over six representative reviews and all three
+  injection fixtures. It uses the production graph, an isolated $0.50 default
+  cap, privacy-reduced output, typed no-key unavailability, and a nonzero exit
+  on any configured fallback.
+- Rebuilt all three non-root images, migrated PostgreSQL, and brought the full
+  five-service Compose stack to healthy.
+- Exercised pasted review, interview start/answer, final feedback, and progress
+  through real localhost HTTP and Streamlit boundaries. PostgreSQL stored a
+  64-character source hash and derived metadata, not raw code.
+- Captured and committed real review, interview-assessment, and progress UI
+  screenshots. Expanded the README with a concrete walkthrough, failure
+  analysis, local quality/cost/latency evidence, prompt-injection example, AWS
+  diagram, deployment handoff, and resume-ready bullets.
+- Refreshed architecture, cost, evaluation, security, and folder memory docs so
+  they describe the completed local implementation and credential checkpoint.
+
+Learned / decided:
+
+- A controlled live baseline needs its own bounded spend counter so repeated
+  experiments cannot accidentally consume the application's full daily budget.
+- Validation failure rate must be derived from explicit safe counters, not raw
+  exceptions or provider payloads.
+- Terraform validation can remain credential-free; AWS plan/apply and image
+  publication stay intentionally outside CI until the paid-resource checkpoint.
+- The 14-day plan's credential-free implementation is complete. Adaptive
+  interview generation and Claude remain evidence-gated post-v1 work.
+
+Verification:
+
+- Ruff passed; mypy passed over 63 source files; all 83 tests passed.
+- Deterministic eval `2026-09-08.v5` passed every gate at $0 model cost.
+- `detect-secrets` passed and `pip-audit` found no known vulnerabilities.
+- Three Docker images rebuilt; five Compose services were healthy; Alembic
+  upgrade succeeded; local review/interview/feedback/progress smoke passed.
+- Terraform 1.16.x formatting and validation passed with AWS provider 6.63.0.
+- The live-model command returned typed `available=false`, zero tokens, and
+  $0.00 charged cost without `OPENAI_API_KEY`, as designed.
+
+Open issues:
+
+- Credentialed OpenAI model and vector/hybrid baselines, Langfuse trace
+  inspection, and private-GitHub token verification require user-owned secrets.
+- AWS saved-plan/cost review, immutable ECR publication, migration task,
+  staging smoke, public URL, log inspection, rollback rehearsal, incident owner,
+  and teardown time belong to the explicit deployment session.
+- No AWS resources have been planned or applied, and no remote push occurred.
+
+Next up:
+
+- User adds credentials only to ignored local/AWS secret stores, then runs the
+  capped live-model and `--require-all` retrieval comparisons and inspects one
+  privacy-reduced Langfuse trace.
+- After confirming AWS account, region, budget, ingress/TLS, incident owner, and
+  teardown policy, follow `CLOUD.md` to saved-plan review, immutable image push,
+  migration, one-task staging enablement, smoke/privacy verification, and URL
+  publication.
