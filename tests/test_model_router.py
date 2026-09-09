@@ -1,6 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 
+import pytest
+
 from clutch.knowledge_base import retrieve_clean_code_principles
 from clutch.llm.providers import (
     FallbackStaticProvider,
@@ -52,6 +54,20 @@ def test_model_router_falls_back_when_primary_fails() -> None:
     assert result.fallback_reason == "RuntimeError"
     assert result.attempt_count == 0
     assert result.validation_failure_count == 0
+
+
+def test_provider_review_rejects_impossible_diagnostic_counts() -> None:
+    with pytest.raises(
+        ValueError,
+        match="validation failures cannot exceed provider attempts",
+    ):
+        ProviderReview(
+            findings=[],
+            confidence=0.7,
+            mode="static_fallback",
+            attempt_count=0,
+            validation_failure_count=1,
+        )
 
 
 class FakeResponses:

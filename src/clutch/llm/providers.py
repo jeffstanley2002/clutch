@@ -5,7 +5,7 @@ from typing import Any, Protocol
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.llm.spend import (
@@ -60,6 +60,12 @@ class ProviderReview(BaseModel):
         le=MAX_MODEL_ATTEMPTS,
     )
     fallback_reason: str | None = None
+
+    @model_validator(mode="after")
+    def validate_diagnostic_counts(self) -> "ProviderReview":
+        if self.validation_failure_count > self.attempt_count:
+            raise ValueError("validation failures cannot exceed provider attempts")
+        return self
 
 
 class ReviewProvider(Protocol):
