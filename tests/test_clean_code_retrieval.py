@@ -6,7 +6,7 @@ from clutch.schemas import FindingCategory
 def test_committed_corpus_has_unique_typed_items_for_phase_two() -> None:
     source_ids = [item.id for item in SEED_CLEAN_CODE_PRINCIPLES]
 
-    assert len(source_ids) == 100
+    assert len(source_ids) == 120
     assert len(source_ids) == len(set(source_ids))
     assert {item.item_type for item in SEED_CLEAN_CODE_PRINCIPLES} == {
         "reference",
@@ -30,13 +30,13 @@ def test_committed_corpus_has_unique_typed_items_for_phase_two() -> None:
         ]
         assert len(
             [item for item in category_items if item.item_type == "reference"]
-        ) == 10
+        ) == 12
         assert len(
             [item for item in category_items if item.item_type == "rubric"]
         ) == 3
         assert len(
             [item for item in category_items if item.item_type == "question_bank"]
-        ) >= 3
+        ) == 5
     assert all(item.roles for item in SEED_CLEAN_CODE_PRINCIPLES)
     assert all(item.seniority_levels for item in SEED_CLEAN_CODE_PRINCIPLES)
 
