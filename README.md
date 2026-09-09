@@ -22,10 +22,12 @@ flowchart LR
   INTERVIEW --> PG[(PostgreSQL)]
 ```
 
-The system remains useful without credentials: no `OPENAI_API_KEY` means a
-clearly labelled, deterministic `static_fallback` review. Model-backed review
+The demo/runtime review path is model-required by default. Model-backed review
 uses the OpenAI Responses API with strict Pydantic output, one validation
-retry, `store=False`, bounded context, and automatic safe fallback.
+retry, `store=False`, bounded context, and citation/line guardrails. If no
+model is configured, or the model output fails validation, the API returns a
+clear 503 instead of showing deterministic fallback output. Deterministic
+fallback remains opt-in for local tests/evals through `CLUTCH_ALLOW_STATIC_FALLBACK=true`.
 
 ## What works now
 
@@ -302,12 +304,50 @@ RDS, ElastiCache, and the ALB still cost money. Applying the module is an
 explicit user checkpoint requiring account, region, budget, ingress, and
 teardown approval.
 
+For the current budget, AWS is not the practical public deployment target. Keep
+the AWS module as portfolio architecture evidence and use the LocalStack
+rehearsal below for learning the AWS-shaped deployment flow locally.
+
 Deployment handoff is ready when the owner supplies those choices plus the
 Secrets Manager ARNs. The documented sequence is: inspect a saved plan, apply
 with zero tasks, publish one immutable Git SHA to all three ECR repositories,
 run Alembic once, enable one task per service, and repeat the local smoke/privacy
 checks. CI deliberately stops at image build and Terraform validation until
 that paid-resource checkpoint is approved.
+
+### LocalStack rehearsal
+
+A separate LocalStack harness lives in
+[infra/localstack](infra/localstack/README.md). It starts LocalStack Pro through
+Docker Compose and applies a local-only Terraform module against
+`http://localhost:4566` using dummy AWS credentials. The harness creates the AWS
+deployment control-plane resources that are useful to test locally on the
+current license: VPC networking, a Secrets Manager API-key secret,
+IAM roles/policies, and CloudWatch log groups. ECR/ECS are optional flags for a
+LocalStack license tier that includes those services.
+
+```bash
+export LOCALSTACK_AUTH_TOKEN="replace-with-rotated-token"
+scripts/localstack_up.sh
+scripts/localstack_terraform.sh init
+scripts/localstack_terraform.sh plan
+scripts/localstack_terraform.sh apply
+scripts/localstack_smoke.sh
+```
+
+This is a rehearsal path, not the production plan. The token stays out of the
+repo, and the real AWS checkpoint in `CLOUD.md` still applies before paid
+resources are created.
+
+Current LocalStack result: VPC networking, IAM, Secrets Manager, and CloudWatch
+Logs apply and smoke successfully. The available LocalStack license returns 501
+for ECR/ECS, so those resources are optional flags rather than part of the
+default local rehearsal.
+
+The next public-hosting path is Vercel/Render/Supabase: Vercel for a public
+web shell if needed, Render for FastAPI and/or Streamlit, Supabase Postgres with
+pgvector for durable data, and a low-cost Redis provider only if cache/spend
+counters need to be enabled.
 
 ## Known limitations
 

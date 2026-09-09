@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.env.localstack
 .venv/
 __pycache__/
 .pytest_cache/
@@ -11,3 +12,6 @@ __pycache__/
 *.tfstate.*
 infra/terraform/backend.hcl
 infra/terraform/terraform.tfvars
+infra/localstack/volume/
+infra/localstack/terraform/.terraform.lock.hcl
+infra/localstack/terraform/localstack.tfplan

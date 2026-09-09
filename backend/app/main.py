@@ -22,7 +22,12 @@ from clutch.interview import (
     InterviewSessionNotFound,
     interview_service,
 )
-from clutch.llm import SpendMetrics, close_spend_guard, spend_metrics_snapshot
+from clutch.llm import (
+    ReviewModelUnavailable,
+    SpendMetrics,
+    close_spend_guard,
+    spend_metrics_snapshot,
+)
 from clutch.observability import close_observability
 from clutch.progress import progress_service
 from clutch.review.service import review_service
@@ -104,7 +109,13 @@ async def spend_metrics() -> SpendMetrics:
 
 @app.post("/review", response_model=ReviewResponse)
 async def review_code(request: ReviewRequest) -> ReviewResponse:
-    return await review_service.review(request)
+    try:
+        return await review_service.review(request)
+    except ReviewModelUnavailable as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"model review unavailable: {exc.failure_reason}",
+        ) from exc
 
 
 @app.post("/review/github", response_model=GitHubReviewResponse)

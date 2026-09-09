@@ -1,0 +1,24 @@
+services:
+  localstack:
+    container_name: clutch-localstack
+    image: localstack/localstack-pro:latest
+    environment:
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:?Set LOCALSTACK_AUTH_TOKEN in your shell; do not commit it}
+      DEBUG: ${LOCALSTACK_DEBUG:-0}
+      PERSISTENCE: ${LOCALSTACK_PERSISTENCE:-1}
+      EAGER_SERVICE_LOADING: ${LOCALSTACK_EAGER_SERVICE_LOADING:-0}
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    volumes:
+      - ./infra/localstack/volume:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:4566/_localstack/health', timeout=2)
+      interval: 5s
+      timeout: 5s
+      retries: 30

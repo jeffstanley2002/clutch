@@ -10,6 +10,7 @@ from clutch.llm.providers import (
     OpenAIProvider,
     ProviderReview,
     ReviewContext,
+    ReviewModelUnavailable,
 )
 from clutch.llm.spend import InMemorySpendGuard
 from clutch.parsing import parse_python_code
@@ -54,6 +55,21 @@ def test_model_router_falls_back_when_primary_fails() -> None:
     assert result.fallback_reason == "RuntimeError"
     assert result.attempt_count == 0
     assert result.validation_failure_count == 0
+
+
+def test_model_router_can_fail_instead_of_falling_back() -> None:
+    router = ModelRouter(
+        primary=FailingProvider(),
+        fallback=FallbackStaticProvider(),
+        allow_static_fallback=False,
+    )
+
+    with pytest.raises(ReviewModelUnavailable) as error:
+        asyncio.run(router.review(_context()))
+
+    assert error.value.failure_reason == "RuntimeError"
+    assert error.value.attempt_count == 0
+    assert error.value.validation_failure_count == 0
 
 
 def test_provider_review_rejects_impossible_diagnostic_counts() -> None:

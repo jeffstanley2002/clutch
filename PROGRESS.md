@@ -732,3 +732,181 @@ Next up:
   teardown policy, follow `CLOUD.md` to saved-plan review, immutable image push,
   migration, one-task staging enablement, smoke/privacy verification, and URL
   publication.
+
+## 2026-09-09 (Day 13)
+
+Phase: 4 local deployment rehearsal
+
+Did:
+
+- Added `compose.localstack.yaml` for `localstack/localstack-pro` with
+  `LOCALSTACK_AUTH_TOKEN` read from the shell, loopback gateway ports, Docker
+  socket mounting for later ECS execution tests, and ignored persistent state.
+- Added `infra/localstack/terraform`, a separate LocalStack-only Terraform
+  harness that targets `http://localhost:4566` with dummy AWS credentials and
+  creates emulated VPC networking, ECR repositories, Secrets Manager API-key
+  secret/version, IAM roles/policies, CloudWatch log groups, ECS task
+  definitions, and zero-desired-count ECS services.
+- Added helper scripts for LocalStack startup, Terraform init/plan/apply/
+  destroy/output, environment inspection, and AWS-resource smoke checks.
+- Wired CI Terraform validation to cover both the production AWS module and the
+  LocalStack harness.
+- Updated README, `CLOUD.md`, `.env.example`, ignore files, and infra memory
+  docs for the new rehearsal path.
+
+Learned / decided:
+
+- Keep LocalStack separate from the production Terraform root so local emulation
+  cannot weaken the paid-resource AWS safety checkpoint.
+- Default LocalStack ECS services to desired count zero. First prove AWS
+  control-plane descriptors locally, then separately test emulated task
+  execution if needed.
+- The LocalStack auth token was not exported in the Codex shell, so the pasted
+  chat token was not used. It should be rotated before use.
+
+Verification:
+
+- `docker compose -f compose.localstack.yaml config --quiet` passed with a
+  dummy token.
+- All LocalStack shell scripts passed `bash -n`.
+- AWS CLI is installed, but Terraform is not installed on PATH. Homebrew
+  Terraform installation from the HashiCorp tap was blocked by outdated Xcode,
+  so `scripts/localstack_terraform.sh` now falls back to
+  `hashicorp/terraform:1.16.1` through Docker.
+- The Terraform Docker fallback was verified with
+  `docker run --rm hashicorp/terraform:1.16.1 version`.
+- LocalStack CLI installation is blocked by the same outdated Xcode requirement,
+  so LocalStack startup uses Docker Compose directly.
+- Docker daemon access from Codex required host permission, and a rotated
+  `LOCALSTACK_AUTH_TOKEN` was not available in the environment, so the
+  LocalStack container was not started.
+
+Open issues:
+
+- Export a rotated `LOCALSTACK_AUTH_TOKEN` or put it in ignored
+  `.env.localstack`, then run the LocalStack init/plan/apply/smoke sequence.
+- If the zero-count apply succeeds, the next LocalStack layer is image push plus
+  `service_desired_count=1` ECS task execution.
+- The practical public deployment path should move to Vercel/Render/Supabase
+  after the LocalStack learning rehearsal; AWS should stay unapplied unless
+  budget approval changes.
+
+Next up:
+
+- Run `scripts/localstack_up.sh`, `scripts/localstack_terraform.sh init`,
+  `scripts/localstack_terraform.sh plan`, `scripts/localstack_terraform.sh
+  apply`, and `scripts/localstack_smoke.sh` from a shell with the rotated token.
+
+## 2026-09-09 (Day 13 continuation)
+
+Phase: 4 local deployment rehearsal
+
+Did:
+
+- Created ignored `.env.localstack` support so the rotated LocalStack token can
+  be consumed without committing it or putting it directly in commands.
+- Started `localstack/localstack-pro:latest`; LocalStack reported Pro edition,
+  activated license, and healthy status on `127.0.0.1:4566`.
+- Initialized the LocalStack Terraform module through the Docker fallback using
+  `hashicorp/terraform:1.16.1` and AWS provider 6.63.0.
+- Fixed provider endpoint names for AWS provider 6.x, formatted the module, and
+  validated it successfully.
+- Planned the full LocalStack control-plane shape, then learned the current
+  LocalStack license returns 501 for ECR and ECS.
+- Made ECR/ECS optional (`enable_emulated_ecr`, `enable_emulated_ecs`) and
+  disabled by default. Replanned and applied the supported subset.
+- Smoked LocalStack with AWS CLI: health endpoint reachable, emulated VPCs
+  listed, `/ecs/clutch-localstack/backend`, `/frontend`, and `/github-mcp` log
+  groups listed, and `clutch-localstack/clutch-api-key` listed in Secrets
+  Manager.
+- Started the regular Clutch Compose stack with Postgres, Redis, GitHub MCP,
+  backend, and frontend healthy at the same time as LocalStack.
+- Aligned the existing local Postgres user's password non-destructively, reran
+  Alembic successfully, and verified FastAPI `/health`, Streamlit health, and a
+  local `/review` request returning two structured findings and questions.
+- Updated docs to keep AWS unapplied for cost reasons and pivot the next public
+  deployment target to Vercel/Render/Supabase.
+
+Learned / decided:
+
+- LocalStack is useful here for supported AWS API learning and Terraform
+  provider wiring, but this license cannot rehearse ECR/ECS task deployment.
+- Keep the LocalStack default apply limited to supported services. Optional
+  ECR/ECS flags document the next layer for a higher LocalStack license.
+- Use Docker-based Terraform because Homebrew Terraform and LocalStack CLI are
+  blocked by outdated Xcode on this machine.
+- AWS remains a portfolio architecture path only unless budget approval changes.
+
+Verification:
+
+- LocalStack health and license activation passed.
+- `scripts/localstack_terraform.sh init`, `fmt`, `validate`, `plan`, and
+  `apply` passed for the supported subset.
+- `scripts/localstack_smoke.sh` passed with AWS CLI against
+  `http://localhost:4566`.
+- Docker Compose app stack reports Postgres, Redis, GitHub MCP, backend,
+  frontend, and LocalStack all healthy.
+- FastAPI health returned `{"status":"ok"}`; Streamlit health returned `ok`.
+- Local `/review` smoke returned static fallback findings for debug `print` and
+  mutable default argument with clean-code citations.
+
+Open issues:
+
+- ECR/ECS cannot be tested on the current LocalStack license tier.
+- The local `.env` API key was surfaced during a presence check; rotate it
+  before any hosted deployment.
+- Add a dedicated Render/Supabase/Vercel deployment guide and smoke scripts
+  next.
+
+Next up:
+
+- Prepare the Vercel/Render/Supabase deployment path: Supabase pgvector schema
+  migration notes, Render service/env setup, optional Redis provider, and a
+  hosted smoke checklist.
+
+## 2026-09-09 (Day 13 no-fallback checkpoint)
+
+Phase: 4 demo correctness checkpoint
+
+Did:
+
+- Changed env-built review runtime so `CLUTCH_ALLOW_STATIC_FALLBACK` defaults
+  to false. Model review is now required for demo/deployment by default.
+- Added `ReviewModelUnavailable` and FastAPI 503 handling so model/provider/
+  validation/budget failures fail loudly instead of returning deterministic
+  findings.
+- Kept deterministic fallback opt-in for tests/evals by constructing
+  `ModelRouter(..., allow_static_fallback=True)` or setting
+  `CLUTCH_ALLOW_STATIC_FALLBACK=true`.
+- Canonicalized known model citation IDs from the local knowledge base while
+  still rejecting invented citations and impossible line ranges.
+- Rebuilt backend/frontend Docker images and recreated healthy containers with
+  the new code.
+
+Learned / decided:
+
+- For demo credibility, user-facing review output should not silently fall back
+  to deterministic findings when an OpenAI key is configured.
+- Current live review requests return 503 with `model review unavailable:
+  ValueError`, so the model path is being reached but still fails validation/
+  grounding. That should be debugged before claiming AI-backed review quality.
+
+Verification:
+
+- `tests/test_model_router.py` passed.
+- Backend/frontend containers were rebuilt and became healthy.
+- A local `/review` request now returns HTTP 503 instead of `mode:
+  static_fallback` when model review fails.
+
+Open issues:
+
+- Debug the remaining OpenAI model validation failure after rotating the exposed
+  key.
+- API tests are influenced by local `.env` auth settings in this shell; run the
+  full suite from a clean test env before the next commit if changing API auth
+  tests.
+
+Next up:
+
+- Rotate exposed local keys, then run a model-required review and inspect safe
+  diagnostics until it returns `mode: model`.

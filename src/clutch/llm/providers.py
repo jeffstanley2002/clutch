@@ -1,4 +1,4 @@
-"""Structured review providers with a deterministic safety fallback."""
+"""Structured review providers with optional deterministic test fallback."""
 
 import os
 from typing import Any, Protocol
@@ -93,6 +93,22 @@ class ReviewProviderFailure(RuntimeError):
         self.validation_failure_count = validation_failure_count
 
 
+class ReviewModelUnavailable(RuntimeError):
+    """Raised when model-required review cannot produce validated output."""
+
+    def __init__(
+        self,
+        *,
+        failure_reason: str,
+        attempt_count: int = 0,
+        validation_failure_count: int = 0,
+    ) -> None:
+        super().__init__("model review is required but unavailable")
+        self.failure_reason = failure_reason
+        self.attempt_count = attempt_count
+        self.validation_failure_count = validation_failure_count
+
+
 class FallbackStaticProvider:
     """Return deterministic findings when model review is unavailable."""
 
@@ -148,7 +164,7 @@ class OpenAIProvider:
                     store=False,
                 )
                 output = ModelReviewOutput.model_validate(response.output_parsed)
-                _validate_grounding(output, context=context)
+                findings = _normalize_grounding(output, context=context)
                 usage = getattr(response, "usage", None)
                 input_tokens = getattr(usage, "input_tokens", None)
                 output_tokens = getattr(usage, "output_tokens", None)
@@ -167,7 +183,7 @@ class OpenAIProvider:
                         # shared counter cannot be reconciled after a paid call.
                         pass
                 return ProviderReview(
-                    findings=output.findings,
+                    findings=findings,
                     confidence=output.confidence,
                     mode="model",
                     model_name=self._model,
@@ -191,29 +207,40 @@ class OpenAIProvider:
 
 
 class ModelRouter:
-    """Select the model path when configured and fail closed to static review."""
+    """Select the model path and optionally allow deterministic fallback."""
 
     def __init__(
         self,
         *,
         primary: ReviewProvider | None,
         fallback: ReviewProvider | None = None,
+        allow_static_fallback: bool = True,
     ) -> None:
         self._primary = primary
         self._fallback = fallback or FallbackStaticProvider()
+        self._allow_static_fallback = allow_static_fallback
 
     @classmethod
     def from_env(cls) -> "ModelRouter":
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        allow_static_fallback = _env_flag("CLUTCH_ALLOW_STATIC_FALLBACK", default=False)
         if not api_key:
-            return cls(primary=None)
+            return cls(
+                primary=None,
+                allow_static_fallback=allow_static_fallback,
+            )
 
         model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
-        return cls(primary=OpenAIProvider(api_key=api_key, model=model))
+        return cls(
+            primary=OpenAIProvider(api_key=api_key, model=model),
+            allow_static_fallback=allow_static_fallback,
+        )
 
     async def review(self, context: ReviewContext) -> ProviderReview:
         if self._primary is None:
+            if not self._allow_static_fallback:
+                raise ReviewModelUnavailable(failure_reason="model_not_configured")
             fallback = await self._fallback.review(context)
             return fallback.model_copy(
                 update={"fallback_reason": "model_not_configured"}
@@ -221,6 +248,12 @@ class ModelRouter:
         try:
             return await self._primary.review(context)
         except ReviewProviderFailure as exc:
+            if not self._allow_static_fallback:
+                raise ReviewModelUnavailable(
+                    failure_reason=exc.failure_reason,
+                    attempt_count=exc.attempt_count,
+                    validation_failure_count=exc.validation_failure_count,
+                ) from exc
             fallback = await self._fallback.review(context)
             return fallback.model_copy(
                 update={
@@ -232,18 +265,27 @@ class ModelRouter:
         except Exception as exc:
             # Store only the exception class. The provider payload and request context
             # may contain source and must never cross the observability boundary.
+            if not self._allow_static_fallback:
+                raise ReviewModelUnavailable(
+                    failure_reason=type(exc).__name__,
+                ) from exc
             fallback = await self._fallback.review(context)
             return fallback.model_copy(update={"fallback_reason": type(exc).__name__})
 
 
-def _validate_grounding(output: ModelReviewOutput, *, context: ReviewContext) -> None:
-    """Reject invented citations and impossible line locations."""
+def _normalize_grounding(
+    output: ModelReviewOutput,
+    *,
+    context: ReviewContext,
+) -> list[CodeFinding]:
+    """Reject invented grounding and canonicalize trusted citation metadata."""
 
     allowed_citations = {
         principle.citation.source_id: principle.citation
         for principle in context.principles
     }
     line_count = max(1, len(context.request.code.splitlines()))
+    normalized_findings: list[CodeFinding] = []
 
     for finding in output.findings:
         if not finding.citations:
@@ -253,11 +295,6 @@ def _validate_grounding(output: ModelReviewOutput, *, context: ReviewContext) ->
             for citation in finding.citations
         ):
             raise ValueError("model finding contains an ungrounded citation")
-        if any(
-            citation != allowed_citations[citation.source_id]
-            for citation in finding.citations
-        ):
-            raise ValueError("model finding altered canonical citation metadata")
         if finding.line_start is not None and finding.line_start > line_count:
             raise ValueError("model finding line_start exceeds source")
         if finding.line_end is not None and finding.line_end > line_count:
@@ -268,3 +305,21 @@ def _validate_grounding(output: ModelReviewOutput, *, context: ReviewContext) ->
             and finding.line_end < finding.line_start
         ):
             raise ValueError("model finding line range is reversed")
+        normalized_findings.append(
+            finding.model_copy(
+                update={
+                    "citations": [
+                        allowed_citations[citation.source_id]
+                        for citation in finding.citations
+                    ]
+                }
+            )
+        )
+    return normalized_findings
+
+
+def _env_flag(name: str, *, default: bool) -> bool:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}

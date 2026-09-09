@@ -11,7 +11,7 @@ parse_code -> static_review -> retrieve_principles -> synthesize_review
 
 Each node/tool/retriever/generation/guardrail stage has an explicit observation
 span. Final state carries findings, questions, mode, confidence, model/tokens,
-attempt/validation-failure counts, and safe fallback metadata to
+attempt/validation-failure counts, and safe failure/fallback metadata to
 `ReviewService`.
 
 `mcp_server/` is the separate read-only GitHub boundary and is not another
@@ -21,8 +21,10 @@ agent. It exposes three tools over stdio or stateless Streamable HTTP.
 
 - Keep one agent; no planner/critic/supervisor without eval evidence.
 - Never trace graph state or raw source. Trace hashes, counts, categories,
-  citations, model/tokens, timing, and fallback category only.
+  citations, model/tokens, timing, and safe failure/fallback category only.
 - Revalidate line ranges and citation allowlists after structured synthesis.
+- Runtime review is model-required by default. Deterministic fallback remains
+  opt-in for tests/evals through `CLUTCH_ALLOW_STATIC_FALLBACK=true`.
 - Generate at most three deterministic questions until broader question evals
   justify adaptive generation.
 

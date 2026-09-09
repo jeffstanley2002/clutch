@@ -1,4 +1,5 @@
 .env
+.env.localstack
 .git
 .github
 .mypy_cache
@@ -15,3 +16,5 @@ terraform.tfstate.*
 **/.terraform
 infra/terraform/backend.hcl
 infra/terraform/terraform.tfvars
+infra/localstack/volume
+infra/localstack/terraform/localstack.tfplan

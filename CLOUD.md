@@ -10,6 +10,11 @@ verified. Terraform has been formatted and validated without AWS credentials;
 it has never been planned against an account or applied. Creating paid cloud
 resources is an explicit user checkpoint.
 
+The practical near-term deployment target is now LocalStack rehearsal first,
+then a lower-cost hosted deployment on Vercel/Render/Supabase. The AWS module
+remains useful as portfolio architecture evidence and as a future migration
+path, but it should not be applied while the owner wants to avoid AWS spend.
+
 ## Target AWS shape
 
 - One VPC across two availability zones.
@@ -34,6 +39,25 @@ resources is an explicit user checkpoint.
 The agent remains inside FastAPI. Split it only when measured scaling or
 operational evidence requires another deployable.
 
+## Low-cost hosted target
+
+Use this path for the next real public deployment unless the owner explicitly
+re-opens AWS funding:
+
+- Vercel hosts a lightweight public landing/demo shell if the Streamlit UI is
+  replaced or wrapped for web sharing.
+- Render hosts the FastAPI backend and can also host Streamlit if keeping the
+  current UI unchanged is more important than Vercel polish.
+- Supabase provides hosted PostgreSQL with pgvector support for durable review,
+  interview, progress, and knowledge-base data.
+- Upstash or Render Redis can replace ElastiCache for cache/spend-counter
+  behavior when Redis is required.
+- Secrets stay in each provider's secret manager/environment settings; no
+  secrets are committed.
+
+Before this deployment, add provider-specific docs and smoke scripts rather
+than weakening the AWS Terraform module.
+
 ## Local Compose parity
 
 `compose.yaml` runs pgvector Postgres, Redis, GitHub MCP, FastAPI, and Streamlit
@@ -50,6 +74,34 @@ docker compose up -d backend frontend
 All three images run as UID/GID 10001. The MCP transport binds loopback by
 default and opts into all-interface binding only inside the container network,
 with DNS-rebinding host checks enabled.
+
+## LocalStack rehearsal
+
+`compose.localstack.yaml` and `infra/localstack/terraform` provide a separate
+AWS-emulation rehearsal path. This is intentionally not the production Terraform
+root. It starts LocalStack Pro with `LOCALSTACK_AUTH_TOKEN` supplied from the
+shell, points the AWS provider at `http://localhost:4566`, and creates local
+VPC networking, Secrets Manager, IAM, and CloudWatch Logs by default. ECR and
+ECS are optional flags for a LocalStack license tier that includes those
+services.
+
+The rehearsal catches provider/resource wiring mistakes without touching a real
+AWS account. It does not prove ALB/RDS/ElastiCache parity and does not remove
+the saved-plan approval checkpoint below.
+
+Current LocalStack license coverage allows the default supported subset to
+apply: VPC/subnet/security group, IAM, Secrets Manager, and CloudWatch Logs.
+ECR and ECS returned LocalStack 501 license errors during testing, so they are
+optional `enable_emulated_ecr` / `enable_emulated_ecs` flags.
+
+```bash
+export LOCALSTACK_AUTH_TOKEN=replace-with-rotated-token
+scripts/localstack_up.sh
+scripts/localstack_terraform.sh init
+scripts/localstack_terraform.sh plan
+scripts/localstack_terraform.sh apply
+scripts/localstack_smoke.sh
+```
 
 ## Terraform safety model
 

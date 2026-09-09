@@ -5,6 +5,7 @@ from clutch.llm.providers import (
     ModelRouter,
     OpenAIProvider,
     ReviewContext,
+    ReviewModelUnavailable,
 )
 from clutch.llm.spend import (
     InMemorySpendGuard,
@@ -23,6 +24,7 @@ __all__ = [
     "ModelRouter",
     "OpenAIProvider",
     "ReviewContext",
+    "ReviewModelUnavailable",
     "SpendMetrics",
     "close_spend_guard",
     "spend_metrics_snapshot",
