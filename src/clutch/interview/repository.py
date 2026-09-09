@@ -14,7 +14,11 @@ from clutch.interview.contracts import (
     InterviewTurnRecord,
 )
 from clutch.persistence.database import application_session_factory_from_env
-from clutch.persistence.models import InterviewSessionModel, InterviewTurnModel
+from clutch.persistence.models import (
+    AgentRunModel,
+    InterviewSessionModel,
+    InterviewTurnModel,
+)
 from clutch.schemas import InterviewAssessment, InterviewQuestion, InterviewStatus
 
 
@@ -150,9 +154,10 @@ class SqlAlchemyInterviewRepository:
             model = await session.get(InterviewSessionModel, record.session_id)
             if model is None:
                 raise InterviewSessionNotFound(record.session_id)
+            turn_id = str(uuid4())
             session.add(
                 InterviewTurnModel(
-                    id=str(uuid4()),
+                    id=turn_id,
                     interview_session_id=record.session_id,
                     turn_number=record.turn_number,
                     question=record.question.question,
@@ -161,6 +166,27 @@ class SqlAlchemyInterviewRepository:
                     assessment=record.assessment.model_dump(mode="json"),
                     assessment_origin=record.assessment.origin,
                 )
+            )
+            session.add_all(
+                [
+                    AgentRunModel(
+                        id=str(uuid4()),
+                        review_session_id=model.review_session_id,
+                        workflow=f"interview.{stage.stage}",
+                        mode=stage.origin,
+                        status=stage.status,
+                        model_name=stage.model_name,
+                        input_tokens=stage.input_tokens,
+                        output_tokens=stage.output_tokens,
+                        estimated_cost_usd=stage.estimated_cost_usd,
+                        latency_ms=stage.latency_ms,
+                        prompt_version=stage.prompt_version,
+                        attempt_count=stage.attempt_count,
+                        validation_failure_count=stage.validation_failure_count,
+                        failure_category=stage.failure_category,
+                    )
+                    for stage in record.provenance
+                ]
             )
             model.current_question = (
                 record.next_question.model_dump(mode="json")

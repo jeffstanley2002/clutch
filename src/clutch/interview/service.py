@@ -1,29 +1,41 @@
-"""Deterministic multi-turn interview service with privacy-safe persistence."""
+"""RAG-grounded interview service with privacy-safe deterministic fallback."""
 
 from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable
 from hashlib import sha256
+from time import perf_counter
 
 from clutch.interview.contracts import InterviewTurnRecord
 from clutch.interview.repository import (
     InterviewRepository,
     interview_repository_from_env,
 )
+from clutch.knowledge_base import CleanCodePrinciple
+from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
+from clutch.llm import InterviewAssessmentContext, ModelRouter
+from clutch.observability import OBSERVABILITY, Observability
 from clutch.persistence.repository import (
     ReviewFindingReader,
     review_finding_reader_from_env,
 )
+from clutch.rag import KnowledgeRetriever, knowledge_retriever_from_env
 from clutch.schemas import (
     FeedbackReport,
+    FindingCategory,
     InterviewAssessment,
     InterviewQuestion,
     InterviewStatus,
     InterviewTurnRequest,
     InterviewTurnResponse,
+    StageProvenance,
     SupportingFinding,
 )
+
+_CORPUS_BY_ID = {
+    principle.id: principle for principle in SEED_CLEAN_CODE_PRINCIPLES
+}
 
 
 class InterviewNotComplete(RuntimeError):
@@ -35,9 +47,15 @@ class InterviewService:
         self,
         repository: InterviewRepository | None = None,
         review_store: ReviewFindingReader | None = None,
+        model_router: ModelRouter | None = None,
+        retriever: KnowledgeRetriever | None = None,
+        observability: Observability | None = None,
     ) -> None:
         self._repository = repository or interview_repository_from_env()
         self._review_store = review_store or review_finding_reader_from_env()
+        self._model_router = model_router or ModelRouter.from_env()
+        self._retriever = retriever or knowledge_retriever_from_env()
+        self._observability = observability or OBSERVABILITY
 
     async def run_turn(self, request: InterviewTurnRequest) -> InterviewTurnResponse:
         if request.interview_session_id is None:
@@ -65,7 +83,86 @@ class InterviewService:
             )
 
         answer = (request.answer or "").strip()
-        assessment = _assess_answer(answer, state.current_question)
+        answer_summary = _summarize_answer(answer)
+        principles, retrieval_provenance = await self._retrieve_grounding(
+            role_context=state.role_context,
+            question=state.current_question,
+        )
+        fallback = _assess_answer_deterministically(
+            answer,
+            state.current_question,
+        ).model_copy(
+            update={
+                "citations": [principle.citation for principle in principles],
+                "origin": "deterministic_static",
+            }
+        )
+        if principles:
+            with self._observability.span(
+                "interview.assess_answer",
+                as_type="generation",
+                input={
+                    "question_id": state.current_question.id,
+                    "answer_sha256": sha256(answer.encode("utf-8")).hexdigest(),
+                    "grounding_ids": [principle.id for principle in principles],
+                },
+                metadata={"prompt_version": "interview_assessment.v1"},
+            ) as span:
+                result = await self._model_router.assess_interview(
+                    InterviewAssessmentContext(
+                        role_context=state.role_context,
+                        question=state.current_question,
+                        answer=answer,
+                        answer_signal_summary=answer_summary,
+                        principles=principles,
+                    ),
+                    deterministic_fallback=fallback,
+                )
+                assessment_provenance = StageProvenance(
+                    stage="interview_assessment",
+                    status=(
+                        "succeeded"
+                        if result.assessment.origin == "ai_generated"
+                        else "fallback"
+                    ),
+                    origin=result.assessment.origin,
+                    model_name=result.model_name,
+                    prompt_version=result.prompt_version,
+                    input_tokens=result.input_tokens,
+                    output_tokens=result.output_tokens,
+                    latency_ms=result.latency_ms,
+                    estimated_cost_usd=result.estimated_cost_usd,
+                    attempt_count=result.attempt_count,
+                    validation_failure_count=result.validation_failure_count,
+                    failure_category=result.failure_category,
+                )
+                assessment = result.assessment.model_copy(
+                    update={"provenance": assessment_provenance}
+                )
+                span.update(
+                    output={
+                        "origin": assessment.origin,
+                        "score": assessment.score,
+                        "citation_ids": [
+                            citation.source_id for citation in assessment.citations
+                        ],
+                        "model_name": result.model_name,
+                        "input_tokens": result.input_tokens,
+                        "output_tokens": result.output_tokens,
+                        "failure_category": result.failure_category,
+                    }
+                )
+        else:
+            assessment_provenance = StageProvenance(
+                stage="interview_assessment",
+                status="fallback",
+                origin="deterministic_static",
+                failure_category="retrieval_failed",
+            )
+            assessment = fallback.model_copy(
+                update={"provenance": assessment_provenance}
+            )
+        provenance = [retrieval_provenance, assessment_provenance]
         next_question = (
             state.remaining_questions[0] if state.remaining_questions else None
         )
@@ -82,8 +179,9 @@ class InterviewService:
                 turn_number=turn_number,
                 question=state.current_question,
                 answer_sha256=sha256(answer.encode("utf-8")).hexdigest(),
-                answer_summary=_summarize_answer(answer),
+                answer_summary=answer_summary,
                 assessment=assessment,
+                provenance=provenance,
                 next_question=next_question,
                 remaining_questions=remaining,
                 status=status,
@@ -95,8 +193,87 @@ class InterviewService:
             turn_number=turn_number + (1 if next_question is not None else 0),
             question=next_question,
             assessment=assessment,
+            provenance=provenance,
             completed=status == "completed",
         )
+
+    async def _retrieve_grounding(
+        self,
+        *,
+        role_context: str,
+        question: InterviewQuestion,
+    ) -> tuple[list[CleanCodePrinciple], StageProvenance]:
+        """Retrieve up to three public rubric/reference items without the answer."""
+
+        category = _question_category(question)
+        cited = [
+            principle
+            for citation in question.citations
+            if (principle := _CORPUS_BY_ID.get(citation.source_id)) is not None
+            and principle.item_type in {"reference", "rubric"}
+        ]
+        query = " ".join(
+            [
+                role_context,
+                "rubric reference interview assessment",
+                category or "",
+                question.question,
+                question.intent,
+                *(citation.title for citation in question.citations),
+            ]
+        )
+        started_at = perf_counter()
+        with self._observability.span(
+            "interview.retrieve_grounding",
+            as_type="retriever",
+            input={
+                "question_id": question.id,
+                "category": category,
+                "cited_source_ids": [
+                    citation.source_id for citation in question.citations
+                ],
+            },
+        ) as span:
+            try:
+                retrieved = await self._retriever.retrieve(
+                    query,
+                    categories={category} if category is not None else None,
+                    limit=3,
+                )
+                candidates = [*cited, *retrieved]
+                principles = list(
+                    {
+                        principle.id: principle
+                        for principle in candidates
+                        if principle.item_type in {"reference", "rubric"}
+                    }.values()
+                )[:3]
+                provenance = StageProvenance(
+                    stage="interview_retrieval",
+                    status="succeeded" if principles else "failed",
+                    origin="retrieved_citation",
+                    latency_ms=(perf_counter() - started_at) * 1_000,
+                    failure_category=None if principles else "retrieval_failed",
+                )
+            except Exception:
+                principles = list({item.id: item for item in cited}.values())[:3]
+                provenance = StageProvenance(
+                    stage="interview_retrieval",
+                    status="succeeded" if principles else "failed",
+                    origin="retrieved_citation",
+                    latency_ms=(perf_counter() - started_at) * 1_000,
+                    failure_category=None if principles else "retrieval_failed",
+                )
+            span.update(
+                output={
+                    "knowledge_source_ids": [
+                        principle.id for principle in principles
+                    ],
+                    "status": provenance.status,
+                    "failure_category": provenance.failure_category,
+                }
+            )
+        return principles, provenance
 
     async def generate_feedback(self, session_id: str) -> FeedbackReport:
         state = await self._repository.get_session(session_id)
@@ -149,13 +326,15 @@ class InterviewService:
                     line_start=finding.line_start,
                     line_end=finding.line_end,
                     citation_ids=finding.citation_ids,
+                    origin=finding.origin,
                 )
                 for finding in findings[:5]
             ],
+            aggregation_label=_aggregation_label(turns),
         )
 
 
-def _assess_answer(
+def _assess_answer_deterministically(
     answer: str,
     question: InterviewQuestion,
 ) -> InterviewAssessment:
@@ -206,7 +385,41 @@ def _assess_answer(
             if bounded_score >= 4
             else "Promising direction; make the tradeoff and verification plan explicit."
         ),
+        origin="deterministic_static",
     )
+
+
+def _question_category(
+    question: InterviewQuestion,
+) -> FindingCategory | None:
+    for citation in question.citations:
+        principle = _CORPUS_BY_ID.get(citation.source_id)
+        if principle is not None:
+            return principle.category
+    text = f"{question.intent} {question.question}".lower()
+    for category in (
+        "maintainability",
+        "readability",
+        "correctness",
+        "testing",
+        "design",
+        "security",
+    ):
+        if category in text:
+            return category
+    return None
+
+
+def _aggregation_label(turns: Iterable[object]) -> str:
+    origins = {
+        getattr(getattr(turn, "assessment", None), "origin", None)
+        for turn in turns
+    }
+    if origins == {"ai_generated"}:
+        return "Rule-based report aggregation from AI-assessed turns."
+    if "ai_generated" in origins:
+        return "Rule-based report aggregation from AI and rule-based turns."
+    return "Rule-based report aggregation from rule-based assessed turns."
 
 
 def _summarize_answer(answer: str) -> str:

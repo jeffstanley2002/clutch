@@ -5,6 +5,7 @@ import pytest
 
 from clutch.knowledge_base import retrieve_clean_code_principles
 from clutch.llm.providers import (
+    InterviewAssessmentContext,
     ModelRouter,
     OpenAIProvider,
     ProviderReview,
@@ -15,7 +16,12 @@ from clutch.llm.providers import (
 from clutch.llm.spend import InMemorySpendGuard
 from clutch.parsing import parse_python_code
 from clutch.review.static import run_static_review
-from clutch.schemas import CodeFinding, InterviewQuestion, ReviewRequest
+from clutch.schemas import (
+    CodeFinding,
+    InterviewAssessment,
+    InterviewQuestion,
+    ReviewRequest,
+)
 
 
 def _context() -> ReviewContext:
@@ -43,6 +49,23 @@ def _question_context() -> QuestionContext:
         role_context=context.request.role_context,
         findings=context.static_findings[:1],
         principles=context.principles,
+    )
+
+
+def _assessment_context() -> InterviewAssessmentContext:
+    question_context = _question_context()
+    return InterviewAssessmentContext(
+        role_context=question_context.role_context,
+        question=InterviewQuestion(
+            id="question-1",
+            finding_id=question_context.findings[0].id,
+            question="How would you improve and verify this default?",
+            intent="Assess correctness reasoning.",
+            difficulty="medium",
+        ),
+        answer="I would use None because it avoids shared state and test two calls.",
+        answer_signal_summary="Answer length: 65 characters; signals: testing.",
+        principles=question_context.principles[:3],
     )
 
 
@@ -269,3 +292,66 @@ def test_question_generation_falls_back_after_grounding_validation() -> None:
     assert result.attempt_count == 2
     assert result.validation_failure_count == 2
     assert responses.calls == 2
+
+
+def test_openai_provider_assesses_answer_with_canonical_citations() -> None:
+    context = _assessment_context()
+    citation = context.principles[0].citation
+    responses = FakeResponses(
+        [
+            {
+                "score": 4,
+                "strengths": ["Explains why shared state is unsafe."],
+                "gaps": ["Name one tradeoff."],
+                "feedback": "Good reasoning; make the tradeoff explicit.",
+                "citation_ids": [citation.source_id],
+            }
+        ]
+    )
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+
+    result = asyncio.run(provider.assess_interview(context))
+
+    assert result.assessment.score == 4
+    assert result.assessment.citations == [citation]
+    assert result.assessment.origin == "ai_generated"
+    assert result.prompt_version == "interview_assessment.v1"
+    assert responses.requests[0]["store"] is False
+    assert responses.requests[0]["max_output_tokens"] == 1_200
+
+
+def test_interview_assessment_falls_back_after_invalid_citations() -> None:
+    context = _assessment_context()
+    invalid = {
+        "score": 5,
+        "strengths": ["Invented support."],
+        "gaps": [],
+        "feedback": "This output must not cross the grounding boundary.",
+        "citation_ids": ["invented.source"],
+    }
+    responses = FakeResponses([invalid, invalid])
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+    fallback = InterviewAssessment(
+        score=2,
+        gaps=["Explain the reasoning in more depth."],
+        feedback="Rule-based fallback.",
+    )
+
+    result = asyncio.run(
+        ModelRouter(primary=provider).assess_interview(
+            context,
+            deterministic_fallback=fallback,
+        )
+    )
+
+    assert result.assessment == fallback
+    assert result.assessment.origin == "deterministic_static"
+    assert result.failure_category == "grounding_validation_failed"
+    assert result.attempt_count == 2
+    assert result.validation_failure_count == 2

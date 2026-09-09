@@ -3,7 +3,7 @@
 import logging
 import os
 from time import perf_counter
-from typing import Any, Literal, Protocol
+from typing import Annotated, Any, Literal, Protocol
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -18,12 +18,17 @@ from clutch.llm.spend import (
     conservative_token_estimate,
     spend_guard_from_env,
 )
+from clutch.prompts.interview_assessment import (
+    PROMPT_VERSION as INTERVIEW_ASSESSMENT_PROMPT_VERSION,
+)
+from clutch.prompts.interview_assessment import build_interview_assessment_prompt
 from clutch.prompts.questions import PROMPT_VERSION as QUESTIONS_PROMPT_VERSION
 from clutch.prompts.questions import build_questions_prompt
 from clutch.prompts.review import PROMPT_VERSION, build_review_prompt
 from clutch.schemas import (
     Citation,
     CodeFinding,
+    InterviewAssessment,
     InterviewQuestion,
     ParsedCode,
     ReviewMode,
@@ -35,6 +40,7 @@ DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 MAX_MODEL_ATTEMPTS = 2
 MAX_REVIEW_OUTPUT_TOKENS = 4_000
 MAX_QUESTION_OUTPUT_TOKENS = 1_600
+MAX_INTERVIEW_ASSESSMENT_OUTPUT_TOKENS = 1_200
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +67,22 @@ class ModelQuestionOutput(BaseModel):
     questions: list[ModelInterviewQuestion] = Field(min_length=1, max_length=3)
 
 
+class ModelInterviewAssessment(BaseModel):
+    """Provider payload before trusted citation canonicalization."""
+
+    score: int = Field(..., ge=1, le=5)
+    strengths: list[Annotated[str, Field(min_length=1)]] = Field(
+        default_factory=list,
+        max_length=4,
+    )
+    gaps: list[Annotated[str, Field(min_length=1)]] = Field(
+        default_factory=list,
+        max_length=4,
+    )
+    feedback: str = Field(..., min_length=1)
+    citation_ids: list[str] = Field(..., min_length=1, max_length=3)
+
+
 class ReviewContext(BaseModel):
     """Typed, request-scoped model context that is never persisted."""
 
@@ -76,6 +98,16 @@ class QuestionContext(BaseModel):
     role_context: str = Field(..., min_length=1, max_length=120)
     findings: list[CodeFinding] = Field(..., min_length=1, max_length=3)
     principles: list[CleanCodePrinciple] = Field(default_factory=list, max_length=8)
+
+
+class InterviewAssessmentContext(BaseModel):
+    """Request-scoped interview context; raw answers never leave this boundary."""
+
+    role_context: str = Field(..., min_length=1, max_length=120)
+    question: InterviewQuestion
+    answer: str = Field(..., min_length=1, max_length=10_000)
+    answer_signal_summary: str = Field(..., min_length=1, max_length=500)
+    principles: list[CleanCodePrinciple] = Field(..., min_length=1, max_length=3)
 
 
 class ProviderReview(BaseModel):
@@ -125,6 +157,31 @@ class ProviderQuestions(BaseModel):
 
     @model_validator(mode="after")
     def validate_diagnostic_counts(self) -> "ProviderQuestions":
+        if self.validation_failure_count > self.attempt_count:
+            raise ValueError("validation failures cannot exceed provider attempts")
+        return self
+
+
+class ProviderAssessment(BaseModel):
+    """Provider-neutral assessment plus privacy-safe model diagnostics."""
+
+    assessment: InterviewAssessment
+    model_name: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    attempt_count: int = Field(default=0, ge=0, le=MAX_MODEL_ATTEMPTS)
+    validation_failure_count: int = Field(
+        default=0,
+        ge=0,
+        le=MAX_MODEL_ATTEMPTS,
+    )
+    prompt_version: str | None = None
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    estimated_cost_usd: float = Field(default=0.0, ge=0.0)
+    failure_category: SafeFailureCategory | None = None
+
+    @model_validator(mode="after")
+    def validate_diagnostic_counts(self) -> "ProviderAssessment":
         if self.validation_failure_count > self.attempt_count:
             raise ValueError("validation failures cannot exceed provider attempts")
         return self
@@ -390,6 +447,99 @@ class OpenAIProvider:
             validation_failure_count=validation_failure_count,
         ) from last_error
 
+    async def assess_interview(
+        self,
+        context: InterviewAssessmentContext,
+    ) -> ProviderAssessment:
+        """Assess one untrusted answer with grounded structured output."""
+
+        started_at = perf_counter()
+        prompt = build_interview_assessment_prompt(
+            role_context=context.role_context,
+            question=context.question,
+            answer=context.answer,
+            answer_signal_summary=context.answer_signal_summary,
+            principles=context.principles,
+        )
+        estimated_cost = completion_cost_usd(
+            self._model,
+            input_tokens=conservative_token_estimate(f"{prompt.system}\n{prompt.user}"),
+            output_tokens=MAX_INTERVIEW_ASSESSMENT_OUTPUT_TOKENS,
+        )
+        attempt_count = 0
+        validation_failure_count = 0
+        last_error: Exception | None = None
+        for _ in range(MAX_MODEL_ATTEMPTS):
+            reservation = await self._spend_guard.reserve(estimated_cost)
+            attempt_count += 1
+            try:
+                response = await self._client.responses.parse(
+                    model=self._model,
+                    instructions=prompt.system,
+                    input=prompt.user,
+                    text_format=ModelInterviewAssessment,
+                    max_output_tokens=MAX_INTERVIEW_ASSESSMENT_OUTPUT_TOKENS,
+                    store=False,
+                )
+                output = ModelInterviewAssessment.model_validate(
+                    response.output_parsed
+                )
+                assessment = _normalize_interview_assessment(
+                    output,
+                    context=context,
+                )
+                usage = getattr(response, "usage", None)
+                input_tokens = getattr(usage, "input_tokens", None)
+                output_tokens = getattr(usage, "output_tokens", None)
+                actual_cost = estimated_cost
+                if isinstance(input_tokens, int) and isinstance(output_tokens, int):
+                    actual_cost = completion_cost_usd(
+                        self._model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                    )
+                    try:
+                        await self._spend_guard.reconcile(reservation, actual_cost)
+                    except ModelBudgetUnavailable:
+                        pass
+                return ProviderAssessment(
+                    assessment=assessment,
+                    model_name=self._model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
+                    prompt_version=INTERVIEW_ASSESSMENT_PROMPT_VERSION,
+                    latency_ms=(perf_counter() - started_at) * 1_000,
+                    estimated_cost_usd=actual_cost,
+                )
+            except (ValidationError, ValueError) as exc:
+                validation_failure_count += 1
+                last_error = exc
+                _log_provider_failure(
+                    model=self._model,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
+                    exc=exc,
+                    stage="interview_assessment",
+                )
+            except Exception as exc:
+                last_error = exc
+                _log_provider_failure(
+                    model=self._model,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
+                    exc=exc,
+                    stage="interview_assessment",
+                )
+        assert last_error is not None
+        raise ReviewProviderFailure(
+            failure_reason=type(last_error).__name__,
+            failure_category=_failure_category(last_error),
+            attempt_count=attempt_count,
+            validation_failure_count=validation_failure_count,
+        ) from last_error
+
 
 class ModelRouter:
     """Prefer configured model review and expose an honest static fallback."""
@@ -485,6 +635,43 @@ class ModelRouter:
             failure_category=failure_category,
         )
 
+    async def assess_interview(
+        self,
+        context: InterviewAssessmentContext,
+        *,
+        deterministic_fallback: InterviewAssessment,
+    ) -> ProviderAssessment:
+        """Prefer AI assessment and return an explicitly labeled rule fallback."""
+
+        failure_category: SafeFailureCategory | None = None
+        attempt_count = 0
+        validation_failure_count = 0
+        assessment_method = (
+            getattr(self._primary, "assess_interview", None)
+            if self._primary is not None
+            else None
+        )
+        if not callable(assessment_method):
+            failure_category = "model_not_configured"
+        else:
+            try:
+                result = await assessment_method(context)
+                return ProviderAssessment.model_validate(result)
+            except ReviewProviderFailure as exc:
+                failure_category = exc.failure_category
+                attempt_count = exc.attempt_count
+                validation_failure_count = exc.validation_failure_count
+            except Exception as exc:
+                failure_category = _failure_category(exc)
+        return ProviderAssessment(
+            assessment=deterministic_fallback.model_copy(
+                update={"origin": "deterministic_static"}
+            ),
+            attempt_count=attempt_count,
+            validation_failure_count=validation_failure_count,
+            failure_category=failure_category,
+        )
+
 
 def _normalize_grounding(
     output: ModelReviewOutput,
@@ -572,6 +759,32 @@ def _normalize_questions(
             )
         )
     return normalized
+
+
+def _normalize_interview_assessment(
+    output: ModelInterviewAssessment,
+    *,
+    context: InterviewAssessmentContext,
+) -> InterviewAssessment:
+    """Canonicalize assessment citations to the retrieved public corpus."""
+
+    citations_by_id = {
+        principle.citation.source_id: principle.citation
+        for principle in context.principles
+    }
+    if any(source_id not in citations_by_id for source_id in output.citation_ids):
+        raise ValueError("model assessment contains an ungrounded citation")
+    return InterviewAssessment(
+        score=output.score,
+        strengths=list(dict.fromkeys(output.strengths)),
+        gaps=list(dict.fromkeys(output.gaps)),
+        feedback=output.feedback,
+        citations=[
+            citations_by_id[source_id]
+            for source_id in dict.fromkeys(output.citation_ids)
+        ],
+        origin="ai_generated",
+    )
 
 
 def _log_provider_failure(

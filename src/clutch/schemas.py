@@ -210,6 +210,7 @@ class InterviewTurnResponse(BaseModel):
     turn_number: int = Field(..., ge=1)
     question: InterviewQuestion | None = None
     assessment: InterviewAssessment | None = None
+    provenance: list[StageProvenance] = Field(default_factory=list)
     completed: bool
 
 
@@ -281,6 +282,7 @@ class SupportingFinding(BaseModel):
     line_start: int | None = Field(default=None, ge=1)
     line_end: int | None = Field(default=None, ge=1)
     citation_ids: list[str] = Field(default_factory=list)
+    origin: OutputOrigin = "deterministic_static"
 
 
 class FeedbackReport(BaseModel):

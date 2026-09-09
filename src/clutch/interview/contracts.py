@@ -8,6 +8,7 @@ from clutch.schemas import (
     InterviewAssessment,
     InterviewQuestion,
     InterviewStatus,
+    StageProvenance,
 )
 
 
@@ -29,6 +30,7 @@ class InterviewTurnRecord(BaseModel):
     answer_sha256: str = Field(..., min_length=64, max_length=64)
     answer_summary: str
     assessment: InterviewAssessment
+    provenance: list[StageProvenance] = Field(default_factory=list)
     next_question: InterviewQuestion | None = None
     remaining_questions: list[InterviewQuestion] = Field(default_factory=list)
     status: InterviewStatus

@@ -2,8 +2,10 @@
 
 from clutch.llm.providers import (
     FallbackStaticProvider,
+    InterviewAssessmentContext,
     ModelRouter,
     OpenAIProvider,
+    ProviderAssessment,
     ProviderQuestions,
     QuestionContext,
     ReviewContext,
@@ -21,10 +23,12 @@ from clutch.llm.spend import (
 __all__ = [
     "InMemorySpendGuard",
     "FallbackStaticProvider",
+    "InterviewAssessmentContext",
     "ModelBudgetExceeded",
     "ModelBudgetUnavailable",
     "ModelRouter",
     "OpenAIProvider",
+    "ProviderAssessment",
     "ProviderQuestions",
     "QuestionContext",
     "ReviewContext",
