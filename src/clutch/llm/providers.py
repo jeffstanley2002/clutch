@@ -1,6 +1,8 @@
-"""Structured review providers with optional deterministic test fallback."""
+"""Structured review providers for AI-backed review synthesis."""
 
+import logging
 import os
+from time import perf_counter
 from typing import Any, Protocol
 
 from dotenv import load_dotenv
@@ -9,23 +11,26 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.llm.spend import (
+    ModelBudgetExceeded,
     ModelBudgetUnavailable,
     SpendGuard,
     completion_cost_usd,
     conservative_token_estimate,
     spend_guard_from_env,
 )
-from clutch.prompts.review import build_review_prompt
+from clutch.prompts.review import PROMPT_VERSION, build_review_prompt
 from clutch.schemas import (
     CodeFinding,
     ParsedCode,
     ReviewMode,
     ReviewRequest,
+    SafeFailureCategory,
 )
 
 DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 MAX_MODEL_ATTEMPTS = 2
 MAX_REVIEW_OUTPUT_TOKENS = 4_000
+logger = logging.getLogger(__name__)
 
 
 class ModelReviewOutput(BaseModel):
@@ -59,7 +64,10 @@ class ProviderReview(BaseModel):
         ge=0,
         le=MAX_MODEL_ATTEMPTS,
     )
-    fallback_reason: str | None = None
+    prompt_version: str | None = None
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    estimated_cost_usd: float = Field(default=0.0, ge=0.0)
+    failure_category: SafeFailureCategory | None = None
 
     @model_validator(mode="after")
     def validate_diagnostic_counts(self) -> "ProviderReview":
@@ -84,11 +92,13 @@ class ReviewProviderFailure(RuntimeError):
         self,
         *,
         failure_reason: str,
+        failure_category: SafeFailureCategory,
         attempt_count: int,
         validation_failure_count: int,
     ) -> None:
         super().__init__("review provider failed after bounded attempts")
         self.failure_reason = failure_reason
+        self.failure_category = failure_category
         self.attempt_count = attempt_count
         self.validation_failure_count = validation_failure_count
 
@@ -100,23 +110,29 @@ class ReviewModelUnavailable(RuntimeError):
         self,
         *,
         failure_reason: str,
+        failure_category: SafeFailureCategory = "fallback_failed",
         attempt_count: int = 0,
         validation_failure_count: int = 0,
     ) -> None:
         super().__init__("model review is required but unavailable")
         self.failure_reason = failure_reason
+        self.failure_category = failure_category
         self.attempt_count = attempt_count
         self.validation_failure_count = validation_failure_count
 
 
 class FallbackStaticProvider:
-    """Return deterministic findings when model review is unavailable."""
+    """Return explicitly labeled deterministic or retrieval-only output."""
 
     async def review(self, context: ReviewContext) -> ProviderReview:
+        findings = [
+            finding.model_copy(update={"origin": "deterministic_static"})
+            for finding in context.static_findings
+        ]
         return ProviderReview(
-            findings=context.static_findings,
-            confidence=0.7,
-            mode="static_fallback",
+            findings=findings,
+            confidence=0.7 if findings else 0.3,
+            mode="static_fallback" if findings else "retrieval_only",
         )
 
 
@@ -136,6 +152,7 @@ class OpenAIProvider:
         self._spend_guard = spend_guard or spend_guard_from_env()
 
     async def review(self, context: ReviewContext) -> ProviderReview:
+        started_at = perf_counter()
         prompt = build_review_prompt(
             request=context.request,
             parsed_code=context.parsed_code,
@@ -183,7 +200,10 @@ class OpenAIProvider:
                         # shared counter cannot be reconciled after a paid call.
                         pass
                 return ProviderReview(
-                    findings=findings,
+                    findings=[
+                        finding.model_copy(update={"origin": "ai_generated"})
+                        for finding in findings
+                    ],
                     confidence=output.confidence,
                     mode="model",
                     model_name=self._model,
@@ -191,86 +211,101 @@ class OpenAIProvider:
                     output_tokens=output_tokens,
                     attempt_count=attempt_count,
                     validation_failure_count=validation_failure_count,
+                    prompt_version=PROMPT_VERSION,
+                    latency_ms=(perf_counter() - started_at) * 1_000,
+                    estimated_cost_usd=(
+                        completion_cost_usd(
+                            self._model,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                        )
+                        if isinstance(input_tokens, int)
+                        and isinstance(output_tokens, int)
+                        else estimated_cost
+                    ),
                 )
             except (ValidationError, ValueError) as exc:
                 validation_failure_count += 1
                 last_error = exc
+                _log_provider_failure(
+                    model=self._model,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
+                    exc=exc,
+                )
             except Exception as exc:
                 last_error = exc
+                _log_provider_failure(
+                    model=self._model,
+                    attempt_count=attempt_count,
+                    validation_failure_count=validation_failure_count,
+                    exc=exc,
+                )
 
         assert last_error is not None
         raise ReviewProviderFailure(
             failure_reason=type(last_error).__name__,
+            failure_category=_failure_category(last_error),
             attempt_count=attempt_count,
             validation_failure_count=validation_failure_count,
         ) from last_error
 
 
 class ModelRouter:
-    """Select the model path and optionally allow deterministic fallback."""
+    """Prefer configured model review and expose an honest static fallback."""
 
     def __init__(
         self,
         *,
         primary: ReviewProvider | None,
         fallback: ReviewProvider | None = None,
-        allow_static_fallback: bool = True,
     ) -> None:
         self._primary = primary
         self._fallback = fallback or FallbackStaticProvider()
-        self._allow_static_fallback = allow_static_fallback
 
     @classmethod
     def from_env(cls) -> "ModelRouter":
         load_dotenv()
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        allow_static_fallback = _env_flag("CLUTCH_ALLOW_STATIC_FALLBACK", default=False)
         if not api_key:
-            return cls(
-                primary=None,
-                allow_static_fallback=allow_static_fallback,
-            )
+            return cls(primary=None)
 
         model = os.getenv("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip()
-        return cls(
-            primary=OpenAIProvider(api_key=api_key, model=model),
-            allow_static_fallback=allow_static_fallback,
-        )
+        return cls(primary=OpenAIProvider(api_key=api_key, model=model))
 
     async def review(self, context: ReviewContext) -> ProviderReview:
+        failure_category: SafeFailureCategory | None = None
+        attempt_count = 0
+        validation_failure_count = 0
         if self._primary is None:
-            if not self._allow_static_fallback:
-                raise ReviewModelUnavailable(failure_reason="model_not_configured")
-            fallback = await self._fallback.review(context)
-            return fallback.model_copy(
-                update={"fallback_reason": "model_not_configured"}
-            )
+            failure_category = "model_not_configured"
+        else:
+            try:
+                return await self._primary.review(context)
+            except ReviewProviderFailure as exc:
+                failure_category = exc.failure_category
+                attempt_count = exc.attempt_count
+                validation_failure_count = exc.validation_failure_count
+            except Exception as exc:
+                # Only a safe class/category crosses the observability boundary.
+                failure_category = _failure_category(exc)
+
         try:
-            return await self._primary.review(context)
-        except ReviewProviderFailure as exc:
-            if not self._allow_static_fallback:
-                raise ReviewModelUnavailable(
-                    failure_reason=exc.failure_reason,
-                    attempt_count=exc.attempt_count,
-                    validation_failure_count=exc.validation_failure_count,
-                ) from exc
             fallback = await self._fallback.review(context)
-            return fallback.model_copy(
-                update={
-                    "fallback_reason": exc.failure_reason,
-                    "attempt_count": exc.attempt_count,
-                    "validation_failure_count": exc.validation_failure_count,
-                }
-            )
         except Exception as exc:
-            # Store only the exception class. The provider payload and request context
-            # may contain source and must never cross the observability boundary.
-            if not self._allow_static_fallback:
-                raise ReviewModelUnavailable(
-                    failure_reason=type(exc).__name__,
-                ) from exc
-            fallback = await self._fallback.review(context)
-            return fallback.model_copy(update={"fallback_reason": type(exc).__name__})
+            raise ReviewModelUnavailable(
+                failure_reason="fallback_failed",
+                failure_category="fallback_failed",
+                attempt_count=attempt_count,
+                validation_failure_count=validation_failure_count,
+            ) from exc
+        return fallback.model_copy(
+            update={
+                "failure_category": failure_category,
+                "attempt_count": attempt_count,
+                "validation_failure_count": validation_failure_count,
+            }
+        )
 
 
 def _normalize_grounding(
@@ -318,8 +353,49 @@ def _normalize_grounding(
     return normalized_findings
 
 
-def _env_flag(name: str, *, default: bool) -> bool:
-    raw_value = os.getenv(name)
-    if raw_value is None:
-        return default
-    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+def _log_provider_failure(
+    *,
+    model: str,
+    attempt_count: int,
+    validation_failure_count: int,
+    exc: Exception,
+) -> None:
+    """Log bounded provider diagnostics without source, prompt, or payload data."""
+
+    logger.warning(
+        "review provider attempt failed",
+        extra={
+            "model": model,
+            "attempt_count": attempt_count,
+            "validation_failure_count": validation_failure_count,
+            "failure_reason": type(exc).__name__,
+            "safe_failure_detail": _safe_failure_detail(exc),
+        },
+    )
+
+
+def _safe_failure_detail(exc: Exception) -> str:
+    if isinstance(exc, ValidationError):
+        return "schema_validation_failed"
+    if isinstance(exc, ValueError):
+        message = str(exc)
+        safe_messages = {
+            "model finding is missing a citation",
+            "model finding contains an ungrounded citation",
+            "model finding line_start exceeds source",
+            "model finding line_end exceeds source",
+            "model finding line range is reversed",
+        }
+        if message in safe_messages:
+            return message
+    return "see_failure_reason"
+
+
+def _failure_category(exc: Exception) -> SafeFailureCategory:
+    if isinstance(exc, (ModelBudgetExceeded, ModelBudgetUnavailable)):
+        return "budget_rejected"
+    if isinstance(exc, ValidationError):
+        return "schema_validation_failed"
+    if isinstance(exc, ValueError):
+        return "grounding_validation_failed"
+    return "provider_error"

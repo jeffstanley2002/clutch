@@ -5,7 +5,33 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 SupportedLanguage = Literal["python"]
-ReviewMode = Literal["model", "static_fallback"]
+ReviewMode = Literal["model", "static_fallback", "retrieval_only"]
+OutputOrigin = Literal[
+    "ai_generated",
+    "deterministic_static",
+    "template_generated",
+    "retrieved_citation",
+]
+StageName = Literal[
+    "retrieval",
+    "review_synthesis",
+    "question_generation",
+    "interview_retrieval",
+    "interview_assessment",
+    "final_aggregation",
+]
+StageStatus = Literal["succeeded", "fallback", "failed", "skipped"]
+SafeFailureCategory = Literal[
+    "model_not_configured",
+    "budget_rejected",
+    "provider_error",
+    "schema_validation_failed",
+    "grounding_validation_failed",
+    "retrieval_failed",
+    "fallback_failed",
+    "persistence_failed",
+    "unknown",
+]
 SymbolKind = Literal["module", "class", "function"]
 FindingSeverity = Literal["low", "medium", "high"]
 FindingCategory = Literal[
@@ -26,6 +52,32 @@ class Citation(BaseModel):
     source_id: str = Field(..., min_length=1)
     title: str = Field(..., min_length=1)
     url: str | None = None
+    origin: OutputOrigin = "retrieved_citation"
+
+
+class StageProvenance(BaseModel):
+    """Privacy-safe runtime evidence for one review or interview stage."""
+
+    stage: StageName
+    status: StageStatus
+    origin: OutputOrigin
+    model_name: str | None = None
+    prompt_version: str | None = None
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    latency_ms: float = Field(default=0.0, ge=0.0)
+    estimated_cost_usd: float = Field(default=0.0, ge=0.0)
+    attempt_count: int = Field(default=0, ge=0)
+    validation_failure_count: int = Field(default=0, ge=0)
+    failure_category: SafeFailureCategory | None = None
+
+    @model_validator(mode="after")
+    def validate_failure_state(self) -> "StageProvenance":
+        if self.validation_failure_count > self.attempt_count:
+            raise ValueError("validation failures cannot exceed stage attempts")
+        if self.status in {"fallback", "failed"} and self.failure_category is None:
+            raise ValueError("fallback and failed stages require a failure category")
+        return self
 
 
 class ReviewRequest(BaseModel):
@@ -68,6 +120,7 @@ class CodeFinding(BaseModel):
     explanation: str = Field(..., min_length=1)
     suggestion: str = Field(..., min_length=1)
     citations: list[Citation] = Field(default_factory=list)
+    origin: OutputOrigin = "deterministic_static"
 
 
 class CodeChunk(BaseModel):
@@ -100,6 +153,7 @@ class InterviewQuestion(BaseModel):
     intent: str = Field(..., min_length=1)
     difficulty: Literal["easy", "medium", "hard"]
     citations: list[Citation] = Field(default_factory=list)
+    origin: OutputOrigin = "template_generated"
 
 
 class InterviewAssessment(BaseModel):
@@ -109,6 +163,9 @@ class InterviewAssessment(BaseModel):
     strengths: list[str] = Field(default_factory=list)
     gaps: list[str] = Field(default_factory=list)
     feedback: str = Field(..., min_length=1)
+    citations: list[Citation] = Field(default_factory=list)
+    origin: OutputOrigin = "deterministic_static"
+    provenance: StageProvenance | None = None
 
 
 class InterviewTurnRequest(BaseModel):
@@ -164,6 +221,7 @@ class ReviewResponse(BaseModel):
     mode: ReviewMode
     confidence: float = Field(..., ge=0.0, le=1.0)
     citations_used: list[Citation] = Field(default_factory=list)
+    provenance: list[StageProvenance] = Field(default_factory=list)
     request_id: str = Field(..., min_length=1)
     latency_ms: float = Field(..., ge=0.0)
 
@@ -234,6 +292,8 @@ class FeedbackReport(BaseModel):
     recommended_tasks: list[str] = Field(default_factory=list)
     interview_readiness_summary: str
     supporting_findings: list[SupportingFinding] = Field(default_factory=list)
+    origin: OutputOrigin = "deterministic_static"
+    aggregation_label: str = "Rule-based report aggregation from assessed turns."
 
 
 class ProgressSnapshot(BaseModel):

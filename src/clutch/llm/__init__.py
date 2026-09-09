@@ -17,8 +17,8 @@ from clutch.llm.spend import (
 )
 
 __all__ = [
-    "FallbackStaticProvider",
     "InMemorySpendGuard",
+    "FallbackStaticProvider",
     "ModelBudgetExceeded",
     "ModelBudgetUnavailable",
     "ModelRouter",

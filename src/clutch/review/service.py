@@ -8,13 +8,19 @@ from uuid import uuid4
 from langgraph.graph.state import CompiledStateGraph
 
 from clutch.agent import REVIEW_GRAPH
-from clutch.observability import OBSERVABILITY, Observability
+from clutch.observability import OBSERVABILITY, Observability, flush_observability
 from clutch.persistence import (
     ReviewRecorder,
     build_review_persistence_record,
     review_recorder_from_env,
 )
-from clutch.schemas import Citation, CodeFinding, ReviewRequest, ReviewResponse
+from clutch.schemas import (
+    Citation,
+    CodeFinding,
+    ReviewRequest,
+    ReviewResponse,
+    StageProvenance,
+)
 
 
 class ReviewService:
@@ -52,7 +58,11 @@ class ReviewService:
                 questions=questions,
                 mode=state["mode"],
                 confidence=state["confidence"],
-                citations_used=_unique_citations(findings),
+                citations_used=_unique_citations(
+                    findings,
+                    retrieved=state.get("retrieved_principles", []),
+                ),
+                provenance=_stage_provenance(state),
                 request_id=str(uuid4()),
                 latency_ms=(perf_counter() - started_at) * 1_000,
             )
@@ -74,18 +84,44 @@ class ReviewService:
                     "model_name": state.get("model_name"),
                     "input_tokens": state.get("input_tokens"),
                     "output_tokens": state.get("output_tokens"),
-                    "fallback_reason": state.get("fallback_reason"),
                 }
             )
-            return response
+        flush_observability()
+        return response
 
 
-def _unique_citations(findings: Sequence[CodeFinding]) -> list[Citation]:
+def _unique_citations(
+    findings: Sequence[CodeFinding],
+    *,
+    retrieved: Sequence[object] = (),
+) -> list[Citation]:
     citations: dict[str, Citation] = {}
     for finding in findings:
         for citation in finding.citations:
             citations.setdefault(citation.source_id, citation)
+    if not findings:
+        for principle in retrieved:
+            retrieved_citation = getattr(principle, "citation", None)
+            if isinstance(retrieved_citation, Citation):
+                citations.setdefault(
+                    retrieved_citation.source_id,
+                    retrieved_citation,
+                )
     return list(citations.values())
+
+
+def _stage_provenance(state: object) -> list[StageProvenance]:
+    if not isinstance(state, dict):
+        return []
+    return [
+        stage
+        for key in (
+            "retrieval_provenance",
+            "review_provenance",
+            "question_provenance",
+        )
+        if isinstance((stage := state.get(key)), StageProvenance)
+    ]
 
 
 review_service = ReviewService()

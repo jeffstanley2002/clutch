@@ -1,7 +1,8 @@
 """LangGraph spine for the pasted-code review workflow."""
 
 import os
-from typing import Literal, NotRequired, TypedDict
+from time import perf_counter
+from typing import Literal, NotRequired, TypedDict, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -23,6 +24,7 @@ from clutch.schemas import (
     ParsedCode,
     ReviewMode,
     ReviewRequest,
+    StageProvenance,
 )
 
 
@@ -42,7 +44,9 @@ class ReviewGraphState(TypedDict):
     output_tokens: NotRequired[int | None]
     attempt_count: NotRequired[int]
     validation_failure_count: NotRequired[int]
-    fallback_reason: NotRequired[str | None]
+    retrieval_provenance: NotRequired[StageProvenance]
+    review_provenance: NotRequired[StageProvenance]
+    question_provenance: NotRequired[StageProvenance]
 
 
 def parse_code(state: ReviewGraphState) -> dict[str, ParsedCode]:
@@ -66,28 +70,50 @@ async def retrieve_principles(
     state: ReviewGraphState,
     *,
     retriever: KnowledgeRetriever,
-) -> dict[str, list[CleanCodePrinciple]]:
+) -> dict[str, object]:
     """Retrieve grounding material for the current findings and role."""
 
     request = state["request"]
     findings = state["static_findings"]
     retrieval_query = build_retrieval_query(request, findings)
-    principles = await retriever.retrieve(
-        retrieval_query.text,
-        categories=(
-            set(retrieval_query.categories)
-            if retrieval_query.categories is not None
-            else None
-        ),
-        limit=retrieval_query.limit,
-    )
-    return {"retrieved_principles": principles}
+    started_at = perf_counter()
+    try:
+        principles = await retriever.retrieve(
+            retrieval_query.text,
+            categories=(
+                set(retrieval_query.categories)
+                if retrieval_query.categories is not None
+                else None
+            ),
+            limit=retrieval_query.limit,
+        )
+        provenance = StageProvenance(
+            stage="retrieval",
+            status="succeeded",
+            origin="retrieved_citation",
+            latency_ms=(perf_counter() - started_at) * 1_000,
+        )
+    except Exception:
+        # Retrieval adapters own their availability fallback. Reaching this branch
+        # means both the configured path and its fallback failed.
+        principles = []
+        provenance = StageProvenance(
+            stage="retrieval",
+            status="failed",
+            origin="retrieved_citation",
+            latency_ms=(perf_counter() - started_at) * 1_000,
+            failure_category="retrieval_failed",
+        )
+    return {
+        "retrieved_principles": principles,
+        "retrieval_provenance": provenance,
+    }
 
 
 async def synthesize_review(
     state: ReviewGraphState, *, model_router: ModelRouter
 ) -> dict[str, object]:
-    """Run structured model synthesis or the deterministic fallback."""
+    """Run structured model synthesis through the configured AI provider."""
 
     citations_by_category: dict[str, list[Citation]] = {}
     for principle in state["retrieved_principles"]:
@@ -114,8 +140,20 @@ async def synthesize_review(
             principles=state["retrieved_principles"],
         )
     )
+    findings = [
+        finding.model_copy(
+            update={
+                "origin": (
+                    "ai_generated"
+                    if result.mode == "model"
+                    else "deterministic_static"
+                )
+            }
+        )
+        for finding in result.findings
+    ]
     return {
-        "findings": result.findings,
+        "findings": findings,
         "mode": result.mode,
         "confidence": result.confidence,
         "model_name": result.model_name,
@@ -123,7 +161,24 @@ async def synthesize_review(
         "output_tokens": result.output_tokens,
         "attempt_count": result.attempt_count,
         "validation_failure_count": result.validation_failure_count,
-        "fallback_reason": result.fallback_reason,
+        "review_provenance": StageProvenance(
+            stage="review_synthesis",
+            status="succeeded" if result.mode == "model" else "fallback",
+            origin=(
+                "ai_generated"
+                if result.mode == "model"
+                else "deterministic_static"
+            ),
+            model_name=result.model_name,
+            prompt_version=result.prompt_version,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=result.latency_ms,
+            estimated_cost_usd=result.estimated_cost_usd,
+            attempt_count=result.attempt_count,
+            validation_failure_count=result.validation_failure_count,
+            failure_category=result.failure_category,
+        ),
     }
 
 
@@ -150,7 +205,7 @@ def validate_findings(state: ReviewGraphState) -> dict[str, list[CodeFinding]]:
 
 def generate_questions(
     state: ReviewGraphState,
-) -> dict[str, list[InterviewQuestion]]:
+) -> dict[str, object]:
     """Turn the most useful findings into deterministic interview prompts."""
 
     role = state["request"].role_context
@@ -171,7 +226,14 @@ def generate_questions(
         )
         for index, finding in enumerate(state["findings"][:3], start=1)
     ]
-    return {"questions": questions}
+    return {
+        "questions": questions,
+        "question_provenance": StageProvenance(
+            stage="question_generation",
+            status="succeeded",
+            origin="template_generated",
+        ),
+    }
 
 
 def _question_difficulty(
@@ -229,16 +291,19 @@ def build_review_graph(
 
     async def retrieve_principles_node(
         state: ReviewGraphState,
-    ) -> dict[str, list[CleanCodePrinciple]]:
+    ) -> dict[str, object]:
         with observer.span("review.retrieve_principles", as_type="retriever") as span:
             result = await retrieve_principles(
                 state,
                 retriever=knowledge_retriever,
             )
+            principles = cast(
+                list[CleanCodePrinciple], result["retrieved_principles"]
+            )
             span.update(
                 output={
                     "knowledge_source_ids": [
-                        principle.id for principle in result["retrieved_principles"]
+                        principle.id for principle in principles
                     ]
                 }
             )
@@ -266,7 +331,6 @@ def build_review_graph(
                     "validation_failure_count": result[
                         "validation_failure_count"
                     ],
-                    "fallback_reason": result["fallback_reason"],
                 }
             )
             return result
@@ -281,10 +345,11 @@ def build_review_graph(
 
     def generate_questions_node(
         state: ReviewGraphState,
-    ) -> dict[str, list[InterviewQuestion]]:
+    ) -> dict[str, object]:
         with observer.span("review.generate_questions", as_type="tool") as span:
             result = generate_questions(state)
-            span.update(output={"question_count": len(result["questions"])})
+            questions = cast(list[InterviewQuestion], result["questions"])
+            span.update(output={"question_count": len(questions)})
             return result
 
     builder = StateGraph(ReviewGraphState)

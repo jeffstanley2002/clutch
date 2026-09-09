@@ -4,8 +4,32 @@ import backend.app.main as main_module
 from backend.app.main import app
 from clutch.github.contracts import FetchedRepository, GitHubFile
 from clutch.github.review import GitHubReviewService
+from clutch.review.service import ReviewService
 
 client = TestClient(app)
+
+
+def _use_fake_model_review(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from clutch.agent import build_review_graph
+    from clutch.llm import ModelRouter
+    from clutch.llm.providers import ProviderReview, ReviewContext
+    from clutch.persistence.repository import IN_MEMORY_REVIEW_RECORDER
+
+    class StaticTestModelProvider:
+        async def review(self, context: ReviewContext) -> ProviderReview:
+            return ProviderReview(
+                findings=context.static_findings,
+                confidence=0.7,
+                mode="model",
+                model_name="test-model",
+                attempt_count=1,
+            )
+
+    service = ReviewService(
+        graph=build_review_graph(ModelRouter(primary=StaticTestModelProvider())),
+        recorder=IN_MEMORY_REVIEW_RECORDER,
+    )
+    monkeypatch.setattr(main_module, "review_service", service)
 
 
 def test_health_check_returns_ok() -> None:
@@ -65,7 +89,35 @@ def test_required_auth_fails_closed_without_configured_key(monkeypatch) -> None:
     }
 
 
-def test_review_returns_structured_findings_for_static_issues() -> None:
+def test_review_plainly_labels_retrieval_only_without_model(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    response = client.post(
+        "/review",
+        json={
+            "code": "def value():\n    return 1\n",
+            "language": "python",
+            "role_context": "backend intern",
+        },
+    )
+
+    assert response.status_code == 200
+    review = response.json()
+    assert review["mode"] == "retrieval_only"
+    assert review["findings"] == []
+    assert review["citations_used"]
+    synthesis = next(
+        stage
+        for stage in review["provenance"]
+        if stage["stage"] == "review_synthesis"
+    )
+    assert synthesis["status"] == "fallback"
+    assert synthesis["origin"] == "deterministic_static"
+    assert synthesis["failure_category"] == "model_not_configured"
+
+
+def test_review_returns_structured_findings_for_model_issues(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _use_fake_model_review(monkeypatch)
     code = "\n".join(
         [
             "def collect(value, bucket=[]):",
@@ -104,7 +156,8 @@ def test_review_returns_structured_findings_for_static_issues() -> None:
         "seed.clean_code.boundary_observability",
         "seed.clean_code.safe_python_defaults",
     }
-    assert review["mode"] == "static_fallback"
+    assert review["mode"] == "model"
+    assert all(finding["origin"] == "ai_generated" for finding in findings)
     assert 0 <= review["confidence"] <= 1
     assert review["request_id"]
     assert review["latency_ms"] >= 0
@@ -114,7 +167,8 @@ def test_review_returns_structured_findings_for_static_issues() -> None:
     )
 
 
-def test_review_uses_parsed_line_metadata_for_large_functions() -> None:
+def test_review_uses_parsed_line_metadata_for_large_functions(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _use_fake_model_review(monkeypatch)
     body = "\n".join(f"    value += {number}" for number in range(45))
     response = client.post(
         "/review",
@@ -142,7 +196,8 @@ def test_review_uses_parsed_line_metadata_for_large_functions() -> None:
     )
 
 
-def test_review_preserves_long_snippet_finding_for_top_level_code() -> None:
+def test_review_preserves_long_snippet_finding_for_top_level_code(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _use_fake_model_review(monkeypatch)
     code = "\n".join(f"value += {number}" for number in range(65))
     response = client.post(
         "/review",
@@ -246,7 +301,10 @@ def test_interview_route_returns_404_for_unknown_session() -> None:
     assert response.json() == {"detail": "interview session not found"}
 
 
-def test_progress_route_aggregates_reviews_for_one_profile() -> None:
+def test_progress_route_aggregates_reviews_for_one_profile(
+    monkeypatch,
+) -> None:  # type: ignore[no-untyped-def]
+    _use_fake_model_review(monkeypatch)
     profile_id = "api-progress-candidate"
     for code in (
         "def one():\n    # TODO finish\n    return True\n",
@@ -290,6 +348,8 @@ def test_interview_route_rejects_invalid_profile_identifier() -> None:
 
 
 def test_github_review_route_returns_ingestion_metadata(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _use_fake_model_review(monkeypatch)
+
     class FakeGateway:
         async def fetch_repo(
             self,
