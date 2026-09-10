@@ -1102,3 +1102,173 @@ Next up:
 
 - Owner deploys the prepared Render backend and Streamlit Community Cloud UI
   using `docs/free-deployment.md`; no additional database setup is required.
+
+## 2026-09-10 (Day 14 local pre-deploy smoke)
+
+Phase: 4 deployment and measured production readiness
+
+Did:
+
+- Started the full local Compose app stack: Postgres, Redis, GitHub MCP,
+  FastAPI backend, and Streamlit frontend.
+- Reproduced and fixed a local Postgres persistence failure where detached
+  `agent_runs` could flush before their parent `review_sessions` row.
+- Rebuilt the backend image and reran authenticated local smoke checks for
+  health, runtime cache/spend, pasted-code review, interview assessment,
+  feedback report, progress summary, and GitHub repository review.
+
+Learned / decided:
+
+- The deployed-style local API key middleware is active whenever
+  `CLUTCH_API_KEY` is configured, even if `CLUTCH_REQUIRE_AUTH` is false.
+- Use the `X-Clutch-API-Key` header for authenticated API smoke checks.
+
+Verification:
+
+- `tests/test_persistence.py` and `tests/test_review_api.py`: 25 passed.
+- Ruff passed for `src/clutch/persistence/repository.py`.
+- Compose health is green for backend `:8000`, frontend `:8501`, GitHub MCP
+  `:8001`, Postgres `:5432`, and Redis `:6379`.
+- Local pasted-code review returned `mode: model` with one AI-generated finding,
+  one AI-generated question, retrieved citation provenance, and persisted
+  diagnostics.
+- Local interview turn completed with AI-generated assessment, deterministic
+  final report aggregation, and progress summary.
+- Local GitHub review of `pypa/sampleproject` returned bounded MCP ingestion
+  metadata and an AI-generated finding/question.
+
+Open issues:
+
+- Rotate local OpenAI/GitHub/Langfuse/Clutch API keys before deployment.
+- Deploy Render and Streamlit Community Cloud, run hosted smoke/manual privacy
+  checks, and verify restart persistence.
+
+Next up:
+
+- Test the currently running local UI at `http://localhost:8501`, then deploy
+  via `docs/free-deployment.md` after key rotation.
+
+## 2026-09-10 (Day 14 Streamlit Google auth)
+
+Phase: 4 deployment and measured production readiness
+
+Did:
+
+- Added Streamlit OIDC support with a Clutch landing/login gate when `[auth]`
+  secrets are configured.
+- Derived a stable opaque `user_<sha256>` profile ID from the signed-in Google
+  identity so progress can persist per user without storing raw email in route
+  IDs.
+- Kept the existing `X-Clutch-API-Key` backend boundary between Streamlit and
+  FastAPI.
+- Added a safe `.streamlit/secrets.example.toml`, ignored real local Streamlit
+  secrets, and documented local/Streamlit Community Cloud Google OAuth setup.
+
+Learned / decided:
+
+- Use Streamlit `st.login()`/`st.logout()` for the v1 demo instead of adding a
+  separate FastAPI auth provider.
+- Local development remains anonymous unless Streamlit OIDC secrets exist; tests
+  force anonymous mode to avoid depending on developer secrets.
+
+Verification:
+
+- Installed `authlib` for Streamlit OIDC.
+- `tests/test_frontend_provenance.py` and `tests/test_review_api.py`: 20 passed.
+- Ruff passed for `frontend/app.py`, `tests/conftest.py`, and
+  `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+- Restarted Streamlit locally; frontend and backend health checks pass.
+
+Open issues:
+
+- Create/configure the Google OAuth web client for local and hosted redirect
+  URIs, then add real values to local `.streamlit/secrets.toml` and Streamlit
+  Community Cloud secrets.
+- Run a browser login smoke once Google OAuth credentials are configured.
+
+Next up:
+
+- Add Google OAuth credentials, test login/logout and per-user progress locally,
+  then deploy Render and Streamlit Community Cloud.
+
+## 2026-09-10 (Day 14 recruiter landing page)
+
+Phase: 4 deployment and measured production readiness
+
+Did:
+
+- Upgraded the unauthenticated Streamlit auth gate into a recruiter-facing
+  landing page with a clear Clutch headline, review-to-interview-to-progress
+  preview, stack proof chips, privacy notes, and Google login CTA.
+- Kept the authenticated Review → Interview → Progress workbench unchanged.
+- Updated the frontend landing AppTest expectation for the new public copy.
+
+Verification:
+
+- `tests/test_frontend_provenance.py` and `tests/test_review_api.py`: 20 passed.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+- `git diff --check` passed.
+- Restarted Streamlit locally and verified health at `:8501`.
+
+Open issues:
+
+- Browser-review the landing page at desktop/mobile widths after logout or in an
+  incognito window, then run the signed-in smoke again.
+
+Next up:
+
+- Deploy Render and Streamlit Community Cloud once the local landing/login smoke
+  looks good.
+
+## 2026-09-11 (Day 15 landing polish and deployment handoff)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Rebuilt the public landing hero with native Streamlit layout containers so
+  the login action and workflow preview remain inside one responsive card.
+- Balanced the hero typography and columns, removed the stray heading anchor,
+  tightened the login hierarchy, and retained the existing evidence-led design
+  language.
+- Expanded the Render and Streamlit Community Cloud runbook with a provider-by-
+  provider secret map, Google OAuth audience steps, copy-ready TOML, failure
+  recovery, and official provider references.
+- Corrected `.streamlit/secrets.example.toml` so `CLUTCH_API_BASE_URL` and
+  `CLUTCH_API_KEY` are top-level values rather than accidental `[auth]` members.
+- Made the persistence and retrieval tests hermetic when a developer `.env`
+  contains live service URLs.
+
+Learned / decided:
+
+- Streamlit widgets cannot be nested by leaving raw HTML tags open across
+  separate `st.markdown` and `st.button` calls; keyed native containers are the
+  stable layout boundary.
+- Keep the Render/Streamlit API key shared, but use an independent cookie secret
+  for Streamlit OIDC.
+- A recruiter-facing Google OAuth client cannot remain limited to the owner's
+  Testing user list when the portfolio link is shared publicly.
+
+Verification:
+
+- Browser-checked the landing page at 1512×982 and 390×844; both widths have no
+  horizontal overflow and the desktop hero uses both columns.
+- Premium UI strict audit: zero findings.
+- Ruff: all checks passed.
+- Mypy: 64 source files passed.
+- Pytest: 120 passed.
+- `pip check` and `git diff --check` passed.
+
+Open issues:
+
+- Hosted Google login/logout still needs real OAuth credentials and an exact
+  deployed redirect URI.
+- Render and Streamlit Community Cloud remain undeployed; hosted persistence,
+  privacy, cold-start, and restart checks remain pending.
+
+Next up:
+
+- Rotate the named credentials, push the deployment branch, then follow
+  `docs/free-deployment.md` from Render Blueprint creation through hosted smoke.

@@ -15,6 +15,22 @@ Streamlit Community Cloud UI
 AWS Terraform remains unapplied architecture evidence. Do not apply it unless
 the separate budget checkpoint in `CLOUD.md` is reopened.
 
+## 0. What You Will Create
+
+You need accounts for GitHub, Render, Streamlit Community Cloud, Google Cloud,
+OpenAI, Neon, and Langfuse. Redis is optional. The finished public path is:
+
+1. Recruiter opens the Streamlit URL.
+2. Google OIDC signs the recruiter in.
+3. Streamlit calls Render with a server-side `CLUTCH_API_KEY`.
+4. Render calls OpenAI and uses Neon for durable derived results.
+5. Render sends privacy-reduced traces to Langfuse.
+
+Before using either hosting dashboard, push the deployment commit to the GitHub
+branch you intend to deploy. Streamlit Community Cloud runs from the repository
+root and discovers the root `requirements.txt`; its entrypoint remains
+`frontend/app.py`.
+
 ## 1. Rotate Secrets Before Deployment
 
 Create fresh values before copying anything into a hosted provider:
@@ -27,6 +43,36 @@ Create fresh values before copying anything into a hosted provider:
 
 Never commit these values. `.env`, `.env.local`, `.env.neon`, and `.neon` are
 ignored, and `node_modules` is excluded from source control and Docker context.
+
+Generate two different random values locally:
+
+```bash
+openssl rand -hex 32  # CLUTCH_API_KEY
+openssl rand -hex 32  # Streamlit auth.cookie_secret
+```
+
+Do not paste the whole local `.env` into either provider. Use this map:
+
+| Setting | Put it in | Required? | Where the value comes from |
+|---|---|---:|---|
+| `DATABASE_URL` | Render | Yes | Neon **pooled** production connection string (`-pooler` hostname) |
+| `OPENAI_API_KEY` | Render | Yes for AI output | A newly rotated OpenAI project key |
+| `CLUTCH_API_KEY` | Render + Streamlit | Yes | First random value above; both copies must match exactly |
+| `LANGFUSE_PUBLIC_KEY` | Render | Recommended | Langfuse project settings |
+| `LANGFUSE_SECRET_KEY` | Render | Recommended | Langfuse project settings |
+| `LANGFUSE_BASE_URL` | Render | Yes when tracing | Region for that Langfuse project; the blueprint currently uses Japan Cloud |
+| `GITHUB_TOKEN` | Render | Optional | Fine-grained read-only token; omit for public-repository-only demos |
+| `REDIS_URL` | Render | Optional | Upstash/Redis Cloud URL; omit for the first single-instance deploy |
+| `CLUTCH_API_BASE_URL` | Streamlit | Yes | Public Render URL after the backend is live |
+| `auth.redirect_uri` | Streamlit + Google | Yes | Exact Streamlit URL ending in `/oauth2callback` |
+| `auth.cookie_secret` | Streamlit | Yes | Second random value above |
+| `auth.client_id` | Streamlit | Yes | Google OAuth web client |
+| `auth.client_secret` | Streamlit | Yes | Google OAuth web client |
+| `auth.server_metadata_url` | Streamlit | Yes | Google's shared OIDC discovery URL shown below |
+
+`DIRECT_DATABASE_URL`, `CLUTCH_DB_*`, `LOCALSTACK_*`, and live-eval budget
+variables are local/admin-only and do not belong in either hosted app. The
+non-secret runtime defaults are already versioned in `render.yaml`.
 
 ## 2. Neon Is Ready
 
@@ -69,8 +115,20 @@ a new baseline passes unchanged thresholds.
 
 ## 3. Deploy the Render Backend
 
-Create a Render Blueprint from this repository's `render.yaml`, or create one
-Python Web Service manually with these settings:
+Recommended path:
+
+1. In Render, choose **New → Blueprint** and connect this GitHub repository.
+2. Select the deployment branch and let Render read the root `render.yaml`.
+3. Enter every value marked `sync: false` when Render prompts for it.
+4. Confirm the free plan, then apply the Blueprint.
+5. Wait for `/health` to pass and copy the service's
+   `https://<clutch-api>.onrender.com` URL.
+
+Render only prompts for `sync: false` variables when a Blueprint service is
+first created. If the service already exists, add or rotate those values under
+**Service → Environment** before redeploying.
+
+If you create a Python Web Service manually instead, use:
 
 - Name: `clutch-api`
 - Runtime: Python
@@ -78,15 +136,17 @@ Python Web Service manually with these settings:
 - Start command: `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
 - Health check path: `/health`
 
-Set these Render secrets:
+Set these Render secrets (`DATABASE_URL`, `OPENAI_API_KEY`, and
+`CLUTCH_API_KEY` are the minimum model-backed deployment):
 
 - `DATABASE_URL=<Neon pooled production URL>`
 - `OPENAI_API_KEY=<rotated key>`
+- `CLUTCH_API_KEY=<rotated random value>`
 - `LANGFUSE_PUBLIC_KEY=<rotated key>`
 - `LANGFUSE_SECRET_KEY=<rotated key>`
-- `CLUTCH_API_KEY=<rotated random value>`
 - `GITHUB_TOKEN=<rotated fine-grained token>` only if private repositories are
   part of the demo
+- `REDIS_URL=<Redis Cloud URL>` only if shared retrieval/spend caching is needed
 
 The blueprint supplies the non-secret defaults, including `gpt-5.4-mini`,
 `text-embedding-3-small`, `CLUTCH_RETRIEVAL_STRATEGY=local_lexical`, API-key
@@ -100,7 +160,23 @@ same per-call and per-process daily model ceilings still apply.
 Free Render services can cold-start after idle periods, so allow the first
 health request extra time.
 
-## 4. Deploy Streamlit Community Cloud
+## 4. Create the Google Login Client
+
+1. In Google Auth Platform, configure **Branding** with the Clutch name and a
+   support email.
+2. Under **Audience**, choose External. While the app is in Testing, add your
+   own Google account as a test user.
+3. Under **Clients**, create a client with application type **Web application**.
+4. Add this exact authorized redirect URI after choosing the Streamlit subdomain:
+
+   `https://<streamlit-app>.streamlit.app/oauth2callback`
+
+The scheme, hostname, path, and trailing slash must match exactly. For a
+recruiter-facing link, do not leave the Google app restricted to your own test
+user: move it to the appropriate production/published state after completing
+Google's current consent-screen requirements.
+
+## 5. Deploy Streamlit Community Cloud
 
 After Render is healthy, create the Streamlit app with:
 
@@ -108,18 +184,30 @@ After Render is healthy, create the Streamlit app with:
 - Branch: the deployment branch
 - Main file path: `frontend/app.py`
 - Dependency file: root `requirements.txt`
+- Python version: `3.11`
 
-Add this TOML in Streamlit Advanced settings:
+Open **Advanced settings** and paste this TOML into **Secrets**. Keep the two
+`CLUTCH_*` keys above `[auth]`; TOML keys written after `[auth]` belong to that
+table and the app will not find them as top-level settings.
 
 ```toml
 CLUTCH_API_BASE_URL = "https://<clutch-api>.onrender.com"
 CLUTCH_API_KEY = "<same rotated key configured on Render>"
+
+[auth]
+redirect_uri = "https://<streamlit-app>.streamlit.app/oauth2callback"
+cookie_secret = "<random-long-cookie-secret>"
+client_id = "<google-oauth-client-id>"
+client_secret = "<google-oauth-client-secret>"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
 ```
 
-Streamlit uses the key server-side when calling FastAPI; it is not rendered into
-the browser page.
+Streamlit uses Google OIDC for user login and sends only an opaque hashed
+profile ID to FastAPI. It uses `CLUTCH_API_KEY` server-side when calling
+FastAPI; the key is not rendered into the browser page. If you edit any auth
+secret later, restart the Streamlit app so the OIDC configuration reloads.
 
-## 5. Hosted Smoke and Manual Checks
+## 6. Hosted Smoke and Manual Checks
 
 Run the included smoke script after both services are live:
 
@@ -132,15 +220,34 @@ scripts/hosted_smoke.sh
 
 Then verify in the UI:
 
+- unauthenticated visitors see the Clutch landing/login screen;
+- Google login redirects back to the Streamlit app and shows a logout control;
 - pasted-code and public-GitHub reviews complete;
 - AI success and explicit fallback labels are accurate;
 - an interview assessment and completed feedback report render;
-- progress persists after a backend restart;
+- progress is tied to the signed-in Google identity and persists after a backend
+  restart;
 - the GitHub scope summary says it is not a full-codebase analysis; and
 - Render, Neon, and Langfuse contain no raw source, raw answers, prompts,
   provider payloads, or secrets.
+
+If login returns `redirect_uri_mismatch`, compare the deployed Streamlit URL,
+the `[auth].redirect_uri` value, and Google's authorized redirect URI character
+for character. If reviews return `401`, compare the Render and Streamlit copies
+of `CLUTCH_API_KEY`. If the Streamlit page loads but review calls time out on the
+first attempt, open the Render `/health` URL once and retry after the free
+service wakes.
 
 Langfuse's current Japan Cloud readback exposes model/version/token fields but
 still omits native generation cost for the tested model trace. Keep that known
 observability limitation visible until a fresh `scripts/audit_langfuse_trace.py`
 run passes; do not present it as a complete native-cost audit.
+
+## Official Provider References
+
+- [Streamlit Community Cloud deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy)
+- [Streamlit secrets management](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
+- [Streamlit OIDC authentication](https://docs.streamlit.io/develop/concepts/connections/authentication)
+- [Render Blueprint specification](https://render.com/docs/blueprint-spec)
+- [Render free-service behavior](https://render.com/docs/free)
+- [Google OAuth web-server setup](https://developers.google.com/identity/protocols/oauth2/web-server)

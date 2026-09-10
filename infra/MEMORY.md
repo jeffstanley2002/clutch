@@ -47,7 +47,10 @@ flags rather than default resources.
   future migration material.
 - `docs/free-deployment.md`, `render.yaml`, and `scripts/hosted_smoke.sh`
   document the already-prepared Neon data layer followed by Render backend and
-  Streamlit Cloud UI deployment.
+  Streamlit Cloud UI deployment. The runbook maps every hosted secret to its
+  provider, distinguishes pooled runtime from direct admin database URLs, and
+  keeps Streamlit's `CLUTCH_*` settings above `[auth]` so TOML parses them at the
+  root.
 - Local app runtime can run without app containers: keep Docker Postgres/Redis
   and LocalStack up, then run MCP, FastAPI, and Streamlit from `.venv`.
 

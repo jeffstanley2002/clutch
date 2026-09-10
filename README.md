@@ -89,7 +89,10 @@ streamlit run frontend/app.py
 
 Open `http://localhost:8501`. Without an OpenAI key, the UI clearly labels
 deterministic/template/rule-based fallbacks. Database, Redis, GitHub token, and
-Langfuse remain optional for local development.
+Langfuse remain optional for local development. Without Streamlit OIDC secrets,
+local development uses an anonymous generated profile ID. With auth secrets, the
+app shows a landing/login screen and derives progress from the signed-in Google
+identity.
 
 Copy `.env.example` to `.env` to opt into provider-backed behavior. Important
 variables are:
@@ -109,6 +112,11 @@ variables are:
 - `GITHUB_TOKEN`, `GITHUB_MCP_URL`
 - `LANGFUSE_*`; tracing is off unless `LANGFUSE_TRACING_ENABLED=true` and both
   keys are configured
+
+For local Google login, copy `.streamlit/secrets.example.toml` to
+`.streamlit/secrets.toml`, create a Google OAuth web client with redirect URI
+`http://localhost:8501/oauth2callback`, and fill in the `[auth]` values. Do not
+commit `.streamlit/secrets.toml`.
 
 For a local credentialed demo without running the app containers, keep
 Postgres/Redis running and start the Python services from `.venv`:
