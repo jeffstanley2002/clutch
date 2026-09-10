@@ -81,7 +81,7 @@ if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is required");
 
 const model = process.env.OPENAI_EMBEDDING_MODEL || DEFAULT_MODEL;
 const pricePerMillion = Number(
-  process.env.CLUTCH_EMBEDDING_PRICE_PER_MILLION_USD ||
+  process.env.CLUTCH_EMBEDDING_USD_PER_MILLION ||
     DEFAULT_PRICE_PER_MILLION_USD,
 );
 const maxCost = Number(

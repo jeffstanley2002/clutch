@@ -7,7 +7,7 @@ const K = 3;
 const DEBUG_IDS = process.argv.includes("--debug-ids");
 const MODEL = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
 const PRICE_PER_MILLION_USD = Number(
-  process.env.CLUTCH_EMBEDDING_PRICE_PER_MILLION_USD || 0.02,
+  process.env.CLUTCH_EMBEDDING_USD_PER_MILLION || 0.02,
 );
 const GATES = {
   irrelevant_at_3_max: 0.15,
