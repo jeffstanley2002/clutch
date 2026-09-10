@@ -3,6 +3,7 @@ from hashlib import sha256
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
 from sqlalchemy import func, select
 
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
@@ -14,6 +15,7 @@ from clutch.rag import (
     OpenAIEmbeddingProvider,
     SqlAlchemyKnowledgeBase,
     SqlAlchemyVectorRetriever,
+    knowledge_retriever_from_env,
 )
 from clutch.rag.retrieval import (
     _hybrid_score,
@@ -272,6 +274,20 @@ def test_local_retriever_keeps_category_filtering() -> None:
     )
 
     assert results[0].category == "design"
+
+
+def test_measured_retrieval_default_is_local_lexical(monkeypatch: Any) -> None:
+    monkeypatch.delenv("CLUTCH_RETRIEVAL_STRATEGY", raising=False)
+    monkeypatch.delenv("REDIS_URL", raising=False)
+
+    assert isinstance(knowledge_retriever_from_env(), LocalKnowledgeRetriever)
+
+
+def test_unknown_retrieval_strategy_fails_configuration(monkeypatch: Any) -> None:
+    monkeypatch.setenv("CLUTCH_RETRIEVAL_STRATEGY", "unmeasured")
+
+    with pytest.raises(ValueError, match="CLUTCH_RETRIEVAL_STRATEGY"):
+        knowledge_retriever_from_env()
 
 
 def test_vector_retriever_embeds_query_and_returns_typed_items() -> None:

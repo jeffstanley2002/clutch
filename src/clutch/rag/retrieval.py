@@ -35,6 +35,12 @@ from clutch.schemas import Citation, FindingCategory
 _LOCAL_PROVENANCE_BY_ID = {
     principle.id: principle for principle in SEED_CLEAN_CODE_PRINCIPLES
 }
+_RETRIEVAL_STRATEGIES = {
+    "local_lexical",
+    "postgres_lexical",
+    "postgres_vector",
+    "postgres_hybrid",
+}
 
 
 class EmbeddingProvider(Protocol):
@@ -482,13 +488,22 @@ class SqlAlchemyVectorRetriever:
 
 
 def knowledge_retriever_from_env() -> KnowledgeRetriever:
-    """Prefer durable hybrid search when configured and always retain fallback."""
+    """Build the measured retrieval strategy and retain the local safety path."""
 
     load_dotenv()
     cache = json_cache_from_env()
+    strategy = os.getenv("CLUTCH_RETRIEVAL_STRATEGY", "local_lexical").strip()
+    if strategy not in _RETRIEVAL_STRATEGIES:
+        raise ValueError(
+            "CLUTCH_RETRIEVAL_STRATEGY must be one of: "
+            + ", ".join(sorted(_RETRIEVAL_STRATEGIES))
+        )
+    local: KnowledgeRetriever = LocalKnowledgeRetriever()
+    if strategy == "local_lexical":
+        return CachedKnowledgeRetriever(local, cache) if cache.enabled else local
+
     session_factory = application_session_factory_from_env()
     if session_factory is None:
-        local: KnowledgeRetriever = LocalKnowledgeRetriever()
         return CachedKnowledgeRetriever(local, cache) if cache.enabled else local
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
     embedding_provider: EmbeddingProvider | None = (
@@ -504,12 +519,21 @@ def knowledge_retriever_from_env() -> KnowledgeRetriever:
     )
     if embedding_provider is not None and cache.enabled:
         embedding_provider = CachedEmbeddingProvider(embedding_provider, cache)
-    retriever: KnowledgeRetriever = FallbackKnowledgeRetriever(
-        SqlAlchemyHybridRetriever(
+    if strategy == "postgres_lexical":
+        primary: KnowledgeRetriever = SqlAlchemyHybridRetriever(session_factory)
+    elif strategy == "postgres_vector" and embedding_provider is not None:
+        primary = SqlAlchemyVectorRetriever(
             session_factory,
             embedding_provider=embedding_provider,
         )
-    )
+    elif strategy == "postgres_hybrid" and embedding_provider is not None:
+        primary = SqlAlchemyHybridRetriever(
+            session_factory,
+            embedding_provider=embedding_provider,
+        )
+    else:
+        primary = local
+    retriever: KnowledgeRetriever = FallbackKnowledgeRetriever(primary, local)
     return CachedKnowledgeRetriever(retriever, cache) if cache.enabled else retriever
 
 
