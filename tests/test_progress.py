@@ -2,6 +2,7 @@ import asyncio
 
 from clutch.agent import build_review_graph
 from clutch.llm import ModelRouter
+from clutch.llm.providers import ProviderReview, ReviewContext
 from clutch.persistence import InMemoryReviewRecorder
 from clutch.progress.repository import InMemoryProgressRepository
 from clutch.progress.service import ProgressService
@@ -9,11 +10,22 @@ from clutch.review.service import ReviewService
 from clutch.schemas import ReviewRequest
 
 
+class StaticTestModelProvider:
+    async def review(self, context: ReviewContext) -> ProviderReview:
+        return ProviderReview(
+            findings=context.static_findings,
+            confidence=0.7,
+            mode="model",
+            model_name="test-model",
+            attempt_count=1,
+        )
+
+
 def test_progress_tracks_improvement_and_persistent_categories() -> None:
     async def exercise() -> None:
         review_store = InMemoryReviewRecorder()
         review_service = ReviewService(
-            graph=build_review_graph(ModelRouter(primary=None)),
+            graph=build_review_graph(ModelRouter(primary=StaticTestModelProvider())),
             recorder=review_store,
         )
         progress_repository = InMemoryProgressRepository(review_store)

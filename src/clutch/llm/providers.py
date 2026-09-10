@@ -215,7 +215,7 @@ class ReviewProviderFailure(RuntimeError):
 
 
 class ReviewModelUnavailable(RuntimeError):
-    """Raised when model-required review cannot produce validated output."""
+    """Raised only when neither model review nor its labeled fallback succeeds."""
 
     def __init__(
         self,
@@ -225,7 +225,7 @@ class ReviewModelUnavailable(RuntimeError):
         attempt_count: int = 0,
         validation_failure_count: int = 0,
     ) -> None:
-        super().__init__("model review is required but unavailable")
+        super().__init__("review and fallback are unavailable")
         self.failure_reason = failure_reason
         self.failure_category = failure_category
         self.attempt_count = attempt_count

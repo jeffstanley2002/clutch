@@ -11,6 +11,7 @@ from clutch.github.contracts import (
 )
 from clutch.github.review import GitHubReviewService, GitHubReviewSourceEmpty
 from clutch.llm import ModelRouter
+from clutch.llm.providers import ProviderReview, ReviewContext
 from clutch.persistence import InMemoryReviewRecorder
 from clutch.review.service import ReviewService
 from clutch.schemas import GitHubReviewRequest
@@ -39,9 +40,20 @@ class FakeGateway:
         return self.diff
 
 
+class StaticTestModelProvider:
+    async def review(self, context: ReviewContext) -> ProviderReview:
+        return ProviderReview(
+            findings=context.static_findings,
+            confidence=0.7,
+            mode="model",
+            model_name="test-model",
+            attempt_count=1,
+        )
+
+
 def _reviewer(recorder: InMemoryReviewRecorder) -> ReviewService:
     return ReviewService(
-        graph=build_review_graph(ModelRouter(primary=None)),
+        graph=build_review_graph(ModelRouter(primary=StaticTestModelProvider())),
         recorder=recorder,
     )
 
