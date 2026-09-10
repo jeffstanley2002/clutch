@@ -66,8 +66,9 @@ components:
 
 Clutch should feel like an engineer's annotated review notebook: precise,
 calm, and evidence-led, with blue review marks connecting a concrete code
-observation to the question it creates. It is a working surface, not a landing
-page.
+observation to the question it creates. The authenticated product is a working
+surface; its public sign-in gate should preview that same workflow rather than
+switching to a generic marketing aesthetic.
 
 ### Product context and register
 
@@ -114,6 +115,12 @@ rhythm; related finding details stay inside one bordered container. At narrow
 widths, all content stacks and code owns any necessary internal overflow.
 Loading, errors, and empty guidance occupy the result region without moving the
 input controls.
+
+The public sign-in gate uses one bordered, cobalt-ruled hero with two balanced
+columns: concise product value and login on the left, the real three-step
+practice loop on the right. The login explanation stays directly below its
+button. At narrow widths, the value, action, and workflow preview become one
+natural reading order without horizontal page overflow.
 
 ## Elevation & Depth
 

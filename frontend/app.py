@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from hashlib import sha256
 from typing import Any, Literal, cast
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
@@ -44,9 +45,323 @@ def _setting(name: str, default: str = "") -> str:
     return str(secret_value).strip()
 
 
-def _initialize_state() -> None:
+def _auth_configured() -> bool:
+    if os.getenv("CLUTCH_DISABLE_STREAMLIT_LOGIN", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return False
+    try:
+        auth_config = st.secrets.get("auth", None)
+    except Exception:
+        return False
+    return bool(auth_config)
+
+
+def _user_value(name: str) -> str:
+    try:
+        value = st.user.get(name, "")
+    except Exception:
+        value = getattr(st.user, name, "")
+    return str(value or "").strip()
+
+
+def _authenticated_profile_id() -> str | None:
+    if not _auth_configured():
+        return None
+    user = st.user
+    if not getattr(user, "is_logged_in", False):
+        return None
+    identity = (
+        _user_value("sub")
+        or _user_value("email")
+        or _user_value("preferred_username")
+        or _user_value("name")
+    )
+    if not identity:
+        return None
+    digest = sha256(identity.encode("utf-8")).hexdigest()
+    return f"user_{digest[:40]}"
+
+
+def _render_landing_gate() -> None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stMainBlockContainer"] {
+            padding-top: 1.75rem;
+            padding-bottom: 3rem;
+        }
+        .st-key-landing_hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(1.4rem, 3vw, 2.6rem);
+            border: 1px solid #d9e0ec;
+            border-top: 4px solid #365fd9;
+            border-radius: 0.8rem;
+            background: #ffffff;
+        }
+        .st-key-landing_hero [data-testid="stHorizontalBlock"] {
+            gap: clamp(1.75rem, 4vw, 4rem);
+        }
+        .clutch-eyebrow {
+            color: #365fd9;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.045em;
+            text-transform: uppercase;
+        }
+        .clutch-hero-title {
+            max-width: 14ch;
+            margin: 0.7rem 0 1rem;
+            color: #172033;
+            font-size: clamp(2.7rem, 5vw, 4.6rem);
+            line-height: 0.96;
+            letter-spacing: -0.035em;
+        }
+        .clutch-hero-title > a {
+            display: none;
+        }
+        .clutch-hero-copy {
+            max-width: 37rem;
+            margin: 0;
+            color: #42506a;
+            font-size: clamp(1rem, 1.35vw, 1.14rem);
+            line-height: 1.65;
+        }
+        .clutch-proof-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+            margin: 1.25rem 0 0;
+        }
+        .clutch-chip {
+            border: 1px solid #c8d3e6;
+            border-radius: 999px;
+            color: #33415c;
+            background: #f5f7fb;
+            padding: 0.42rem 0.7rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        .st-key-landing_hero [data-testid="stButton"] {
+            margin-top: 1.4rem;
+        }
+        .st-key-landing_hero button[kind="primary"] {
+            min-height: 3rem;
+            padding-inline: 1.15rem;
+            font-weight: 700;
+        }
+        .clutch-preview {
+            display: grid;
+            gap: 0.7rem;
+        }
+        .clutch-preview-label {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 0.15rem;
+            color: #5e6a7d;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .clutch-preview-label::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #d9e0ec;
+        }
+        .clutch-note {
+            border: 1px solid #d9e0ec;
+            border-left: 4px solid #365fd9;
+            border-radius: 0.55rem;
+            background: #f8faff;
+            padding: 0.95rem 1rem;
+            color: #4c5a72;
+            font-size: 0.94rem;
+            line-height: 1.55;
+        }
+        .clutch-note strong {
+            display: block;
+            margin-bottom: 0.3rem;
+            color: #172033;
+        }
+        .clutch-note code {
+            white-space: normal;
+            color: #2448b5;
+            background: #eef2f8;
+            border-radius: 0.35rem;
+            padding: 0.12rem 0.3rem;
+        }
+        .clutch-sections {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1.1rem;
+        }
+        .clutch-panel {
+            border: 1px solid #d9e0ec;
+            border-radius: 0.55rem;
+            background: #ffffff;
+            padding: 1.1rem;
+            min-height: 11.5rem;
+        }
+        .clutch-panel h2 {
+            margin: 0 0 0.7rem;
+            color: #172033;
+            font-size: 1.05rem;
+            letter-spacing: 0;
+        }
+        .clutch-panel p,
+        .clutch-panel li {
+            color: #4c5a72;
+            line-height: 1.6;
+            font-size: 0.96rem;
+        }
+        .clutch-panel ul {
+            padding-left: 1.1rem;
+            margin-bottom: 0;
+        }
+        .clutch-cta-copy {
+            max-width: 34rem;
+            color: #5e6a7d;
+            font-size: 0.9rem;
+            line-height: 1.55;
+            margin: 0.65rem 0 0;
+        }
+        @media (max-width: 820px) {
+            .st-key-landing_hero [data-testid="stHorizontalBlock"] {
+                flex-wrap: wrap;
+            }
+            .st-key-landing_hero [data-testid="stColumn"] {
+                flex: 1 1 100%;
+                width: 100%;
+            }
+            .clutch-sections {
+                grid-template-columns: 1fr;
+            }
+            .clutch-panel {
+                min-height: 0;
+            }
+            .clutch-hero-title {
+                max-width: 12ch;
+                font-size: clamp(2.6rem, 13vw, 4rem);
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container(key="landing_hero"):
+        copy, preview = st.columns(
+            [1.08, 0.92], gap="large", vertical_alignment="center"
+        )
+        with copy:
+            st.markdown(
+                """
+                <div class="clutch-eyebrow">
+                    AI code review + interview practice
+                </div>
+                <h1 class="clutch-hero-title">
+                    Clutch turns code review into interview prep.
+                </h1>
+                <p class="clutch-hero-copy">
+                    Paste Python or review a GitHub repo, get cited findings,
+                    practice the follow-up questions an interviewer would ask,
+                    and track the engineering habits that improve over time.
+                </p>
+                <div class="clutch-proof-row" aria-label="Product capabilities">
+                    <span class="clutch-chip">Cited code findings</span>
+                    <span class="clutch-chip">GitHub repo review</span>
+                    <span class="clutch-chip">Practice interview loop</span>
+                    <span class="clutch-chip">Progress history</span>
+                    <span class="clutch-chip">Privacy-aware tracing</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.button(
+                "Log in with Google",
+                key="landing_login",
+                type="primary",
+                on_click=st.login,
+            )
+            st.markdown(
+                """
+                <p class="clutch-cta-copy">
+                    Sign in to run a private practice session, save progress,
+                    and return to your review history later.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+        with preview:
+            st.markdown(
+                """
+                <div class="clutch-preview" aria-label="Clutch workflow preview">
+                    <div class="clutch-preview-label">
+                        The practice loop
+                    </div>
+                    <div class="clutch-note">
+                        <strong>1. Review evidence</strong>
+                        <code># TODO validate discounts before launch</code>
+                    </div>
+                    <div class="clutch-note">
+                        <strong>2. Explain the tradeoff</strong>
+                        Generated questions probe scope, ownership, testing, and
+                        failure modes.
+                    </div>
+                    <div class="clutch-note">
+                        <strong>3. Track progress</strong>
+                        Derived snapshots show recurring issues and next practice
+                        tasks without storing raw code.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown(
+        """
+        <div class="clutch-sections">
+            <section class="clutch-panel">
+                <h2>From code to signal</h2>
+                <ul>
+                    <li>Findings cite clean-code and review guidance.</li>
+                    <li>Each issue includes evidence, impact, and a fix path.</li>
+                    <li>GitHub ingestion is read-only and scope-bounded.</li>
+                </ul>
+            </section>
+            <section class="clutch-panel">
+                <h2>Practice the explanation</h2>
+                <ul>
+                    <li>Review, interview, feedback, and progress are one flow.</li>
+                    <li>Questions probe design choices and tradeoffs.</li>
+                    <li>Answer feedback turns weak spots into next tasks.</li>
+                </ul>
+            </section>
+            <section class="clutch-panel">
+                <h2>Built for safe practice</h2>
+                <ul>
+                    <li>Google handles authentication.</li>
+                    <li>Raw code and raw answers are not stored durably.</li>
+                    <li>Progress is tied to an opaque profile ID.</li>
+                </ul>
+            </section>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _initialize_state(profile_id: str | None = None) -> None:
     defaults: dict[str, Any] = {
-        "profile_id": str(uuid4()),
+        "profile_id": profile_id or str(uuid4()),
         "workflow_nav": "Review",
         "review_input_mode": "Paste code",
         "review_result": None,
@@ -59,6 +374,13 @@ def _initialize_state() -> None:
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    if profile_id is not None and st.session_state.profile_id != profile_id:
+        st.session_state.profile_id = profile_id
+        st.session_state.review_result = None
+        st.session_state.github_ingestion = None
+        st.session_state.interview_result = None
+        st.session_state.feedback_report = None
+        st.session_state.progress_result = None
     requested_page = st.session_state.pop("requested_page", None)
     if requested_page is not None:
         st.session_state.workflow_nav = requested_page
@@ -95,6 +417,13 @@ def _render_header() -> PageName:
         "Move from concrete code evidence to a practiced explanation, then track "
         "which engineering habits are changing across sessions."
     )
+    if _auth_configured() and getattr(st.user, "is_logged_in", False):
+        name = _user_value("name") or _user_value("email") or "Signed in"
+        account, action = st.columns([3, 1])
+        with account:
+            st.caption(f"Signed in as {name}")
+        with action:
+            st.button("Log out", on_click=st.logout)
     selected = st.segmented_control(
         "Workflow",
         options=["Review", "Interview", "Progress"],
@@ -197,7 +526,10 @@ def _render_review_provenance(review: dict[str, Any]) -> None:
             "This result used retrieval-only/static logic, not AI synthesis."
         )
     for stage in provenance:
-        if stage.get("status") == "fallback" and stage.get("stage") != "review_synthesis":
+        if (
+            stage.get("status") == "fallback"
+            and stage.get("stage") != "review_synthesis"
+        ):
             label = _STAGE_LABELS.get(stage.get("stage"), "A later stage")
             reason = _FAILURE_LABELS.get(
                 stage.get("failure_category"),
@@ -689,7 +1021,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-_initialize_state()
+authenticated_profile_id = _authenticated_profile_id()
+if _auth_configured() and authenticated_profile_id is None:
+    _render_landing_gate()
+    st.stop()
+
+_initialize_state(authenticated_profile_id)
 active_page = _render_header()
 if active_page == "Review":
     _render_review_page()

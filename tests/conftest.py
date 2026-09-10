@@ -15,3 +15,4 @@ for _credential_name in (
 ):
     os.environ[_credential_name] = ""
 os.environ["CLUTCH_REQUIRE_AUTH"] = "false"
+os.environ["CLUTCH_DISABLE_STREAMLIT_LOGIN"] = "true"
