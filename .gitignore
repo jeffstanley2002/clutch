@@ -2,6 +2,7 @@
 .env
 .env.localstack
 .venv/
+node_modules/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
@@ -15,3 +16,6 @@ infra/terraform/terraform.tfvars
 infra/localstack/volume/
 infra/localstack/terraform/.terraform.lock.hcl
 infra/localstack/terraform/localstack.tfplan
+.neon
+.env.local
+.env.neon

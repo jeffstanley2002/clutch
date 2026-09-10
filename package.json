@@ -1,0 +1,9 @@
+{
+  "name": "clutch-neon-config",
+  "private": true,
+  "dependencies": {
+    "@neon/config": "1.3.2",
+    "@neon/env": "1.2.3",
+    "@neondatabase/serverless": "1.0.2"
+  }
+}
