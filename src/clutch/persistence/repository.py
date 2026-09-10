@@ -111,6 +111,7 @@ class SqlAlchemyReviewRecorder:
         )
         async with self._session_factory() as session:
             session.add(session_model)
+            await session.flush()
             session.add_all(
                 [
                     AgentRunModel(

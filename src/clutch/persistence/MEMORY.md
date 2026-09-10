@@ -21,6 +21,8 @@ derived signal summary.
 - Migrations are a one-off deployment task, never an every-replica startup.
 - Neon runtime uses the pooled `DATABASE_URL`; Alembic and administrative seed
   work use `DIRECT_DATABASE_URL`.
+- `SqlAlchemyReviewRecorder` flushes the parent `review_sessions` row before
+  inserting detached `agent_runs`, so local/Postgres FK ordering is explicit.
 
 ## Production evidence
 
