@@ -1272,3 +1272,41 @@ Next up:
 
 - Rotate the named credentials, push the deployment branch, then follow
   `docs/free-deployment.md` from Render Blueprint creation through hosted smoke.
+
+## 2026-09-11 (Day 16 security gate repair)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Reproduced the pushed `Run security checks` failure locally and traced all
+  five findings to reviewed placeholder or test-only OAuth values.
+- Added line-local `detect-secrets` annotations to the three Streamlit deployment
+  placeholders and two dummy OAuth test credentials.
+- Preserved the repository-wide keyword detector and committed baseline instead
+  of masking future secret findings globally.
+
+Learned / decided:
+
+- `detect-secrets` intentionally flags credential-shaped placeholders as well as
+  real values; known fixtures should be documented at the exact source line so
+  every new finding still fails CI by default.
+
+Verification:
+
+- Exact security runner passed both `detect-secrets` and strict `pip-audit`.
+- Ruff passed.
+- Mypy passed for 73 source files.
+- Pytest: 120 passed.
+- Prompt-manifest validation passed for three production prompts.
+- Deterministic eval suite passed all configured gates.
+
+Open issues:
+
+- The follow-up commit still needs to be pushed so GitHub can rerun the security
+  and container gates on `main`.
+
+Next up:
+
+- Push the security-gate repair, confirm the GitHub Actions run is green, then
+  continue the Render and Streamlit Community Cloud deployment runbook.

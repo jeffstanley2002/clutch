@@ -52,7 +52,7 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Deployment logs contain no source code or secrets.
 - A rollback path and incident owner are documented before public deployment.
 
-## Current evidence (2026-09-10)
+## Current evidence (2026-09-11)
 
 - Three prompt-injection fixtures remain data under the real static graph,
   avoid prohibited behavior, and emit only known citations.
@@ -65,6 +65,8 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Langfuse gets explicit privacy-reduced fields, a redaction mask, bounded
   sampling, disabled automatic IO capture, and graceful flush.
 - `detect-secrets` and `pip-audit` pass; CI runs them alongside all tests/evals.
+  Reviewed deployment placeholders and dummy OAuth test credentials are
+  allowlisted only on their exact lines, without a global detector exclusion.
 - All three images build and run as UID/GID 10001; the full Compose stack is
   healthy and PostgreSQL stored only the expected 64-character source hash.
 - Terraform validates private data services, service-to-service security groups,

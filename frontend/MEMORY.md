@@ -49,6 +49,9 @@ top-level parsing of the hosted API settings in the Streamlit secrets example.
 - The landing hero uses a keyed native Streamlit container and columns. Raw HTML
   never spans the login widget, which keeps the workflow preview and login copy
   inside the same responsive card at desktop and 390px.
+- Deployment placeholders and dummy OAuth test credentials use reviewed,
+  line-local `detect-secrets` annotations; the repository does not suppress the
+  keyword detector globally or weaken the committed baseline.
 - Every finding, question, assessment, citation, and final aggregation has a
   literal origin label. A warning appears whenever the applicable model did not
   complete; deterministic/template output is never described as AI-generated.

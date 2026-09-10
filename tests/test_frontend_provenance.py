@@ -123,9 +123,9 @@ def test_auth_configured_shows_landing_gate(
     app = AppTest.from_file(str(APP_PATH))
     app.secrets["auth"] = {
         "redirect_uri": "http://localhost:8501/oauth2callback",
-        "cookie_secret": "test-cookie-secret",
+        "cookie_secret": "test-cookie-secret",  # pragma: allowlist secret
         "client_id": "test-client-id",
-        "client_secret": "test-client-secret",
+        "client_secret": "test-client-secret",  # pragma: allowlist secret
         "server_metadata_url": (
             "https://accounts.google.com/.well-known/openid-configuration"
         ),
