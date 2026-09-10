@@ -5,10 +5,12 @@ quality alongside accuracy and latency, not a cleanup task after launch.
 
 ## Guardrails
 
-- Default to deterministic local review when no model key is configured.
+- Prefer the model, but expose deterministic/static, template, and rule-based
+  fallbacks with literal provenance labels when no model key is configured.
 - Bound submitted source, selected chunks, retrieved principles, output tokens,
   retries, and interview history before every model call.
-- Retry invalid structured output once, then use the static fallback.
+- Retry invalid structured output once, then use the applicable labeled
+  fallback.
 - Cache embeddings and retrieval results only; never cache raw code, review
   evidence, interview answers, or full responses.
 - Record model name, input/output tokens, estimated cost, latency, cache status,
@@ -25,8 +27,8 @@ quality alongside accuracy and latency, not a cleanup task after launch.
 
 ## Deployment Defaults
 
-- Use the smallest practical ECS tasks, single-AZ non-production RDS, and the
-  smallest supported Redis tier for the portfolio environment.
+- Use Neon production, one free Render backend instance, and Streamlit
+  Community Cloud for the first public demo. Redis remains optional.
 - Prefer scheduled scale-down or teardown when the demo is not in use.
 - Set AWS Budgets alerts before provisioning paid resources.
 - Keep Terraform as the infrastructure source of truth and estimate the monthly
@@ -62,5 +64,8 @@ expectations. The Terraform module defaults ECS desired count to zero but still
 models paid ALB, RDS, and ElastiCache resources. It has not been applied.
 
 Deployment API-key auth and per-call/daily model spend ceilings are implemented
-and tested locally. AWS remains blocked on the explicit provisioning checkpoint,
-and credentialed behavior still needs staging evidence before public launch.
+and tested locally. The capped `gpt-5.4-mini` baseline cost $0.028781 total and
+$0.004797 per review; production corpus embeddings cost $0.00015972 and the
+retrieval query batch cost $0.00001746. AWS remains blocked on the explicit
+provisioning checkpoint; Render/Streamlit deployment is the remaining public
+launch step.

@@ -9,10 +9,11 @@
 `POST /progress/{profile_id}/snapshots`.
 
 Factories choose in-memory/local adapters unless database, Redis, model, MCP,
-or tracing configuration is present. GitHub and interview errors become bounded
-4xx/5xx responses without provider bodies. Optional API-key middleware protects
-every non-health route and fails closed when auth is required but unconfigured.
-Shutdown closes Redis/cache/spend clients and flushes Langfuse.
+or tracing configuration is present. Model failures use typed labeled fallback
+results; only combined model/fallback failures become privacy-safe errors.
+Optional API-key middleware protects every non-health route and fails closed
+when auth is required but unconfigured. Shutdown closes the shared database
+engine, Redis/cache/spend clients, and Langfuse.
 
 ## Decisions
 
@@ -28,4 +29,5 @@ Shutdown closes Redis/cache/spend clients and flushes Langfuse.
 - No streaming/SSE interview response yet.
 - API-key auth is deployment-level; user accounts, key rotation, and request-rate
   limiting are not implemented.
-- Live OpenAI/Langfuse failure behavior needs credentialed staging evidence.
+- Render/Streamlit hosted smoke and restart-persistence evidence remain after
+  deployment. Local and browser success/fallback/error paths are verified.

@@ -21,17 +21,17 @@
   cases and all three injection cases through the production graph. It has an
   isolated $0.50 default cap, reports model/fallback/validation/quality/latency/
   token/cost metrics, and never serializes fixture source or prompts.
-- Dataset `2026-09-08.v5` passes every deterministic gate. Finding, citation,
+- Dataset `2026-09-10.v6` passes every deterministic gate. Finding, citation,
   question, severity, clean-negative, mixed recall, interview, feedback,
   privacy, ingestion, and injection metrics are 1.0. Graded retrieval is
-  Precision@3 0.786, Recall@3 0.559, nDCG@3 0.934, judgment coverage 1.0,
-  and irrelevant-result rate 0.044; MRR is 1.0 and hallucinated-line rate is
+  Precision@3 0.800, Recall@3 0.563, nDCG@3 0.970, judgment coverage 1.0,
+  and irrelevant-result rate 0.000; MRR is 1.0 and hallucinated-line rate is
   0.0.
 
 ## Decisions
 
-- CI forces static fallback so it is deterministic, fast, secret-free, and
-  zero-cost.
+- CI uses the explicitly labeled deterministic paths so it is fast,
+  secret-free, and zero-cost.
 - Live evaluation is manual and fails closed: no key returns typed unavailable
   output without a client call; any configured fallback returns nonzero.
 - Static execution reports model schema-validity as unmeasured.
@@ -45,15 +45,16 @@
 - Candidate strategies may have up to 10% unjudged top-three results. Unjudged
   hits are still relevance zero for nDCG and irrelevant-rate, avoiding a hidden
   quality exemption while preventing an exact-coverage double penalty.
-- Credential-free comparison baseline: local lexical P@3 0.786, R@3 0.559,
-  MRR 1.0, nDCG@3 0.934, coverage 1.0, irrelevant 0.044, mean 0.48 ms;
-  PostgreSQL lexical P@3 0.786, R@3 0.559, MRR 1.0, nDCG@3 0.914, coverage
-  0.911, irrelevant 0.089, mean 16.22 ms. Both cost $0 and pass.
+- Neon comparison baseline: local lexical passes and wins at nDCG@3 0.970;
+  Neon lexical/vector/hybrid remain below one or more unchanged gates. The full
+  privacy-safe evidence is `baselines/retrieval-neon-production.json`.
+- Credentialed `gpt-5.4-mini` baseline passes: finding/citation/question/
+  injection/privacy metrics are 1.0, interview within-one is 0.833, schema
+  failures are zero, and total cost is $0.028781.
 
 ## Known gaps
 
-- Measure PostgreSQL vector-only and hybrid retrieval on these same judgments
-  after the user configures an OpenAI key and the corpus embeddings are seeded.
-- Live OpenAI accuracy, invalid-output, fallback, latency, token, and cost
-  baselines require a user-provided key; the harness itself is complete and
-  fake-provider tested.
+- Improve Neon hybrid retrieval without weakening gates, then rerun the same
+  benchmark before changing `CLUTCH_RETRIEVAL_STRATEGY`.
+- Add broader human labels before treating either live baseline as general
+  quality evidence.

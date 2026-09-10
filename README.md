@@ -5,9 +5,11 @@ engineers. It turns pasted Python or a public/private GitHub repository or pull
 request into cited findings, interviewer-style follow-ups, a stateful practice
 interview, and cross-session progress evidence.
 
-**Status:** the credential-free build is complete and verified locally. The
-public URL, credentialed OpenAI/Langfuse evidence, and AWS smoke results are the
-remaining deployment checkpoint; no cloud resources have been created.
+**Status:** the application and Neon production data layer are complete. The
+remaining handoff is deploying FastAPI to Render and the UI to Streamlit
+Community Cloud, as documented in
+[`docs/free-deployment.md`](docs/free-deployment.md). AWS remains unapplied
+architecture evidence while cost is paused.
 
 ```mermaid
 flowchart LR
@@ -15,32 +17,34 @@ flowchart LR
   API --> AGENT[One LangGraph review agent]
   API --> INTERVIEW[Interview + progress services]
   AGENT --> PARSER[tree-sitter]
-  AGENT --> RAG[Hybrid PostgreSQL + pgvector retrieval]
+  AGENT --> RAG[Measured lexical / Neon pgvector retrieval]
   API --> MCP[Read-only GitHub MCP]
   API --> REDIS[Redis derived-data cache]
   AGENT --> LF[Privacy-reduced Langfuse traces]
-  INTERVIEW --> PG[(PostgreSQL)]
+  INTERVIEW --> PG[(Neon PostgreSQL)]
 ```
 
-The demo/runtime review path is model-required by default. Model-backed review
-uses the OpenAI Responses API with strict Pydantic output, one validation
-retry, `store=False`, bounded context, and citation/line guardrails. If no
-model is configured, or the model output fails validation, the API returns a
-clear 503 instead of showing deterministic fallback output. Deterministic
-fallback remains opt-in for local tests/evals through `CLUTCH_ALLOW_STATIC_FALLBACK=true`.
+The runtime is model-first with an honestly labeled deterministic fallback.
+Model-backed review uses the OpenAI Responses API with strict Pydantic output,
+one validation retry, `store=False`, bounded context, and citation/line
+guardrails. Missing credentials or provider/validation failures return
+`static_fallback` findings, or `retrieval_only` when no static finding exists;
+neither path is described as AI-generated.
 
 ## What works now
 
 - Pasted Python and bounded GitHub repo/PR review through the same typed flow.
 - One six-node LangGraph workflow: parse, static review, retrieve, synthesize,
   validate, and generate questions.
-- In-memory zero-service mode or durable PostgreSQL/pgvector mode.
+- In-memory zero-service mode or durable Neon PostgreSQL/pgvector mode with a
+  version-synchronized 120-item public corpus.
 - Stateful interview turns, a structured final feedback report, and progress
   aggregation across review sessions.
 - Redis caches only hashed embedding/retrieval inputs and knowledge-base data;
   raw source and review evidence are excluded.
 - Explicit Langfuse spans contain hashes, categories, citation IDs, timings,
-  model/fallback metadata, and token counts—not raw code, prompts, or answers.
+  native model/version/usage fields, and safe failure metadata—not raw code,
+  prompts, provider payloads, or answers.
 - CI gates Ruff, mypy, tests, deterministic evals, prompt-injection behavior,
   secret scanning, dependency audit, three container builds, and Terraform.
 - Non-root Docker images and a validated AWS ECS/RDS/ElastiCache Terraform
@@ -83,23 +87,49 @@ In another terminal:
 streamlit run frontend/app.py
 ```
 
-Open `http://localhost:8501`. The default requires no database, Redis, GitHub
-token, Langfuse account, or model key.
+Open `http://localhost:8501`. Without an OpenAI key, the UI clearly labels
+deterministic/template/rule-based fallbacks. Database, Redis, GitHub token, and
+Langfuse remain optional for local development.
 
 Copy `.env.example` to `.env` to opt into provider-backed behavior. Important
 variables are:
 
 - `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_EMBEDDING_MODEL`
+- `CLUTCH_RETRIEVAL_STRATEGY`; `local_lexical` is the measured default, while
+  `postgres_lexical`, `postgres_vector`, and `postgres_hybrid` remain available
 - `CLUTCH_MODEL_PER_REQUEST_USD`, `CLUTCH_MODEL_DAILY_USD`; custom models also
   require explicit per-million-token price variables
 - `CLUTCH_LIVE_EVAL_MAX_USD`, `CLUTCH_LIVE_EVAL_PER_REQUEST_USD` for the
   isolated, manually invoked live-model evaluation budget
 - `CLUTCH_REQUIRE_AUTH`, `CLUTCH_API_KEY` (both backend and Streamlit receive
   the same server-side key in a deployed environment)
-- `DATABASE_URL` (or the separate `CLUTCH_DB_*` values used by ECS)
+- pooled `DATABASE_URL` for runtime; direct `DIRECT_DATABASE_URL` for Alembic
+  and administrative seeding
 - `REDIS_URL`
 - `GITHUB_TOKEN`, `GITHUB_MCP_URL`
-- `LANGFUSE_*`; tracing is off unless explicitly enabled with both keys
+- `LANGFUSE_*`; tracing is off unless `LANGFUSE_TRACING_ENABLED=true` and both
+  keys are configured
+
+For a local credentialed demo without running the app containers, keep
+Postgres/Redis running and start the Python services from `.venv`:
+
+```bash
+set -a
+source .env
+set +a
+
+export DATABASE_URL="postgresql+asyncpg://clutch:$CLUTCH_DB_PASSWORD@localhost:5432/clutch"
+export REDIS_URL="redis://localhost:6379/0"
+export LANGFUSE_TRACING_ENABLED=true
+export GITHUB_MCP_URL="http://127.0.0.1:8001/mcp"
+
+CLUTCH_MCP_TRANSPORT=streamable-http clutch-github-mcp
+uvicorn backend.app.main:app --reload
+streamlit run frontend/app.py
+```
+
+Run each long-lived command in its own terminal. The UI is at
+`http://localhost:8501`.
 
 ## Full local stack
 
@@ -114,6 +144,14 @@ docker compose up -d backend frontend
 The UI is at `http://localhost:8501`, FastAPI at `http://localhost:8000`, and
 the MCP Streamable HTTP endpoint at `http://localhost:8001/mcp`. Run migrations
 as a one-off command; do not run them independently in every backend replica.
+
+## Low-cost public deployment
+
+Neon production is migrated, seeded, and verified. Deploy the FastAPI backend
+to Render and the UI to Streamlit Community Cloud. The exact remaining secrets,
+settings, and smoke checklist live in
+[`docs/free-deployment.md`](docs/free-deployment.md); `render.yaml` and
+`scripts/hosted_smoke.sh` make the handoff repeatable.
 
 ## API surface
 
@@ -149,13 +187,13 @@ its isolated configured cap:
 python -m clutch.evals.live_model --compact
 ```
 
-It runs six representative review cases and all three injection cases through
-the production graph, then reports model/fallback rate, validation failures,
-finding and grounding quality, latency, tokens, and charged cost. With no key it
-returns a typed `available=false` report and exit code 2 without constructing a
-client or making a network call. Any fallback makes a configured run fail.
+It runs six representative review cases, all three injection cases, and three
+interview cases through production model paths, then reports validation,
+quality, latency, token, and charged-cost evidence. With no key it returns a
+typed `available=false` report and exit code 2 without constructing a client or
+making a network call. Any fallback in the credentialed baseline fails the run.
 
-Dataset `2026-09-08.v5` has 15 review cases: 12 pasted-code cases and three
+Dataset `2026-09-10.v6` has 15 review cases: 12 pasted-code cases and three
 multi-file repositories run through the real GitHub review coordinator. It also
 has three adversarial prompt-injection samples and three complete
 interview-to-feedback cases. Its deterministic baseline is deliberately narrow:
@@ -165,11 +203,11 @@ interview-to-feedback cases. Its deterministic baseline is deliberately narrow:
 | Finding precision / recall | 1.000 / 1.000 |
 | Finding severity accuracy | 1.000 |
 | Clean-negative / mixed full-recall rate | 1.000 / 1.000 |
-| Retrieval Precision@3 / Recall@3 | 0.786 / 0.559 |
-| Retrieval MRR / nDCG@3 | 1.000 / 0.934 |
+| Retrieval Precision@3 / Recall@3 | 0.800 / 0.563 |
+| Retrieval MRR / nDCG@3 | 1.000 / 0.970 |
 | Retrieval judgment coverage@3 | 1.000 |
-| Irrelevant-result rate@3 | 0.044 |
-| Citation faithfulness | 1.000 |
+| Irrelevant-result rate@3 | 0.000 |
+| Citation validity / support | 1.000 / 1.000 |
 | Hallucinated-line rate | 0.000 |
 | Question relevance | 1.000 |
 | GitHub ingestion / persisted-source privacy | 1.000 / 1.000 |
@@ -179,34 +217,36 @@ interview-to-feedback cases. Its deterministic baseline is deliberately narrow:
 | Model cost | $0.00 |
 
 The perfect scores prove only the named deterministic rules, not general code
-review quality. The live-model harness is implemented, tested with fake
-providers, and ready to record accuracy, validation failures, latency, tokens,
-and cost when the user supplies a key.
+review quality. The credentialed `gpt-5.4-mini` baseline passed: finding
+precision/recall, citation validity/support, question relevance, injection, and
+answer privacy were 1.000; interview score-within-one was 0.833; schema failures
+were zero. It used 16,411 input and 3,659 output tokens, averaged 2,941 ms
+end-to-end (5,706 ms p95), and cost $0.028781 total / $0.004797 per review.
 
-The same 15 bounded queries and relevance judgments can compare every retrieval
-strategy without serializing raw submitted source:
+The same 15 bounded queries and relevance judgments compare all four retrieval
+strategies without persisting raw submitted source. The production HTTPS runner
+is:
 
 ```bash
-python -m clutch.evals.retrieval_comparison --compact
+.venv/bin/python scripts/export_retrieval_benchmark.py | \
+  DATABASE_URL="<Neon pooled URL>" node --env-file=.env \
+  scripts/run_neon_retrieval_eval.mjs
 ```
 
-A credential-free local PostgreSQL run on 2026-09-08 produced:
+A 2026-09-10 run against Neon production produced:
 
 | Strategy | Precision@3 | Recall@3 | MRR | nDCG@3 | Judgment coverage@3 | Irrelevant@3 | Mean latency | Query cost |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Local lexical | 0.786 | 0.559 | 1.000 | 0.934 | 1.000 | 0.044 | 0.48 ms | $0.00 |
-| PostgreSQL lexical | 0.786 | 0.559 | 1.000 | 0.914 | 0.911 | 0.089 | 16.22 ms | $0.00 |
+| Local lexical | 0.800 | 0.563 | 1.000 | 0.970 | 1.000 | 0.000 | 0.55 ms | $0.00 |
+| Neon lexical | 0.756 | 0.531 | 0.933 | 0.913 | 0.956 | 0.044 | 49.64 ms | $0.00 |
+| Neon vector | 0.644 | 0.453 | 0.756 | 0.738 | 0.756 | 0.244 | 24.18 ms | $0.00001746 |
+| Neon hybrid | 0.733 | 0.516 | 0.900 | 0.872 | 0.867 | 0.133 | 38.12 ms | $0.00001746 |
 
-This single-machine latency sample is diagnostic, not a production benchmark.
-The PostgreSQL path exposed and now regression-tests OR semantics for broad
-review queries. The gate requires Recall@3 >= 0.55, MRR 1.0, nDCG@3 >= 0.90,
-judgment coverage@3 >= 0.90, and irrelevant@3 <= 0.15. Unjudged hits still
-receive zero relevance, so nDCG and irrelevant-rate penalize them.
-
-Vector-only and hybrid rows remain unavailable until `OPENAI_API_KEY` is added
-to the untracked `.env`. With the local database running, reseed once to create
-missing embeddings, then run the comparison with `--require-all`; the shared
-spend guard and hashed embedding cache remain active.
+The gate remains Recall@3 ≥ 0.55, MRR 1.0, nDCG@3 ≥ 0.90, judgment coverage@3
+≥ 0.90, and irrelevant@3 ≤ 0.15. Local lexical was the only passing strategy,
+so `CLUTCH_RETRIEVAL_STRATEGY=local_lexical` is the deterministic deployment
+default. The Neon candidates remain implemented and seeded, but are not called
+passing. This is one production-region sample, not a general latency claim.
 
 A local container smoke test on 2026-09-08 measured the same synthetic review
 at about 111 ms cold and 8.6 ms after a Redis retrieval-cache hit. That is a
@@ -215,8 +255,9 @@ single correctness smoke test, not a production benchmark.
 | Local measurement | Quality signal | Mean/application latency | Model cost |
 |---|---:|---:|---:|
 | Deterministic eval | Finding P/R 1.000 / 1.000 | ~3.1 ms across review cases | $0.00 |
-| Local lexical retrieval | nDCG@3 0.934 | 0.48 ms | $0.00 |
-| PostgreSQL lexical retrieval | nDCG@3 0.914 | 16.22 ms | $0.00 |
+| Local lexical retrieval | nDCG@3 0.970 | 0.55 ms | $0.00 |
+| Neon hybrid retrieval | nDCG@3 0.872 | 38.12 ms | $0.00001746 |
+| Live model review | Finding P/R 1.000 / 1.000 | 2,941 ms end-to-end | $0.004797/review |
 | Redis repeated-review smoke | Same structured result | ~111 ms cold / 8.6 ms cached | $0.00 |
 
 These are single-machine regression and correctness measurements, not public
@@ -249,7 +290,11 @@ answers are absent from the durable records.
   can establish from the bounded input.
 - Model output can be malformed, cite unknown sources, or point outside the
   submitted line range. The provider retries validation once, records only safe
-  attempt/failure counters, and falls back to labelled deterministic findings.
+  attempt/failure counters, and returns explicitly labeled deterministic/static,
+  template, or rule-based output when the applicable AI stage fails.
+- The first production vector/hybrid baseline missed the fixed retrieval gates.
+  Clutch kept the thresholds unchanged and selected the passing lexical strategy
+  instead of publishing a hybrid-quality claim.
 - Perfect deterministic scores are intentionally presented as narrow fixture
   coverage. Clean negatives, mixed-signal cases, multi-file cases, live-model
   evaluation, and retrieval comparisons exist to make overclaiming visible.
@@ -344,25 +389,25 @@ Logs apply and smoke successfully. The available LocalStack license returns 501
 for ECR/ECS, so those resources are optional flags rather than part of the
 default local rehearsal.
 
-The next public-hosting path is Vercel/Render/Supabase: Vercel for a public
-web shell if needed, Render for FastAPI and/or Streamlit, Supabase Postgres with
-pgvector for durable data, and a low-cost Redis provider only if cache/spend
-counters need to be enabled.
+The production data layer now runs on Neon Postgres with pgvector. The only
+remaining public-hosting steps are Render for FastAPI and Streamlit Community
+Cloud for the UI; Redis is optional for multi-replica shared cache/spend state.
 
 ## Known limitations
 
 - Python is the only parsed language; GitHub review selects Python files.
-- The validated knowledge corpus has 100 cited references, rubrics, and
-  question-bank items with role/seniority metadata, reaching Phase 2's lower
-  bound. The deterministic eval remains synthetic despite adding multi-file,
-  clean, and mixed-signal cases.
-- Interview assessment is deterministic and does not yet adaptively generate
-  novel follow-ups; the final report is deterministic and evidence-based rather
-  than a claim of general interview readiness.
+- The validated corpus has exactly 120 atomic items: 72 references, 18 rubrics,
+  and 30 question-bank entries, all with exact allowlisted source provenance.
+  The deterministic eval remains synthetic despite multi-file, clean, and
+  mixed-signal coverage.
+- Question generation and interview-turn assessment are model-backed when
+  available, with template/rule-based fallbacks. Final feedback aggregation is
+  deterministic and explicitly labeled; it is not a general-readiness claim.
 - API-key auth is intentionally deployment-level rather than user accounts.
   Account identity, key rotation automation, and abuse-rate limiting remain.
-- Live OpenAI, Langfuse, private-GitHub, and AWS evidence requires user-owned
-  credentials. No secrets belong in this repository.
+- Langfuse's tested model trace has native model/version/usage and latency, but
+  Japan Cloud still reads native cost as empty; the audit correctly remains
+  failing for that trace. Private-GitHub and hosted smoke evidence await deploy.
 
 ## Resume-ready bullets
 
@@ -370,7 +415,7 @@ counters need to be enabled.
   LangGraph, tree-sitter, strict Pydantic outputs, PostgreSQL/pgvector, Redis,
   and a deliberately scoped three-tool GitHub MCP boundary.
 - Designed a 21-scenario regression suite—15 code reviews, three adversarial
-  prompt-injection cases, and three complete interviews—with 83 automated tests
+  prompt-injection cases, and three complete interviews—with 118 automated tests
   and measured retrieval, grounding, privacy, latency, and cost gates.
 - Implemented privacy-safe persistence/tracing, bounded model-spend controls,
   non-root containers, and validated Terraform for ECS/Fargate, RDS,

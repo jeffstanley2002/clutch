@@ -175,7 +175,9 @@ The project is successful when it can demonstrate:
 - Show progress across at least two sessions.
 - Demonstrate at least one prompt-injection test that fails safely.
 - Show eval metrics and one model comparison table in the README.
-- Run through CI and deploy through the AWS path described in `CLOUD.md`.
+- Run through CI and deploy through the prepared Neon → Render → Streamlit
+  Community Cloud path; keep the AWS path in `CLOUD.md` as unapplied future
+  architecture evidence.
 
 ## Assumptions
 
@@ -199,7 +201,8 @@ Resolved implementation defaults from the 14-day sprint brief:
 - Langfuse is the first tracing platform.
 - `gpt-5.4-mini` is the initial OpenAI review model, configurable through
   `OPENAI_MODEL` so eval evidence can justify a change later.
-- Deterministic baseline `2026-09-08.v5` uses a 100-item typed corpus, 15 review
-  cases (including three multi-file repositories, clean negatives, and mixed
-  signals), three injection cases, and three interview-to-feedback cases. This
-  reaches the lower product target but does not establish general quality.
+- Deterministic baseline `2026-09-10.v6` uses a 120-item source-traceable corpus,
+  15 review cases (including three multi-file repositories, clean negatives,
+  and mixed signals), three injection cases, and three interview-to-feedback
+  cases. A capped `gpt-5.4-mini` run now supplies real model evidence, but the
+  bounded fixtures still do not establish general quality.

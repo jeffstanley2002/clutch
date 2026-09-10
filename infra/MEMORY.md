@@ -42,16 +42,22 @@ flags rather than default resources.
 - Budget creation is a dependency of paid ALB/RDS/Redis resources.
 - LocalStack is a control-plane rehearsal, not a replacement for the production
   AWS saved-plan/apply checkpoint.
-- For near-term public deployment, prefer Vercel/Render/Supabase over AWS to
-  avoid AWS spend. Keep AWS Terraform as architecture evidence and future
-  migration material.
+- For near-term public deployment, prefer Neon/Render/Streamlit Community Cloud
+  over AWS to avoid AWS spend. Keep AWS Terraform as architecture evidence and
+  future migration material.
+- `docs/free-deployment.md`, `render.yaml`, and `scripts/hosted_smoke.sh`
+  document the already-prepared Neon data layer followed by Render backend and
+  Streamlit Cloud UI deployment.
+- Local app runtime can run without app containers: keep Docker Postgres/Redis
+  and LocalStack up, then run MCP, FastAPI, and Streamlit from `.venv`.
 
 ## Known gaps / checkpoint
 
 - Do not apply until the user confirms AWS account, region, budget email and
   ceiling, ingress range, credentials, and teardown policy.
-- Staging plan/cost estimate, ECR push, migration task, deployment smoke, and
-  rollback rehearsal remain unverified.
+- Neon production migration/seed is verified. Render backend deploy, Streamlit
+  Community Cloud UI deploy, hosted smoke, AWS staging plan/cost estimate, ECR
+  push, migration task, and rollback rehearsal remain unverified.
 - Terraform is not installed on PATH because Homebrew Terraform is blocked by
   outdated Xcode; use the Docker fallback in `scripts/localstack_terraform.sh`.
 - LocalStack cannot currently rehearse ECR/ECS without a higher license tier.

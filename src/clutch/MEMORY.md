@@ -14,7 +14,8 @@ ReviewRequest -> parse -> static signals -> retrieve -> model/static synthesis
 ```
 
 Every optional dependency has a safe fallback: local retrieval, in-memory
-repositories, no-op cache, no-op tracing, in-process MCP, and static synthesis.
+repositories, no-op cache, no-op tracing, in-process MCP, static findings,
+template questions, and rule-based assessment.
 
 ## Decisions
 
@@ -32,12 +33,13 @@ repositories, no-op cache, no-op tracing, in-process MCP, and static synthesis.
 ## Known gaps
 
 - Python is the only reviewed/parser language.
-- The validated corpus contains 100 typed reference/rubric/question-bank items
-  with role and seniority metadata, reaching the Phase 2 lower bound.
-- Eval `2026-09-08.v5` covers 12 pasted reviews, three multi-file GitHub
+- The validated corpus contains exactly 120 source-traceable reference/rubric/
+  question-bank items with role and seniority metadata.
+- Eval `2026-09-10.v6` covers 12 pasted reviews, three multi-file GitHub
   reviews, and three complete interview-to-feedback cases; it is still
   synthetic and does not justify a general-quality claim.
-- Live provider accuracy, cost, and traces require user-owned credentials.
-- Adaptive interviews are still deferred. Final reports, interview/report eval
+- The capped live provider baseline is recorded; the Langfuse native-cost
+  readback defect remains explicit.
+- Adaptive between-turn interviews are still deferred. Final reports, interview/report eval
   coverage, deployment API-key auth, and shared per-call/daily spend limits are
   implemented.

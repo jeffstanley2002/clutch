@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: clutch-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -e .
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: CLUTCH_REQUIRE_AUTH
+        value: true
+      - key: LANGFUSE_OBSERVE_DECORATOR_IO_CAPTURE_ENABLED
+        value: false
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-mini
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: CLUTCH_RETRIEVAL_STRATEGY
+        value: local_lexical
+      - key: CLUTCH_MODEL_PER_REQUEST_USD
+        value: 0.10
+      - key: CLUTCH_MODEL_DAILY_USD
+        value: 1.00
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_MCP_URL
+        value: ""
+      - key: LANGFUSE_TRACING_ENABLED
+        value: true
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        value: https://jp.cloud.langfuse.com
+      - key: CLUTCH_API_KEY
+        sync: false

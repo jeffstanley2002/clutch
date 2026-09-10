@@ -24,5 +24,5 @@ def test_review_does_not_log_raw_submitted_code(caplog) -> None:
             )
         )
 
-    assert response.mode == "static_fallback"
+    assert response.mode == "retrieval_only"
     assert sentinel not in caplog.text

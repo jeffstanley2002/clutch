@@ -910,3 +910,195 @@ Next up:
 
 - Rotate exposed local keys, then run a model-required review and inspect safe
   diagnostics until it returns `mode: model`.
+
+## 2026-09-09 (Day 13 local runtime + free deployment path)
+
+Phase: 4 low-cost deployment preparation
+
+Did:
+
+- Added privacy-safe provider warning logs for bounded OpenAI review attempts:
+  model name, attempt counts, exception class, and allowlisted failure detail
+  only.
+- Added explicit Langfuse flush after review requests so demo traces are not
+  left waiting for shutdown batching.
+- Added `.python-version`, `render.yaml`, `docs/free-deployment.md`, and
+  `scripts/hosted_smoke.sh` for the Supabase -> Render -> optional Vercel path.
+- Updated README, `CLOUD.md`, and infra/LLM/observability/project memory docs
+  for the low-cost deployment sequence.
+- Stopped only Docker app containers and kept Docker Postgres, Redis, and
+  LocalStack running.
+- Set a local-only ignored `CLUTCH_DB_PASSWORD`, aligned the existing Postgres
+  role, and reran Alembic successfully.
+- Started GitHub MCP, FastAPI, and Streamlit directly from `.venv`.
+
+Learned / decided:
+
+- The previous no-logs Langfuse symptom was expected because
+  `LANGFUSE_TRACING_ENABLED=false`; local runtime now starts with it enabled.
+- The model-required 503 disappeared in the `.venv` runtime after environment
+  alignment; pasted-code and GitHub reviews both returned `mode: model`.
+- Keep Render as the actual public app host, Supabase as the pgvector database,
+  and Vercel as an optional portfolio landing/link shell.
+
+Verification:
+
+- Focused deterministic tests passed with clean test env and
+  `CLUTCH_ALLOW_STATIC_FALLBACK=true`: `tests/test_review_api.py`,
+  `tests/test_model_router.py`, and `tests/test_observability.py`.
+- Ruff passed for the changed provider/observability/review files.
+- `git diff --check`, `bash -n scripts/hosted_smoke.sh`, and a YAML parse check
+  for `render.yaml` passed.
+- Local health checks passed for FastAPI `:8000`, GitHub MCP `:8001`, and
+  Streamlit `:8501`.
+- Local pasted-code review returned `mode: model` with two findings and two
+  questions; GitHub review of `pypa/sampleproject` returned `mode: model` with
+  five included Python files.
+- Cache and spend endpoints responded; Langfuse `auth_check` passed against
+  `https://jp.cloud.langfuse.com`.
+- LocalStack health reported Pro edition with `apigateway`, `ec2`, `iam`,
+  `logs`, and `secretsmanager` running.
+
+Open issues:
+
+- Rotate the local OpenAI, GitHub, Langfuse, and Clutch API keys before copying
+  any value to hosted providers.
+- Confirm Langfuse traces visually in the dashboard after the explicit flush.
+- Run the broader live-model eval only after key rotation.
+
+Next up:
+
+- Create Supabase project, enable pgvector, run migrations/seed, then deploy
+  the two Render web services and run `scripts/hosted_smoke.sh`.
+
+## 2026-09-09 (Day 13 no-fallback final + Streamlit Cloud handoff)
+
+Phase: 4 demo correctness + low-cost deployment handoff
+
+Did:
+
+- Removed the runtime deterministic AI fallback path entirely:
+  `FallbackStaticProvider`, `CLUTCH_ALLOW_STATIC_FALLBACK`,
+  `static_fallback`, fallback metadata fields, and fallback-rate eval reporting
+  are gone from the user-facing review flow.
+- Changed `ModelRouter` so missing providers, provider failures, budget
+  failures, and validation failures raise typed unavailable errors instead of
+  returning synthetic review output.
+- Kept deterministic rules only inside the offline eval harness/test doubles,
+  separated from runtime model behavior.
+- Updated API, graph, guardrail, persistence, GitHub review, observability, and
+  live-model tests for the model-or-error contract.
+- Updated Streamlit to read `CLUTCH_API_BASE_URL` and `CLUTCH_API_KEY` from
+  either environment variables or `st.secrets`, making it deployable on
+  Streamlit Community Cloud.
+- Switched the free public deployment guide to Supabase -> Render backend ->
+  Streamlit Community Cloud UI; `render.yaml` now describes only the FastAPI
+  backend, and root `requirements.txt` supports Streamlit Cloud dependency
+  install.
+- Restarted the local `.venv` GitHub MCP, FastAPI, and Streamlit services.
+
+Learned / decided:
+
+- Runtime AI review must be binary: a real model-backed result or a clear
+  error. Deterministic rules are still useful for offline eval gates, but they
+  should never masquerade as AI output.
+- The next public demo should host FastAPI on Render, Postgres/pgvector on
+  Supabase, and `frontend/app.py` on Streamlit Community Cloud.
+
+Verification:
+
+- Full tests passed: 85/85.
+- Ruff passed for `src`, `tests`, `frontend`, and `scripts`.
+- Mypy passed over 63 source files.
+- `git diff --check` passed.
+- `bash -n scripts/hosted_smoke.sh` passed.
+- Local health checks passed for GitHub MCP `:8001`, FastAPI `:8000`, and
+  Streamlit `:8501`.
+- Authenticated local pasted-code review returned `mode: model` with two
+  findings and two questions.
+
+Open issues:
+
+- Rotate OpenAI, GitHub, Langfuse, and `CLUTCH_API_KEY` values before entering
+  them into Supabase, Render, or Streamlit Community Cloud.
+- Supabase migration/seed, Render backend deployment, Streamlit Community Cloud
+  UI deployment, hosted smoke, and visual Langfuse trace confirmation are still
+  deployment-time tasks.
+
+Next up:
+
+- Create Supabase, enable `vector`, run Alembic and seed scripts; deploy Render
+  backend; deploy Streamlit Community Cloud UI; then run
+  `scripts/hosted_smoke.sh`.
+
+## 2026-09-10 (Day 14 deployment-ready AI evidence + Neon production)
+
+Phase: 4 deployment and measured production readiness
+
+Did:
+
+- Restored a model-first contract with literal provenance for static/retrieval,
+  template-question, and rule-based-assessment fallbacks.
+- Curated exactly 120 atomic, source-traceable knowledge items from the approved
+  Python/PEP, OWASP, pytest/unittest, and Google sources.
+- Added versioned seed synchronization, grounded model question generation,
+  RAG-grounded AI interview assessment, prompt manifests, stronger citation
+  support gates, complete stage diagnostics, and native Langfuse trace fields.
+- Added per-item frontend labels, stage diagnostics, clickable exact-section
+  citations, and bounded GitHub analysis scope messaging; browser-tested model,
+  fallback, error, empty, keyboard, and 390px states.
+- Installed and authenticated Neon CLI 4.14.6, installed the official project
+  skills/MCP configuration, linked project `holy-feather-79203801` branch
+  `production`, and committed the empty `neon.ts` policy plus lockfiles.
+- Created snapshot `clutch-pre-migration-20260910`, proved the full Alembic chain
+  on a disposable production clone, then deleted that clone.
+- Migrated Neon production to `20260909_0003`; synchronized 120 embeddings for
+  $0.00015972 and proved the second sync was unchanged/zero-cost.
+- Verified all ten tables, 120 active provenance-complete rows, 120 valid
+  1536-dimensional embeddings, no raw-code/raw-answer columns, and pooled
+  temporary read/write behavior.
+- Recorded a passing capped `gpt-5.4-mini` baseline and a four-strategy Neon
+  retrieval comparison, then made the sole gate-passing `local_lexical`
+  strategy the deployment default without lowering thresholds.
+- Replaced the Supabase handoff with Neon → Render → Streamlit Community Cloud.
+
+Learned / decided:
+
+- This host blocks direct PostgreSQL port 5432. The exact offline SQL generated
+  by Alembic was applied transactionally through Neon's official HTTPS driver;
+  Alembic remains the only schema source.
+- Local lexical won the fixed retrieval benchmark. Neon lexical/vector/hybrid
+  stay implemented and seeded, but none should be called passing or selected
+  until a future unchanged-gate rerun wins.
+- The prior transient model-required/no-fallback and Supabase decisions in the
+  2026-09-09 entries are superseded by the tested labeled-fallback and Neon
+  production decisions above.
+- Langfuse forced-fallback trace audit passes. The model trace contains native
+  model/version/usage/latency, but Japan Cloud still returns empty native cost;
+  keep that limitation explicit.
+
+Verification:
+
+- Deterministic `2026-09-10.v6` metrics pass every mandatory gate; citation
+  validity/support are 1.000 and hallucinated-line rate is 0.000.
+- Live baseline: finding/citation/question/injection/privacy metrics 1.000,
+  interview within-one 0.833, zero schema failures, 16,411 input and 3,659
+  output tokens, 2,941 ms average / 5,706 ms p95, $0.028781 total.
+- Neon retrieval: local lexical nDCG@3 0.970 and passes; Neon lexical 0.913,
+  vector 0.738, hybrid 0.872 and remain below one or more fixed gates.
+- Final gates pass: Ruff, mypy across 73 source files, all 118 tests, prompt
+  manifest and deterministic eval checks, secret scans, Python/JavaScript
+  dependency audits, shell/Compose validation, and all three Docker image
+  builds.
+
+Open issues:
+
+- Rotate local OpenAI/GitHub/Langfuse/Clutch API keys before deployment.
+- Deploy Render and Streamlit Community Cloud, run the hosted smoke/manual
+  privacy checks, and verify restart persistence.
+- Re-run the model-trace audit when Langfuse native-cost readback is available.
+
+Next up:
+
+- Owner deploys the prepared Render backend and Streamlit Community Cloud UI
+  using `docs/free-deployment.md`; no additional database setup is required.

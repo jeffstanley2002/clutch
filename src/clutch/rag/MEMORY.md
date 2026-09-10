@@ -2,12 +2,12 @@
 
 ## Current state
 
-Retrieval supports local lexical search and durable PostgreSQL hybrid search.
+Retrieval supports local lexical search and durable Neon PostgreSQL search.
 PostgreSQL combines full-text rank with optional 1536-dimensional OpenAI
 embedding distance; local fallback preserves availability. Redis wrappers cache
 only hashed queries/vectors and knowledge-base results. The validated corpus has
-100 references/rubrics/question prompts with explicit item type, role, and
-seniority metadata; those fields survive the SQL round trip.
+120 references/rubrics/question prompts with exact provenance; those fields
+survive the SQL round trip.
 
 Local ranking treats category, role, seniority, rubric, and question words as
 routing metadata. Issue-specific tag/title/body overlap controls relevance, and
@@ -17,7 +17,8 @@ term caused broad review queries to return no rows.
 
 ## Decisions
 
-- Embedding absence degrades to lexical retrieval.
+- `CLUTCH_RETRIEVAL_STRATEGY` selects local lexical, Neon lexical, vector, or
+  hybrid. Missing database/model dependencies degrade to local retrieval.
 - Cache/provider/database failure must not block review.
 - Citation IDs remain stable across local and SQL paths.
 - The comparison runner hashes queries in reports and never includes raw source
@@ -25,6 +26,7 @@ term caused broad review queries to return no rows.
 
 ## Known gaps
 
-- Local and PostgreSQL lexical comparison is measured and green. PostgreSQL
-  vector-only and hybrid measurements require an OpenAI key and seeded
-  embeddings; no semantic reranker is implemented.
+- The 2026-09-10 Neon baseline measured all four strategies. Local lexical alone
+  passed every fixed gate (P@3 0.800, R@3 0.563, MRR 1.000, nDCG@3 0.970) and is
+  the deployment default. Neon hybrid measured nDCG@3 0.872 and remains a
+  non-default candidate until ranking improves without a gate change.

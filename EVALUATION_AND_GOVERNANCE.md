@@ -26,7 +26,7 @@ changes are reviewed like code because changing labels can hide regressions.
   irrelevant-result rate.
 - Findings: precision, recall, severity calibration, and hallucinated-line rate.
 - Questions: relevance to findings and role context.
-- Grounding: citation presence and citation faithfulness.
+- Grounding: citation validity and deterministic concept-level citation support.
 - Reliability: schema-valid response rate, retry rate, and fallback rate.
 - Guardrails: prompt-injection pass rate and prohibited-tool-call count.
 - System: end-to-end/node latency, tokens, estimated cost, and cache hit rate.
@@ -36,8 +36,10 @@ changes are reviewed like code because changing labels can hide regressions.
 - Deterministic unit and API tests must pass on every change.
 - The compact golden and injection suites gate every pull request and main push.
 - Prompt-injection pass rate is 100% for the committed adversarial suite.
-- Model or retrieval changes may not materially regress finding recall,
-  citation faithfulness, or hallucinated-line rate without a documented review.
+- Citation validity must be 100%, citation support at least 90%, hallucinated
+  line rate 0%, finding precision at least 75%, finding recall at least 70%,
+  question relevance at least 80%, interview score-within-one at least 80%, and
+  prompt-injection pass rate 100%.
 - Retrieval strategies must meet Recall@3 >= 0.55, MRR 1.0, nDCG@3 >= 0.90,
   judgment coverage@3 >= 0.90, and irrelevant-result rate@3 <= 0.15.
 - Full and potentially costly model evals run manually or on a controlled
@@ -51,15 +53,14 @@ categories, tokens, latency, and charged cost—never fixture source or prompts.
 Missing credentials return a typed unavailable result without a provider call;
 any fallback causes a nonzero configured-run exit.
 
-Deterministic thresholds are checked by the committed eval runner. Credentialed
-model thresholds will be added only after a measured baseline rather than being
-invented in advance.
+Prompt text is governed by a version/hash manifest. CI fails when prompt content
+changes without a version bump and refreshed manifest/baseline evidence.
 
 ## Current Baseline
 
-Dataset version `2026-09-08.v5` runs the real review graph with model routing
-forced to the deterministic fallback, then runs the actual interview service and
-final-report generator against in-memory privacy-safe repositories. The three
+Dataset version `2026-09-10.v6` runs the real review graph through its labeled
+deterministic paths, then runs the actual interview service and final-report
+generator against in-memory privacy-safe repositories. The three
 GitHub cases verify selected-file metadata and prove that request-scoped source
 sentinels do not enter persisted review records. It also contains three
 prompt-injection cases and three complete interviews.
@@ -71,13 +72,14 @@ prompt-injection cases and three complete interviews.
 | Finding severity accuracy | 1.000 |
 | Clean-negative pass rate | 1.000 |
 | Mixed-case full recall | 1.000 |
-| Retrieval Recall@3 | 0.559 |
-| Retrieval Precision@3 | 0.786 |
+| Retrieval Recall@3 | 0.563 |
+| Retrieval Precision@3 | 0.800 |
 | Retrieval MRR | 1.000 |
-| Retrieval nDCG@3 | 0.934 |
+| Retrieval nDCG@3 | 0.970 |
 | Retrieval judgment coverage@3 | 1.000 |
-| Retrieval irrelevant-result rate@3 | 0.044 |
-| Citation faithfulness | 1.000 |
+| Retrieval irrelevant-result rate@3 | 0.000 |
+| Citation validity | 1.000 |
+| Citation support | 1.000 |
 | Hallucinated line-number rate | 0.000 |
 | Question relevance | 1.000 |
 | GitHub ingestion expectation pass rate | 1.000 |
@@ -93,36 +95,40 @@ Binary retrieval metrics treat grades 2–3 as relevant; nDCG uses all four grad
 Every returned top-three result is explicitly judged, while the fixture also
 lists known-relevant candidates that were not returned. Mixed multi-file cases
 can have seven relevant items while K remains three, so the corpus-wide Recall@3
-gate is 0.55 and the observed value stays at an honest 0.559. MRR remains 1.0;
+gate is 0.55 and the observed value stays at an honest 0.563. MRR remains 1.0;
 nDCG and irrelevant-result rate prevent the lower recall floor from hiding weak
 ordering.
 
-The comparison runner evaluates local lexical, PostgreSQL lexical, PostgreSQL
-vector-only, and PostgreSQL hybrid retrieval over these exact bounded queries:
+The production comparison evaluates local lexical, Neon lexical, Neon
+vector-only, and Neon hybrid retrieval over these exact bounded queries:
 
 ```bash
-python -m clutch.evals.retrieval_comparison --compact
+.venv/bin/python scripts/export_retrieval_benchmark.py | \
+  DATABASE_URL="<Neon pooled URL>" node --env-file=.env \
+  scripts/run_neon_retrieval_eval.mjs
 ```
 
-The credential-free 2026-09-08 run measured local lexical at Precision@3 0.786,
-Recall@3 0.559, MRR 1.000, nDCG@3 0.934, 1.000 judgment coverage, 0.044
-irrelevant rate, and 0.48 ms mean latency. PostgreSQL lexical measured the same
-precision/recall/MRR, nDCG@3 0.914, 0.911 judgment coverage, 0.089 irrelevant
-rate, and 16.22 ms mean latency. Both cost $0 and pass the current gate. This is
-a single local run, not a production latency claim. Vector-only and hybrid
-measurements require an OpenAI key to seed embeddings and remain explicitly
-unmeasured.
+The 2026-09-10 Neon run measured local lexical at P@3 0.800, R@3 0.563,
+MRR 1.000, nDCG@3 0.970, coverage 1.000, irrelevant 0.000, and 0.55 ms. Neon
+lexical measured 0.756 / 0.531 / 0.933 / 0.913 / 0.956 / 0.044 at 49.64 ms.
+Vector measured 0.644 / 0.453 / 0.756 / 0.738 / 0.756 / 0.244 at 24.18 ms;
+hybrid measured 0.733 / 0.516 / 0.900 / 0.872 / 0.867 / 0.133 at 38.12 ms.
+The vector query batch cost $0.00001746. Only local lexical passed every gate,
+so it is the deployment default. Candidate failures remain visible in
+`evals/baselines/retrieval-neon-production.json`; no gate was weakened.
 
 Judgment coverage is not required to be perfect for candidate strategies:
 unjudged results already receive relevance zero in nDCG and irrelevant-rate, so
 an exact coverage requirement would double-penalize the same uncertainty. The
 0.90 floor still prevents comparisons from silently outrunning the labels.
-The perfect finding and interview scores establish narrow regression coverage
-for deterministic rules; they are not evidence of general review quality.
-Invalid structured-output rate is deliberately reported as unmeasured for this
-static run. Provider attempt and validation-failure counters plus the capped
-live harness are now implemented; the first credentialed baseline remains a
-deployment checkpoint.
+The credentialed `gpt-5.4-mini` baseline covers six reviews, three injections,
+and three interviews. Finding precision/recall/accuracy, citation validity and
+support, question relevance, injection pass, interview citation validity,
+model-backed rate, and answer privacy are 1.000. Interview exact-score accuracy
+is 0.333 while within-one agreement is 0.833, above the fixed 0.80 gate. There
+were zero schema failures. The run used 16,411 input and 3,659 output tokens,
+averaged 2,941 ms end-to-end (5,706 ms p95), and cost $0.028781 total /
+$0.004797 per review. These narrow fixtures do not establish general quality.
 
 Local cache evidence is tracked separately from quality: one container smoke on
 2026-09-08 measured ~111 ms cold versus ~8.6 ms after a retrieval-cache hit.

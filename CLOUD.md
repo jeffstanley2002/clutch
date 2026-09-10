@@ -10,10 +10,11 @@ verified. Terraform has been formatted and validated without AWS credentials;
 it has never been planned against an account or applied. Creating paid cloud
 resources is an explicit user checkpoint.
 
-The practical near-term deployment target is now LocalStack rehearsal first,
-then a lower-cost hosted deployment on Vercel/Render/Supabase. The AWS module
-remains useful as portfolio architecture evidence and as a future migration
-path, but it should not be applied while the owner wants to avoid AWS spend.
+The practical production path is Neon, Render, and Streamlit Community Cloud.
+Neon is already migrated and seeded; only the two application deployments
+remain. The AWS module remains useful as portfolio architecture evidence and as
+a future migration path, but it should not be applied while the owner wants to
+avoid AWS spend.
 
 ## Target AWS shape
 
@@ -44,19 +45,22 @@ operational evidence requires another deployable.
 Use this path for the next real public deployment unless the owner explicitly
 re-opens AWS funding:
 
-- Vercel hosts a lightweight public landing/demo shell if the Streamlit UI is
-  replaced or wrapped for web sharing.
-- Render hosts the FastAPI backend and can also host Streamlit if keeping the
-  current UI unchanged is more important than Vercel polish.
-- Supabase provides hosted PostgreSQL with pgvector support for durable review,
-  interview, progress, and knowledge-base data.
+- Streamlit Community Cloud hosts the existing Streamlit UI from `frontend/app.py`.
+- Render hosts the FastAPI backend.
+- Neon project `holy-feather-79203801`, branch `production`, provides hosted
+  PostgreSQL with pgvector for durable review, interview, progress, and the
+  versioned knowledge corpus.
 - Upstash or Render Redis can replace ElastiCache for cache/spend-counter
-  behavior when Redis is required.
+  behavior when Redis is required across multiple replicas; it is optional for
+  the initial single-instance deployment.
 - Secrets stay in each provider's secret manager/environment settings; no
   secrets are committed.
 
-Before this deployment, add provider-specific docs and smoke scripts rather
-than weakening the AWS Terraform module.
+The provider-specific runbook is
+[`docs/free-deployment.md`](docs/free-deployment.md), with a Render backend
+blueprint in `render.yaml` and a post-deploy smoke helper in
+`scripts/hosted_smoke.sh`. Runtime uses Neon's pooled URL; Alembic and
+administrative seeding use its direct URL.
 
 ## Local Compose parity
 
@@ -161,9 +165,10 @@ tool/retrieval timing, and safe error category. They must never receive raw
 code, repository content, prompts, provider payloads, interview answers, or
 secret values.
 
-RDS stores derived review/interview/progress data and hashes. Redis stores only
-hashed embedding/retrieval keys and knowledge-base values. No S3 artifact store
-is provisioned because v1 has no current non-sensitive artifact requirement.
+Neon or RDS stores derived review/interview/progress data and hashes. Redis
+stores only hashed embedding/retrieval keys and knowledge-base values. No S3
+artifact store is provisioned because v1 has no current non-sensitive artifact
+requirement.
 
 ## Cost and rollback
 

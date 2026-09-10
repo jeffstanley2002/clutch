@@ -16,10 +16,10 @@ GitHub repo/PR -> read-only MCP ------> FastAPI /review/github
                  interview turns -> progress snapshots
 ```
 
-Every external/API/model boundary is Pydantic-validated. Without optional
-services the system runs in memory with deterministic review. With PostgreSQL,
-Redis, OpenAI, and Langfuse configured it enables durable hybrid retrieval,
-safe caching, model-backed synthesis, and privacy-reduced traces.
+Every external/API/model boundary is Pydantic-validated. Model-backed stages are
+preferred; unavailable or invalid model paths return explicitly labeled static,
+template, or rule-based fallbacks. Neon provides durable PostgreSQL/pgvector,
+Redis is optional, and Langfuse receives privacy-reduced traces.
 
 ## Current boundaries
 
@@ -29,8 +29,9 @@ safe caching, model-backed synthesis, and privacy-reduced traces.
   `/health`.
 - LangGraph owns the linear review workflow. There is no multi-agent layer.
 - Tree-sitter owns Python structure and line ranges.
-- Internal retrieval uses PostgreSQL full-text plus optional pgvector similarity;
-  an in-memory lexical fallback keeps zero-service mode runnable.
+- Internal retrieval supports local lexical plus Neon full-text, pgvector, and
+  hybrid strategies. The measured deployment default is local lexical because
+  it alone passed the current fixed production retrieval gates.
 - Redis caches only knowledge-base retrieval/embedding data behind hashed keys.
 - MCP owns exactly three external GitHub reads; it exposes no mutation tool.
 - PostgreSQL persists source hashes and derived review/interview/progress data,
@@ -40,7 +41,7 @@ safe caching, model-backed synthesis, and privacy-reduced traces.
 
 ## Durable data
 
-Alembic migration `20260908_0001` creates review sessions/findings/questions,
+Alembic migrations through `20260909_0003` create review sessions/findings/questions,
 interview sessions/turns, progress snapshots, knowledge-base items, retrieval
 events, and agent runs. The knowledge table has PostgreSQL full-text indexing,
 a 1536-dimensional pgvector column, and an HNSW index.
@@ -52,11 +53,12 @@ request-scoped.
 ## Runtime modes
 
 - No `DATABASE_URL`/`CLUTCH_DB_*`: in-memory repositories and local retrieval.
-- Database configured, no OpenAI key: PostgreSQL lexical retrieval and static
-  review; durable sessions still work.
-- OpenAI key configured: embeddings and strict structured synthesis; one retry,
-  then `static_fallback`. Every paid call reserves a conservative cost against
-  per-call and UTC-daily ceilings before it reaches OpenAI.
+- No OpenAI key: deterministic findings, template questions, and rule-based
+  answer assessment are labeled with `model_not_configured`; durable sessions
+  still work when the database is configured.
+- OpenAI key configured: strict structured review/question/assessment calls;
+  one validation retry, then the same labeled fallback. Every paid call reserves
+  a conservative cost against per-call and UTC-daily ceilings before OpenAI.
 - `REDIS_URL` configured: cached embedding/retrieval results with fail-open
   timeouts and aggregate metrics.
 - Langfuse explicitly enabled with both keys: redacted node/tool/retriever/
@@ -76,15 +78,22 @@ request-scoped.
 - Optional local API-key auth becomes mandatory in Terraform whenever ECS task
   count is nonzero; only `/health` remains unauthenticated.
 - Redis makes the daily spend reservation atomic across backend processes;
-  counter failure blocks the paid call and preserves static fallback.
+  counter failure blocks the paid call before the provider request.
 
 ## Verified state
 
-- Deterministic eval `2026-09-08.v5`: all committed gates pass across 15 review
-  cases, three injection cases, and three complete interview cases; 83 tests,
-  Ruff, and mypy over 63 source files are green.
-- A spend-capped nine-case live-model runner is implemented with privacy-safe
-  attempt/validation counters; credentials are the only missing baseline input.
+- Deterministic eval `2026-09-10.v6`: all committed gates pass across 15 review
+  cases, three injection cases, and three complete interview cases; 118 tests,
+  Ruff, and mypy are green.
+- The capped `gpt-5.4-mini` baseline passed all mandatory gates at $0.028781
+  total / $0.004797 per review, with zero schema failures.
+- Neon production is at Alembic head with 120 active sourced items and 120
+  1536-dimensional embeddings. Direct and pooled verification passed.
+- Production retrieval measured all four strategies; local lexical won and is
+  the default. The Neon hybrid/vector candidates remain below gate.
+- Forced-fallback Langfuse trace audit passes. The model trace has native
+  model/version/usage/latency, but Japan Cloud still reads native cost as empty,
+  so that audit remains honestly failing.
 - Local browser: complete Review → Interview → assessment/report → Progress
   flow, with committed screenshots from the rebuilt five-service stack.
 - Docker: three non-root images build; pgvector Postgres migration and all five
@@ -96,10 +105,10 @@ request-scoped.
 
 ## Next sequence
 
-1. With user credentials, run the capped OpenAI baseline, seed embeddings, run
-   vector-only/hybrid retrieval with `--require-all`, inspect a privacy-reduced
-   Langfuse trace, and verify a scoped private GitHub token.
-2. Only after account/region/budget/teardown approval, review an AWS saved plan,
-   publish immutable images, run migrations, and deploy staging.
-3. Add adaptive interview follow-ups only if credentialed eval evidence
-   justifies the extra latency and model cost.
+1. Rotate deployment credentials, then deploy Render from `render.yaml` with the
+   pooled Neon URL.
+2. Deploy `frontend/app.py` to Streamlit Community Cloud and run the hosted
+   smoke/manual privacy checklist.
+3. Improve and remeasure Neon hybrid retrieval without weakening gates; switch
+   only if a new baseline wins. Re-audit Langfuse native cost after provider
+   readback changes.

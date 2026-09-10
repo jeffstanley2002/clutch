@@ -12,7 +12,7 @@ terraform {
 provider "aws" {
   region                      = var.aws_region
   access_key                  = "test"
-  secret_key                  = "test"
+  secret_key                  = "test" # pragma: allowlist secret -- LocalStack convention
   s3_use_path_style           = true
   skip_credentials_validation = true
   skip_metadata_api_check     = true
@@ -247,7 +247,7 @@ resource "aws_ecs_task_definition" "backend" {
       { name = "CLUTCH_REQUIRE_AUTH", value = "true" },
       { name = "CLUTCH_MODEL_DAILY_USD", value = "1.00" },
       { name = "CLUTCH_MODEL_PER_REQUEST_USD", value = "0.10" },
-      { name = "DATABASE_URL", value = "postgresql+asyncpg://clutch:clutch-local@postgres:5432/clutch" },
+      { name = "DATABASE_URL", value = "postgresql+asyncpg://clutch:clutch-local@postgres:5432/clutch" }, # pragma: allowlist secret -- local-only fixture
       { name = "GITHUB_MCP_URL", value = "http://github-mcp:8001/mcp" },
       { name = "OPENAI_MODEL", value = var.openai_model },
       { name = "REDIS_URL", value = "redis://redis:6379/0" },

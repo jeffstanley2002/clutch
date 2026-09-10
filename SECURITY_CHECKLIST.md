@@ -31,8 +31,8 @@ the product requirements in `PRD.md`; it does not expand product scope.
   browser or Streamlit client.
 - Do not add repository mutation in v1. Any later mutation needs an explicit,
   per-action human approval gate.
-- Keep OpenAI, Langfuse, GitHub, database, Redis, and AWS secrets in environment
-  variables locally and managed secret stores in AWS.
+- Keep OpenAI, Langfuse, GitHub, database, Redis, and cloud secrets in ignored
+  local environment files and provider-managed secret settings.
 
 ## Application and Supply Chain
 
@@ -52,7 +52,7 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Deployment logs contain no source code or secrets.
 - A rollback path and incident owner are documented before public deployment.
 
-## Current evidence (2026-09-09)
+## Current evidence (2026-09-10)
 
 - Three prompt-injection fixtures remain data under the real static graph,
   avoid prohibited behavior, and emit only known citations.
@@ -79,10 +79,16 @@ the product requirements in `PRD.md`; it does not expand product scope.
 - Provider diagnostics expose bounded attempt and validation-failure counts plus
   safe cause categories only. The capped live-model report omits fixture source,
   prompts, provider payloads, credentials, and raw exception messages.
+- Neon production has no raw-code/raw-answer columns and contains only the
+  public versioned corpus plus derived application schemas. Direct and pooled
+  aggregate/privacy verification passed after a named pre-migration snapshot.
+- The capped live OpenAI baseline passed citation, line, injection, schema, and
+  answer-privacy gates for its bounded cases.
 - A fresh local acceptance pass rebuilt every image, ran migrations, verified
-  all five health checks, exercised review/interview/feedback/progress, passed 83
+  all five health checks, exercised review/interview/feedback/progress, passed 118
   tests, and found no known dependency vulnerabilities.
 
-Remaining release evidence: credentialed live-model trace inspection, verified
-read-only scope on a private GitHub token, AWS log review, saved-plan/cost
-review, rollback rehearsal, rate/abuse limiting, and named incident owner.
+Remaining release evidence: hosted Render/Streamlit privacy smoke, verified
+read-only scope on a private GitHub token, Langfuse native-cost readback, AWS
+log/saved-plan/rollback work only if AWS is later activated, rate/abuse limiting,
+and a named incident owner.

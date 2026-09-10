@@ -2,12 +2,13 @@
 
 ## Current state
 
-The committed `corpus.json` contains 100 validated items across all six finding
-categories: 60 cited references, 18 interview rubrics, and 22 question-bank
-prompts. Each category has 10 references, three rubrics, and at least three
-questions. Every item has a stable ID, citation, item type, role tags, and
-seniority levels. Package data is validated at import; duplicate IDs or citation
-ID mismatches fail fast.
+The committed `corpus.json` contains exactly 120 atomic items across all six
+finding categories: 72 references, 18 rubrics, and 30 question-bank prompts,
+with 20 items per category. Every item has a stable ID, exact anchored URL,
+source family/title/section, corpus version, content SHA-256, item type, role and
+seniority tags, plus validated derivation IDs where applicable. Sources are
+restricted to Python docs/PEPs, OWASP Cheat Sheets, pytest/unittest docs, Google
+Engineering Practices, and the Google Python style guide.
 
 `src/clutch/rag/retrieval.py` provides:
 
@@ -17,9 +18,10 @@ ID mismatches fail fast.
 - reciprocal-rank-style score fusion and local fallback;
 - Redis wrappers for hashed retrieval results and embeddings.
 
-Alembic seeds the durable corpus and creates FTS plus 1536-dimensional HNSW
-vector indexes. Migration `20260908_0002` adds item type, roles, and seniority
-metadata to existing databases.
+Alembic creates FTS plus 1536-dimensional HNSW vector indexes. Migration
+`20260909_0003` adds provenance, content hashes, active/seeded status, and model
+diagnostics. Seeding is a versioned synchronization: insert/update/re-embed,
+deactivate obsolete seed rows, and preserve unrelated data.
 
 ## Decisions
 
@@ -30,6 +32,7 @@ metadata to existing databases.
 
 ## Known gaps
 
-- Local and PostgreSQL lexical quality/latency/cost are now measured on the same
-  expanded eval set. The credentialed vector-only and hybrid paths still lack a
-  measured baseline.
+- Neon production has 120 active sourced rows and 120 valid embeddings. The
+  production comparison measured all four strategies; local lexical is the only
+  current gate-passing default. Improve Neon hybrid mappings/ranking before
+  switching rather than lowering thresholds.

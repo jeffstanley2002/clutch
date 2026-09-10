@@ -16,7 +16,7 @@ Streamlit pasted-code form
   -> FastAPI /review
   -> Pydantic request model
   -> LangGraph review service
-  -> deterministic fallback or strict OpenAI structured synthesis
+  -> strict OpenAI structured synthesis or labeled deterministic fallback
   -> Pydantic ReviewResponse
   -> Streamlit findings and interview follow-ups
 ```
@@ -108,13 +108,14 @@ Regex-only parsing should be avoided for code structure.
 The knowledge base stores clean-code principles, rubric items, role-specific
 expectations, and interview follow-up patterns.
 
-The current durable retriever uses PostgreSQL full-text ranking plus optional
-pgvector cosine distance and score fusion over a validated package-data corpus.
-The first two expansions contain 60 references, rubrics, and question-bank items;
-each has explicit role and seniority metadata. Without PostgreSQL it uses
-deterministic local lexical retrieval; without an embedding key PostgreSQL still
-provides lexical results. Reranking remains deferred until the corpus and eval
-set are large enough to justify it.
+The durable layer is Neon PostgreSQL with full-text ranking and 1536-dimensional
+pgvector cosine distance over a validated 120-item package-data corpus: 72
+references, 18 rubrics, and 30 question-bank entries. Every item has exact
+allowlisted source provenance, role/seniority metadata, a corpus version, and a
+content hash. Local lexical, Neon lexical, vector-only, and hybrid strategies
+share one graded benchmark. Local lexical is the current deployment default
+because it alone passed the unchanged production gates; the Neon strategies
+remain selectable for measured improvement work.
 
 The local query builder removes common stop words and never uses source-ID
 prefixes as ranking evidence. Positive deterministic signals restrict retrieval
@@ -263,9 +264,10 @@ shapes:
 5. Tree-sitter extracts bounded line-aware chunks.
 6. Retrieval returns clean-code principles relevant to the code and role
    context.
-7. LangGraph synthesizes deterministic or model-backed structured findings.
-8. Pydantic validates findings and generated questions; invalid model output is
-   rejected, retried once, then replaced by the static fallback.
+7. LangGraph prefers model-backed structured findings and questions.
+8. Pydantic validates line/citation grounding; invalid model output is retried
+   once, then replaced by explicitly labeled static findings and template
+   questions.
 9. FastAPI returns `ReviewResponse` to Streamlit without logging raw code.
 
 ### GitHub Review
@@ -280,11 +282,13 @@ shapes:
 
 1. User starts from findings or generated questions.
 2. FastAPI loads interview session state.
-3. The deterministic interview service assesses explicit reasoning signals and
-   selects the next generated question.
+3. The interview service retrieves up to three grounded items and prefers a
+   schema-constrained AI assessment; failures use an explicitly labeled
+   rule-based assessment.
 4. Session state persists current/remaining questions. Answers persist only as
    SHA-256 plus a bounded signal summary.
-5. Adaptive model-generated follow-ups and SSE remain future work.
+5. Final feedback aggregation remains deterministic and labels whether its turns
+   were AI- or rule-assessed. SSE remains future work.
 
 ## Guardrails
 
@@ -335,7 +339,10 @@ validation fail. Credentialed model evals remain manual/controlled.
 
 ## Deployment Architecture
 
-Local development runs all services locally or through Docker Compose.
+Local development runs all services locally or through Docker Compose. The
+prepared public path uses Neon production Postgres, Render for FastAPI, and
+Streamlit Community Cloud for the UI; only the two application deployments
+remain.
 
 The validated, unapplied Terraform deployment models:
 
@@ -360,8 +367,8 @@ Detailed deployment choices live in `CLOUD.md`.
   an early repo. The mitigation is sequencing: the first runnable version uses
   only Streamlit, FastAPI, Pydantic, and a deterministic review stub or minimal
   model path.
-- Hybrid retrieval should not be built until vector-only retrieval has a
-  baseline that can be improved.
+- Hybrid retrieval is implemented but may not become the default until it beats
+  the fixed graded baseline; the first Neon run did not.
 - Redis should wait until there is a measured repeated-call latency problem.
 - Model comparison should wait until the eval set is stable enough to make the
   comparison meaningful.
