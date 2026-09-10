@@ -277,8 +277,8 @@ def test_local_retriever_keeps_category_filtering() -> None:
 
 
 def test_measured_retrieval_default_is_local_lexical(monkeypatch: Any) -> None:
-    monkeypatch.delenv("CLUTCH_RETRIEVAL_STRATEGY", raising=False)
-    monkeypatch.delenv("REDIS_URL", raising=False)
+    monkeypatch.setenv("CLUTCH_RETRIEVAL_STRATEGY", "local_lexical")
+    monkeypatch.setenv("REDIS_URL", "")
 
     assert isinstance(knowledge_retriever_from_env(), LocalKnowledgeRetriever)
 

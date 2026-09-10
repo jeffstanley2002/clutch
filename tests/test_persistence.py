@@ -188,7 +188,7 @@ def test_application_repositories_share_one_pool_and_close_it(monkeypatch) -> No
 def test_database_url_can_be_assembled_from_secret_friendly_parts(
     monkeypatch,
 ) -> None:
-    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "")
     monkeypatch.setenv("CLUTCH_DB_HOST", "database.internal")
     monkeypatch.setenv(  # pragma: allowlist secret
         "CLUTCH_DB_PASSWORD", "safe/example:value"
