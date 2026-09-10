@@ -6,10 +6,13 @@ import os
 import re
 from contextlib import AbstractContextManager
 from types import TracebackType
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 from dotenv import load_dotenv
 from langfuse import Langfuse
+
+from clutch.llm.spend import completion_cost_usd
+from clutch.schemas import StageProvenance
 
 ObservationType = Literal[
     "agent",
@@ -20,6 +23,8 @@ ObservationType = Literal[
     "span",
     "tool",
 ]
+ObservationLevel = Literal["DEBUG", "DEFAULT", "WARNING", "ERROR"]
+REDACTION_POLICY = "hashes_counts_ids_only.v1"
 _REDACTED_KEYS = frozenset(
     {
         "answer",
@@ -43,6 +48,12 @@ class ObservationSpan(Protocol):
         *,
         output: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
+        model: str | None = None,
+        version: str | None = None,
+        usage_details: dict[str, int] | None = None,
+        cost_details: dict[str, float] | None = None,
+        level: ObservationLevel | None = None,
+        status_message: str | None = None,
     ) -> None: ...
 
 
@@ -69,6 +80,12 @@ class _NullSpan(AbstractContextManager[ObservationSpan]):
         *,
         output: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
+        model: str | None = None,
+        version: str | None = None,
+        usage_details: dict[str, int] | None = None,
+        cost_details: dict[str, float] | None = None,
+        level: ObservationLevel | None = None,
+        status_message: str | None = None,
     ) -> None:
         return None
 
@@ -99,9 +116,10 @@ class _LangfuseSpan(AbstractContextManager[ObservationSpan]):
             name=name,
             as_type=as_type,
             input=redact_sensitive_data(input),
-            metadata=redact_sensitive_data(metadata),
+            metadata=_with_redaction_evidence(metadata),
         )
         self._observation: Any | None = None
+        self._failure_recorded = False
 
     def __enter__(self) -> ObservationSpan:
         self._observation = self._context.__enter__()
@@ -113,6 +131,18 @@ class _LangfuseSpan(AbstractContextManager[ObservationSpan]):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> bool | None:
+        if (
+            exc_type is not None
+            and self._observation is not None
+            and not self._failure_recorded
+        ):
+            self._observation.update(
+                level="ERROR",
+                status_message="unknown",
+                metadata=_with_redaction_evidence(
+                    {"failure_category": "unknown"}
+                ),
+            )
         return self._context.__exit__(exc_type, exc_value, traceback)
 
     def update(
@@ -120,12 +150,38 @@ class _LangfuseSpan(AbstractContextManager[ObservationSpan]):
         *,
         output: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
+        model: str | None = None,
+        version: str | None = None,
+        usage_details: dict[str, int] | None = None,
+        cost_details: dict[str, float] | None = None,
+        level: ObservationLevel | None = None,
+        status_message: str | None = None,
     ) -> None:
         if self._observation is not None:
+            self._failure_recorded = level == "ERROR" or bool(
+                metadata and metadata.get("failure_category")
+            )
             self._observation.update(
                 output=redact_sensitive_data(output),
-                metadata=redact_sensitive_data(metadata),
+                metadata=_with_redaction_evidence(metadata),
+                model=model,
+                version=version,
+                usage_details=usage_details,
+                # Cost is emitted below through Langfuse's documented standard
+                # OTEL mapping. Sending both attributes makes the SDK-specific
+                # value take precedence in regions affected by its projection bug.
+                cost_details=None,
+                level=level,
+                status_message=status_message,
             )
+            if cost_details and isinstance(cost_details.get("total"), (int, float)):
+                # Langfuse maps this standard OTEL field to native cost_details.
+                otel_span = getattr(self._observation, "_otel_span", None)
+                if otel_span is not None:
+                    otel_span.set_attribute(
+                        "gen_ai.usage.cost",
+                        cost_details["total"],
+                    )
 
 
 class LangfuseObservability:
@@ -151,6 +207,9 @@ class LangfuseObservability:
     def shutdown(self) -> None:
         self._client.shutdown()
 
+    def flush(self) -> None:
+        self._client.flush()
+
 
 class _RecordedSpan(AbstractContextManager[ObservationSpan]):
     def __init__(
@@ -166,6 +225,16 @@ class _RecordedSpan(AbstractContextManager[ObservationSpan]):
         return self
 
     def __exit__(self, *args: object) -> None:
+        exc_type = args[0] if args else None
+        metadata = self._record.setdefault("metadata", {})
+        if exc_type is not None and not metadata.get("failure_category"):
+            self._record.update(
+                {
+                    "level": "ERROR",
+                    "status_message": "unknown",
+                }
+            )
+            metadata["failure_category"] = "unknown"
         return None
 
     def update(
@@ -173,11 +242,27 @@ class _RecordedSpan(AbstractContextManager[ObservationSpan]):
         *,
         output: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
+        model: str | None = None,
+        version: str | None = None,
+        usage_details: dict[str, int] | None = None,
+        cost_details: dict[str, float] | None = None,
+        level: ObservationLevel | None = None,
+        status_message: str | None = None,
     ) -> None:
         self._record["output"] = redact_sensitive_data(output)
         if metadata:
             current = self._record.setdefault("metadata", {})
             current.update(redact_sensitive_data(metadata))
+        for key, value in (
+            ("model", model),
+            ("version", version),
+            ("usage_details", usage_details),
+            ("cost_details", cost_details),
+            ("level", level),
+            ("status_message", status_message),
+        ):
+            if value is not None:
+                self._record[key] = value
 
 
 class InMemoryObservability:
@@ -200,9 +285,90 @@ class InMemoryObservability:
                 "name": name,
                 "as_type": as_type,
                 "input": redact_sensitive_data(input),
-                "metadata": redact_sensitive_data(metadata),
+                "metadata": _with_redaction_evidence(metadata),
             },
         )
+
+
+def update_span_from_provenance(
+    span: ObservationSpan,
+    provenance: StageProvenance,
+    *,
+    output: dict[str, Any] | None = None,
+) -> None:
+    """Populate native Langfuse fields from one privacy-safe stage record."""
+
+    usage_details = None
+    if provenance.input_tokens is not None or provenance.output_tokens is not None:
+        input_tokens = provenance.input_tokens or 0
+        output_tokens = provenance.output_tokens or 0
+        usage_details = {
+            "input": input_tokens,
+            "output": output_tokens,
+            "total": input_tokens + output_tokens,
+        }
+    level = cast(
+        ObservationLevel,
+        {
+            "succeeded": "DEFAULT",
+            "skipped": "DEFAULT",
+            "fallback": "WARNING",
+            "failed": "ERROR",
+        }[provenance.status],
+    )
+    span.update(
+        output=output,
+        metadata={
+            "stage": provenance.stage,
+            "stage_status": provenance.status,
+            "origin": provenance.origin,
+            "latency_ms": provenance.latency_ms,
+            "attempt_count": provenance.attempt_count,
+            "validation_failure_count": provenance.validation_failure_count,
+            "failure_category": provenance.failure_category,
+        },
+        model=provenance.model_name,
+        version=provenance.prompt_version,
+        usage_details=usage_details,
+        cost_details=_native_cost_details(provenance),
+        level=level,
+        status_message=provenance.failure_category or provenance.status,
+    )
+
+
+def _native_cost_details(provenance: StageProvenance) -> dict[str, float] | None:
+    if provenance.model_name is None:
+        return None
+    details = {"total": provenance.estimated_cost_usd}
+    if provenance.input_tokens is None or provenance.output_tokens is None:
+        return details
+    try:
+        details.update(
+            {
+                "input": completion_cost_usd(
+                    provenance.model_name,
+                    input_tokens=provenance.input_tokens,
+                    output_tokens=0,
+                ),
+                "output": completion_cost_usd(
+                    provenance.model_name,
+                    input_tokens=0,
+                    output_tokens=provenance.output_tokens,
+                ),
+            }
+        )
+    except ValueError:
+        # Unknown custom models still retain the provider's total estimate.
+        pass
+    return details
+
+
+def _with_redaction_evidence(
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    safe = redact_sensitive_data(metadata or {})
+    assert isinstance(safe, dict)
+    return {**safe, "redaction_policy": REDACTION_POLICY}
 
 
 def observability_from_env() -> Observability:
@@ -238,6 +404,13 @@ def close_observability() -> None:
 
     if isinstance(OBSERVABILITY, LangfuseObservability):
         OBSERVABILITY.shutdown()
+
+
+def flush_observability() -> None:
+    """Flush pending Langfuse spans after demo-critical request boundaries."""
+
+    if isinstance(OBSERVABILITY, LangfuseObservability):
+        OBSERVABILITY.flush()
 
 
 def redact_sensitive_data(data: Any, **_: Any) -> Any:

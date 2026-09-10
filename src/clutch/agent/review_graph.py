@@ -1,6 +1,5 @@
 """LangGraph spine for the pasted-code review workflow."""
 
-import os
 from time import perf_counter
 from typing import Literal, NotRequired, TypedDict, cast
 
@@ -9,7 +8,11 @@ from langgraph.graph.state import CompiledStateGraph
 
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.llm import ModelRouter, QuestionContext, ReviewContext
-from clutch.observability import OBSERVABILITY, Observability
+from clutch.observability import (
+    OBSERVABILITY,
+    Observability,
+    update_span_from_provenance,
+)
 from clutch.parsing import parse_python_code
 from clutch.rag import (
     KnowledgeRetriever,
@@ -305,7 +308,10 @@ def build_review_graph(
                 output={
                     "chunk_count": len(result["parsed_code"].chunks),
                     "has_syntax_error": result["parsed_code"].has_syntax_error,
-                }
+                },
+                metadata={"stage_status": "succeeded"},
+                level="DEFAULT",
+                status_message="succeeded",
             )
             return result
 
@@ -319,7 +325,10 @@ def build_review_graph(
                     "finding_categories": [
                         finding.category for finding in result["static_findings"]
                     ]
-                }
+                },
+                metadata={"stage_status": "succeeded"},
+                level="DEFAULT",
+                status_message="succeeded",
             )
             return result
 
@@ -334,7 +343,10 @@ def build_review_graph(
             principles = cast(
                 list[CleanCodePrinciple], result["retrieved_principles"]
             )
-            span.update(
+            provenance = cast(StageProvenance, result["retrieval_provenance"])
+            update_span_from_provenance(
+                span,
+                provenance,
                 output={
                     "knowledge_source_ids": [
                         principle.id for principle in principles
@@ -349,24 +361,33 @@ def build_review_graph(
         with observer.span(
             "review.synthesize",
             as_type="generation",
-            metadata={"configured_model": os.getenv("OPENAI_MODEL", "gpt-5.4-mini")},
         ) as span:
             result = await synthesize_review(state, model_router=router)
             findings = result["findings"]
             assert isinstance(findings, list)
-            span.update(
+            provenance = cast(StageProvenance, result["review_provenance"])
+            update_span_from_provenance(
+                span,
+                provenance,
                 output={
                     "mode": result["mode"],
                     "finding_count": len(findings),
-                    "model_name": result["model_name"],
-                    "input_tokens": result["input_tokens"],
-                    "output_tokens": result["output_tokens"],
-                    "attempt_count": result["attempt_count"],
-                    "validation_failure_count": result[
-                        "validation_failure_count"
-                    ],
                 }
             )
+            if provenance.status == "fallback":
+                with observer.span(
+                    "review.fallback",
+                    as_type="guardrail",
+                ) as fallback_span:
+                    fallback_span.update(
+                        output={"mode": result["mode"]},
+                        metadata={
+                            "failure_category": provenance.failure_category,
+                            "stage_status": "fallback",
+                        },
+                        level="WARNING",
+                        status_message=provenance.failure_category,
+                    )
             return result
 
     def validate_findings_node(
@@ -374,7 +395,12 @@ def build_review_graph(
     ) -> dict[str, list[CodeFinding]]:
         with observer.span("review.validate_findings", as_type="guardrail") as span:
             result = validate_findings(state)
-            span.update(output={"validated_finding_count": len(result["findings"])})
+            span.update(
+                output={"validated_finding_count": len(result["findings"])},
+                metadata={"stage_status": "succeeded"},
+                level="DEFAULT",
+                status_message="succeeded",
+            )
             return result
 
     async def generate_questions_node(
@@ -383,21 +409,32 @@ def build_review_graph(
         with observer.span(
             "review.generate_questions",
             as_type="generation",
-            metadata={"prompt_version": "questions.v1"},
         ) as span:
             result = await generate_questions(state, model_router=router)
             questions = cast(list[InterviewQuestion], result["questions"])
             provenance = cast(StageProvenance, result["question_provenance"])
-            span.update(
+            update_span_from_provenance(
+                span,
+                provenance,
                 output={
                     "question_count": len(questions),
                     "origin": provenance.origin,
-                    "model_name": provenance.model_name,
-                    "input_tokens": provenance.input_tokens,
-                    "output_tokens": provenance.output_tokens,
-                    "failure_category": provenance.failure_category,
                 }
             )
+            if provenance.status == "fallback":
+                with observer.span(
+                    "questions.fallback",
+                    as_type="guardrail",
+                ) as fallback_span:
+                    fallback_span.update(
+                        output={"question_count": len(questions)},
+                        metadata={
+                            "failure_category": provenance.failure_category,
+                            "stage_status": "fallback",
+                        },
+                        level="WARNING",
+                        status_message=provenance.failure_category,
+                    )
             return result
 
     builder = StateGraph(ReviewGraphState)

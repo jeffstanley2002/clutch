@@ -7,8 +7,10 @@ from clutch.observability.tracing import (
     Observability,
     ObservationSpan,
     close_observability,
+    flush_observability,
     observability_from_env,
     redact_sensitive_data,
+    update_span_from_provenance,
 )
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "ObservationSpan",
     "Observability",
     "close_observability",
+    "flush_observability",
     "observability_from_env",
     "redact_sensitive_data",
+    "update_span_from_provenance",
 ]

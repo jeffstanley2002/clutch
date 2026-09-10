@@ -66,9 +66,39 @@ class ReviewService:
                 request_id=str(uuid4()),
                 latency_ms=(perf_counter() - started_at) * 1_000,
             )
-            await self._recorder.record_review(
-                build_review_persistence_record(request, response)
-            )
+            persistence_started = perf_counter()
+            with self._observability.span(
+                "review.persistence",
+                input={"request_id": response.request_id},
+            ) as persistence_span:
+                try:
+                    await self._recorder.record_review(
+                        build_review_persistence_record(request, response)
+                    )
+                except Exception:
+                    persistence_span.update(
+                        metadata={
+                            "stage_status": "failed",
+                            "failure_category": "persistence_failed",
+                            "latency_ms": (
+                                perf_counter() - persistence_started
+                            )
+                            * 1_000,
+                        },
+                        level="ERROR",
+                        status_message="persistence_failed",
+                    )
+                    raise
+                persistence_span.update(
+                    output={"persisted": True},
+                    metadata={
+                        "stage_status": "succeeded",
+                        "latency_ms": (perf_counter() - persistence_started)
+                        * 1_000,
+                    },
+                    level="DEFAULT",
+                    status_message="succeeded",
+                )
             span.update(
                 output={
                     "request_id": response.request_id,
@@ -81,10 +111,10 @@ class ReviewService:
                     ],
                     "question_count": len(response.questions),
                     "latency_ms": response.latency_ms,
-                    "model_name": state.get("model_name"),
-                    "input_tokens": state.get("input_tokens"),
-                    "output_tokens": state.get("output_tokens"),
-                }
+                },
+                metadata={"stage_status": "succeeded"},
+                level="DEFAULT",
+                status_message="succeeded",
             )
         flush_observability()
         return response

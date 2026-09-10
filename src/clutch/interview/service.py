@@ -15,7 +15,11 @@ from clutch.interview.repository import (
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
 from clutch.llm import InterviewAssessmentContext, ModelRouter
-from clutch.observability import OBSERVABILITY, Observability
+from clutch.observability import (
+    OBSERVABILITY,
+    Observability,
+    update_span_from_provenance,
+)
 from clutch.persistence.repository import (
     ReviewFindingReader,
     review_finding_reader_from_env,
@@ -58,13 +62,68 @@ class InterviewService:
         self._observability = observability or OBSERVABILITY
 
     async def run_turn(self, request: InterviewTurnRequest) -> InterviewTurnResponse:
-        if request.interview_session_id is None:
-            state = await self._repository.create_session(
-                review_session_id=request.review_session_id,
-                profile_id=request.profile_id,
-                role_context=request.role_context,
-                questions=request.questions,
+        started_at = perf_counter()
+        with self._observability.span(
+            "interview.turn",
+            as_type="agent",
+            input={
+                "interview_session_id": request.interview_session_id,
+                "review_session_id": request.review_session_id,
+                "question_count": len(request.questions),
+                "answer_sha256": (
+                    sha256(request.answer.encode("utf-8")).hexdigest()
+                    if request.answer is not None
+                    else None
+                ),
+            },
+        ) as span:
+            response = await self._run_turn(request)
+            span.update(
+                output={
+                    "interview_session_id": response.interview_session_id,
+                    "status": response.status,
+                    "completed": response.completed,
+                    "assessment_origin": (
+                        response.assessment.origin
+                        if response.assessment is not None
+                        else None
+                    ),
+                },
+                metadata={
+                    "stage_status": "succeeded",
+                    "latency_ms": (perf_counter() - started_at) * 1_000,
+                },
+                level="DEFAULT",
+                status_message="succeeded",
             )
+            return response
+
+    async def _run_turn(
+        self,
+        request: InterviewTurnRequest,
+    ) -> InterviewTurnResponse:
+        if request.interview_session_id is None:
+            persistence_started = perf_counter()
+            with self._observability.span(
+                "interview.persistence",
+                input={"operation": "create_session"},
+            ) as persistence_span:
+                state = await self._repository.create_session(
+                    review_session_id=request.review_session_id,
+                    profile_id=request.profile_id,
+                    role_context=request.role_context,
+                    questions=request.questions,
+                )
+                persistence_span.update(
+                    output={"persisted": True},
+                    metadata={
+                        "stage_status": "succeeded",
+                        "latency_ms": (perf_counter() - persistence_started)
+                        * 1_000,
+                    },
+                    level="DEFAULT",
+                    status_message="succeeded",
+                )
             return InterviewTurnResponse(
                 interview_session_id=state.session_id,
                 status=state.status,
@@ -139,19 +198,35 @@ class InterviewService:
                 assessment = result.assessment.model_copy(
                     update={"provenance": assessment_provenance}
                 )
-                span.update(
+                update_span_from_provenance(
+                    span,
+                    assessment_provenance,
                     output={
                         "origin": assessment.origin,
                         "score": assessment.score,
                         "citation_ids": [
                             citation.source_id for citation in assessment.citations
                         ],
-                        "model_name": result.model_name,
-                        "input_tokens": result.input_tokens,
-                        "output_tokens": result.output_tokens,
-                        "failure_category": result.failure_category,
                     }
                 )
+                if assessment_provenance.status == "fallback":
+                    with self._observability.span(
+                        "interview.fallback",
+                        as_type="guardrail",
+                    ) as fallback_span:
+                        fallback_span.update(
+                            output={"origin": assessment.origin},
+                            metadata={
+                                "failure_category": (
+                                    assessment_provenance.failure_category
+                                ),
+                                "stage_status": "fallback",
+                            },
+                            level="WARNING",
+                            status_message=(
+                                assessment_provenance.failure_category
+                            ),
+                        )
         else:
             assessment_provenance = StageProvenance(
                 stage="interview_assessment",
@@ -162,6 +237,19 @@ class InterviewService:
             assessment = fallback.model_copy(
                 update={"provenance": assessment_provenance}
             )
+            with self._observability.span(
+                "interview.fallback",
+                as_type="guardrail",
+            ) as fallback_span:
+                fallback_span.update(
+                    output={"origin": assessment.origin},
+                    metadata={
+                        "failure_category": "retrieval_failed",
+                        "stage_status": "fallback",
+                    },
+                    level="WARNING",
+                    status_message="retrieval_failed",
+                )
         provenance = [retrieval_provenance, assessment_provenance]
         next_question = (
             state.remaining_questions[0] if state.remaining_questions else None
@@ -173,20 +261,37 @@ class InterviewService:
         status: InterviewStatus = (
             "active" if next_question is not None else "completed"
         )
-        await self._repository.record_turn(
-            InterviewTurnRecord(
-                session_id=state.session_id,
-                turn_number=turn_number,
-                question=state.current_question,
-                answer_sha256=sha256(answer.encode("utf-8")).hexdigest(),
-                answer_summary=answer_summary,
-                assessment=assessment,
-                provenance=provenance,
-                next_question=next_question,
-                remaining_questions=remaining,
-                status=status,
+        persistence_started = perf_counter()
+        with self._observability.span(
+            "interview.persistence",
+            input={
+                "interview_session_id": state.session_id,
+                "operation": "record_turn",
+            },
+        ) as persistence_span:
+            await self._repository.record_turn(
+                InterviewTurnRecord(
+                    session_id=state.session_id,
+                    turn_number=turn_number,
+                    question=state.current_question,
+                    answer_sha256=sha256(answer.encode("utf-8")).hexdigest(),
+                    answer_summary=answer_summary,
+                    assessment=assessment,
+                    provenance=provenance,
+                    next_question=next_question,
+                    remaining_questions=remaining,
+                    status=status,
+                )
             )
-        )
+            persistence_span.update(
+                output={"persisted": True, "status": status},
+                metadata={
+                    "stage_status": "succeeded",
+                    "latency_ms": (perf_counter() - persistence_started) * 1_000,
+                },
+                level="DEFAULT",
+                status_message="succeeded",
+            )
         return InterviewTurnResponse(
             interview_session_id=state.session_id,
             status=status,
@@ -264,7 +369,9 @@ class InterviewService:
                     latency_ms=(perf_counter() - started_at) * 1_000,
                     failure_category=None if principles else "retrieval_failed",
                 )
-            span.update(
+            update_span_from_provenance(
+                span,
+                provenance,
                 output={
                     "knowledge_source_ids": [
                         principle.id for principle in principles
@@ -276,6 +383,30 @@ class InterviewService:
         return principles, provenance
 
     async def generate_feedback(self, session_id: str) -> FeedbackReport:
+        started_at = perf_counter()
+        with self._observability.span(
+            "interview.final_aggregation",
+            input={"interview_session_id": session_id},
+        ) as span:
+            report = await self._generate_feedback(session_id)
+            span.update(
+                output={
+                    "strength_count": len(report.strengths),
+                    "recurring_issue_count": len(report.recurring_issues),
+                    "recommended_task_count": len(report.recommended_tasks),
+                    "aggregation_label": report.aggregation_label,
+                },
+                metadata={
+                    "stage_status": "succeeded",
+                    "origin": "deterministic_static",
+                    "latency_ms": (perf_counter() - started_at) * 1_000,
+                },
+                level="DEFAULT",
+                status_message="succeeded",
+            )
+            return report
+
+    async def _generate_feedback(self, session_id: str) -> FeedbackReport:
         state = await self._repository.get_session(session_id)
         if state.status != "completed":
             raise InterviewNotComplete(session_id)

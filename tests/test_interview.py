@@ -166,6 +166,26 @@ def test_interview_uses_rag_grounded_ai_assessment_without_persisting_answer() -
         assert report.aggregation_label == (
             "Rule-based report aggregation from AI-assessed turns."
         )
+        assessment_span = next(
+            record
+            for record in observer.records
+            if record["name"] == "interview.assess_answer"
+        )
+        assert assessment_span["model"] == "test-model"
+        assert assessment_span["version"] == "interview_assessment.v1"
+        assert assessment_span["usage_details"] == {
+            "input": 80,
+            "output": 40,
+            "total": 120,
+        }
+        assert assessment_span["cost_details"] == {"total": 0.002}
+        assert {
+            "interview.turn",
+            "interview.persistence",
+            "interview.retrieve_grounding",
+            "interview.assess_answer",
+            "interview.final_aggregation",
+        } <= {record["name"] for record in observer.records}
 
     asyncio.run(exercise())
 
