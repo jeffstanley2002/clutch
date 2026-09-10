@@ -53,6 +53,9 @@ components:
   status-danger:
     backgroundColor: "{colors.danger}"
     textColor: "{colors.surface}"
+  provenance-label:
+    backgroundColor: "{colors.surface-muted}"
+    textColor: "{colors.text-muted}"
 ---
 
 # Clutch Design System
@@ -148,6 +151,21 @@ active work surface, uses the same stage names everywhere, and stacks naturally
 with the document at narrow widths. Request metadata is utility copy,
 subordinate to findings and questions.
 
+GitHub scope is always rendered as a compact factual line—files included,
+files skipped, truncation, and `full-codebase analysis: no`. This line is part
+of the result contract, not optional diagnostic decoration.
+
+### Provenance and trust labels
+
+Every finding, follow-up question, interview assessment, retrieved citation,
+and final aggregation names its origin in text. Model success uses the calm
+primary/success treatment; missing or failed model calls use a persistent
+warning adjacent to the affected output. Provenance labels stay visually quiet
+through `surface-muted` and `text-muted`, but they appear before the content
+they qualify so a user never needs to infer whether AI ran. A disclosure may
+show model, prompt version, tokens, latency, estimated cost, and safe failure
+category; it never shows raw prompts, code, answers, or provider payloads.
+
 ### Forms and overlays
 
 Labels name user concepts: “Target role” and “Python code.” Help text states
@@ -176,7 +194,9 @@ this palette.
 
 - **Do:** Keep the evidence-to-question relationship visible and predictable.
 - **Do:** Explain empty, error, and fallback states in plain language.
+- **Do:** State bounded GitHub analysis scope and output provenance literally.
 - **Don't:** Style the product like a terminal or imply model certainty it does
   not have.
+- **Don't:** Use “AI” as a generic label for deterministic or template output.
 - **Don't:** Let metadata, badges, or decoration compete with submitted code and
   actionable findings.

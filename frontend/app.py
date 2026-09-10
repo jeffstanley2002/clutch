@@ -4,13 +4,44 @@ from __future__ import annotations
 
 import os
 from typing import Any, Literal, cast
+from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("CLUTCH_API_BASE_URL", "http://localhost:8000")
 PageName = Literal["Review", "Interview", "Progress"]
+
+_STAGE_LABELS = {
+    "retrieval": "Review retrieval",
+    "review_synthesis": "Review synthesis",
+    "question_generation": "Question generation",
+    "interview_retrieval": "Interview retrieval",
+    "interview_assessment": "Interview assessment",
+    "final_aggregation": "Final report aggregation",
+}
+_FAILURE_LABELS = {
+    "model_not_configured": "no model credentials were configured",
+    "budget_rejected": "the model spend ceiling rejected the call",
+    "provider_error": "the model provider did not complete the call",
+    "schema_validation_failed": "the model response failed schema validation",
+    "grounding_validation_failed": "the model response failed grounding validation",
+    "retrieval_failed": "retrieval did not complete",
+    "fallback_failed": "the fallback path did not complete",
+    "persistence_failed": "derived result persistence did not complete",
+    "unknown": "the stage failed for a safely redacted reason",
+}
+
+
+def _setting(name: str, default: str = "") -> str:
+    env_value = os.getenv(name, "").strip()
+    if env_value:
+        return env_value
+    try:
+        secret_value = st.secrets.get(name, default)
+    except Exception:
+        secret_value = default
+    return str(secret_value).strip()
 
 
 def _initialize_state() -> None:
@@ -43,10 +74,11 @@ def _api_request(
     *,
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    api_key = os.getenv("CLUTCH_API_KEY", "").strip()
+    api_base_url = _setting("CLUTCH_API_BASE_URL", "http://localhost:8000")
+    api_key = _setting("CLUTCH_API_KEY")
     response = requests.request(
         method,
-        f"{API_BASE_URL}{path}",
+        f"{api_base_url}{path}",
         json=payload,
         headers={"X-Clutch-API-Key": api_key} if api_key else None,
         timeout=30,
@@ -76,8 +108,108 @@ def _render_header() -> PageName:
     return cast(PageName, selected or "Review")
 
 
+def _origin_label(origin: str | None, *, item: str) -> str:
+    if origin == "ai_generated":
+        return {
+            "finding": "AI-generated review finding",
+            "question": "AI-generated follow-up question",
+            "assessment": "AI-generated interview assessment",
+        }.get(item, "AI-generated output")
+    if origin == "template_generated":
+        return "Template-generated follow-up question"
+    if origin == "retrieved_citation":
+        return "Retrieved citation"
+    return {
+        "finding": "Deterministic static finding",
+        "assessment": "Rule-based interview assessment",
+        "report": "Deterministic report aggregation",
+    }.get(item, "Deterministic output")
+
+
+def _citation_markdown(citation: dict[str, Any]) -> str:
+    title = str(citation.get("title") or citation.get("source_id") or "Source")
+    title = title.replace("[", "\\[").replace("]", "\\]")
+    url = str(citation.get("url") or "")
+    fragment = unquote(urlparse(url).fragment)
+    locator = f"#{fragment}" if fragment else "source page"
+    label = f"{title} — {locator}"
+    return f"[{label}]({url})" if url else label
+
+
+def _render_citations(citations: list[dict[str, Any]]) -> None:
+    if not citations:
+        return
+    st.caption(_origin_label("retrieved_citation", item="citation"))
+    rendered: set[tuple[str, str]] = set()
+    for citation in citations:
+        identity = (
+            str(citation.get("source_id") or ""),
+            str(citation.get("url") or ""),
+        )
+        if identity in rendered:
+            continue
+        rendered.add(identity)
+        st.markdown(f"- {_citation_markdown(citation)}")
+
+
+def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
+    if not provenance:
+        return
+    with st.expander("How this result was produced"):
+        for stage in provenance:
+            stage_name = str(stage.get("stage") or "unknown")
+            label = _STAGE_LABELS.get(stage_name, stage_name)
+            details = [str(stage.get("status", "unknown")).replace("_", " ")]
+            if stage.get("model_name"):
+                details.append(str(stage["model_name"]))
+            if stage.get("prompt_version"):
+                details.append(str(stage["prompt_version"]))
+            input_tokens = stage.get("input_tokens")
+            output_tokens = stage.get("output_tokens")
+            if isinstance(input_tokens, int) or isinstance(output_tokens, int):
+                details.append(f"{(input_tokens or 0) + (output_tokens or 0):,} tokens")
+            details.append(f"{float(stage.get('latency_ms') or 0):,.1f} ms")
+            estimated_cost = float(stage.get("estimated_cost_usd") or 0)
+            if estimated_cost > 0:
+                details.append(f"estimated ${estimated_cost:.6f}")
+            failure_category = stage.get("failure_category")
+            if failure_category:
+                details.append(
+                    _FAILURE_LABELS.get(failure_category, str(failure_category))
+                )
+            st.markdown(f"**{label}**  ")
+            st.caption(" · ".join(details))
+
+
+def _render_review_provenance(review: dict[str, Any]) -> None:
+    mode = review.get("mode")
+    provenance = review.get("provenance", [])
+    if mode == "model":
+        st.success("AI-generated review synthesis completed.")
+    elif mode == "static_fallback":
+        st.warning(
+            "No successful review model call occurred. These findings came from "
+            "deterministic static analysis, so they are not AI-generated."
+        )
+    else:
+        st.warning(
+            "No successful review model call occurred and no static issue matched. "
+            "This result used retrieval-only/static logic, not AI synthesis."
+        )
+    for stage in provenance:
+        if stage.get("status") == "fallback" and stage.get("stage") != "review_synthesis":
+            label = _STAGE_LABELS.get(stage.get("stage"), "A later stage")
+            reason = _FAILURE_LABELS.get(
+                stage.get("failure_category"),
+                "the model path did not complete",
+            )
+            st.warning(f"{label} used its fallback because {reason}.")
+    _render_stage_provenance(provenance)
+
+
 def _render_finding(finding: dict[str, Any]) -> None:
     with st.container(border=True):
+        st.caption(_origin_label(finding.get("origin"), item="finding"))
         st.markdown(f"**{finding['severity'].upper()} · {finding['category']}**")
         st.markdown(f"### {finding['message']}")
         if finding.get("line_start"):
@@ -86,11 +218,7 @@ def _render_finding(finding: dict[str, Any]) -> None:
         st.code(finding["evidence"], language="python")
         st.write(finding["explanation"])
         st.info(finding["suggestion"])
-        citations = finding.get("citations", [])
-        if citations:
-            st.caption(
-                "Citations: " + ", ".join(citation["title"] for citation in citations)
-            )
+        _render_citations(finding.get("citations", []))
 
 
 def _render_review_page() -> None:
@@ -207,15 +335,25 @@ def _render_review_page() -> None:
             else f"ref {ingestion['ref']}"
         )
         st.info(
-            f"Fetched {len(ingestion['files_included'])} Python file(s) from "
+            f"Reviewed a bounded Python selection from "
             f"{ingestion['owner']}/{ingestion['repository']} ({source_label}) through "
-            "the read-only MCP boundary. All fetched content was treated as untrusted."
+            "the read-only MCP boundary. Fetched content was treated as untrusted."
         )
+        st.caption(
+            f"Included {len(ingestion['files_included'])} files · "
+            f"skipped {ingestion['skipped_file_count']} · "
+            f"truncated: {'yes' if ingestion['truncated'] else 'no'} · "
+            "full-codebase analysis: no"
+        )
+        with st.expander("Included files"):
+            for path in ingestion["files_included"]:
+                st.code(path, language=None)
 
     st.caption(
-        f"Mode: {review['mode']} · Confidence: {review['confidence']:.0%} · "
+        f"Confidence: {review['confidence']:.0%} · "
         f"Request: {review['request_id']} · {review['latency_ms']:.1f} ms"
     )
+    _render_review_provenance(review)
     st.markdown("#### Findings")
     if review["findings"]:
         for finding in review["findings"]:
@@ -231,9 +369,13 @@ def _render_review_page() -> None:
         st.markdown("#### Interview follow-ups")
         for question in questions:
             with st.container(border=True):
+                st.caption(_origin_label(question.get("origin"), item="question"))
                 st.markdown(f"**{question['difficulty'].upper()}**")
                 st.write(question["question"])
                 st.caption(question["intent"])
+                if question.get("finding_id"):
+                    st.caption(f"Grounded in finding {question['finding_id']}")
+                _render_citations(question.get("citations", []))
         st.button(
             "Practice these questions",
             type="primary",
@@ -243,6 +385,7 @@ def _render_review_page() -> None:
 
 
 def _render_assessment(assessment: dict[str, Any]) -> None:
+    st.caption(_origin_label(assessment.get("origin"), item="assessment"))
     st.markdown(f"#### Answer feedback · {assessment['score']}/5")
     st.write(assessment["feedback"])
     left, right = st.columns(2)
@@ -260,6 +403,10 @@ def _render_assessment(assessment: dict[str, Any]) -> None:
                 st.write(f"• {gap}")
         else:
             st.caption("No major gap detected in this answer.")
+    _render_citations(assessment.get("citations", []))
+    provenance = assessment.get("provenance")
+    if provenance:
+        _render_stage_provenance([provenance])
 
 
 def _load_feedback(session_id: str) -> dict[str, Any] | None:
@@ -276,6 +423,13 @@ def _load_feedback(session_id: str) -> dict[str, Any] | None:
 
 def _render_feedback_report(report: dict[str, Any]) -> None:
     st.markdown("### Final feedback report")
+    st.caption(
+        report.get(
+            "aggregation_label",
+            "Rule-based report aggregation from assessed turns.",
+        )
+    )
+    st.caption(_origin_label(report.get("origin"), item="report"))
     st.write(report["interview_readiness_summary"])
     strengths, issues = st.columns(2)
     with strengths:
@@ -355,6 +509,11 @@ def _render_interview_page() -> None:
 
     assessment = interview.get("assessment")
     if assessment:
+        if assessment.get("origin") != "ai_generated":
+            st.warning(
+                "No successful interview-assessment model call occurred for the "
+                "previous answer. The score and feedback are rule-based."
+            )
         _render_assessment(assessment)
     if interview["completed"]:
         st.success("Interview complete. Your structured report is ready.")
@@ -378,9 +537,13 @@ def _render_interview_page() -> None:
         f"QUESTION {interview['turn_number']}  /  {question['difficulty'].upper()}"
     )
     with st.container(border=True):
+        st.caption(_origin_label(question.get("origin"), item="question"))
         st.markdown(f"### {question['question']}")
         st.caption(question["intent"])
+        _render_citations(question.get("citations", []))
 
+    if st.session_state.pop("clear_interview_answer", False):
+        st.session_state.interview_answer = ""
     with st.form("answer-form", clear_on_submit=False):
         answer = st.text_area(
             "Your answer",
@@ -389,6 +552,7 @@ def _render_interview_page() -> None:
                 "Explain the decision, name a tradeoff, and describe how you would "
                 "verify it…"
             ),
+            key="interview_answer",
         )
         answered = st.form_submit_button("Submit answer", type="primary")
     if not answered:
@@ -415,6 +579,7 @@ def _render_interview_page() -> None:
         st.session_state.interview_result = next_state
         st.session_state.feedback_report = None
         st.session_state.progress_result = None
+        st.session_state.clear_interview_answer = True
         st.rerun()
 
 
