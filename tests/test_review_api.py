@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 import backend.app.main as main_module
@@ -7,6 +8,14 @@ from clutch.github.review import GitHubReviewService
 from clutch.review.service import ReviewService
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _disable_api_auth_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep local deployment secrets from changing API test behavior."""
+
+    monkeypatch.setenv("CLUTCH_REQUIRE_AUTH", "false")
+    monkeypatch.setenv("CLUTCH_API_KEY", "")
 
 
 def _use_fake_model_review(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -79,7 +88,7 @@ def test_api_key_auth_can_protect_every_non_health_route(monkeypatch) -> None:
 
 def test_required_auth_fails_closed_without_configured_key(monkeypatch) -> None:
     monkeypatch.setenv("CLUTCH_REQUIRE_AUTH", "true")
-    monkeypatch.delenv("CLUTCH_API_KEY", raising=False)
+    monkeypatch.setenv("CLUTCH_API_KEY", "")
 
     response = client.get("/runtime/cache")
 
@@ -90,7 +99,7 @@ def test_required_auth_fails_closed_without_configured_key(monkeypatch) -> None:
 
 
 def test_review_plainly_labels_retrieval_only_without_model(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "")
 
     response = client.post(
         "/review",

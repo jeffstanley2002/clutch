@@ -9,7 +9,11 @@
         "id_prefix": "finding-todo-",
         "category": "maintainability",
         "severity": "medium",
-        "citation_ids": ["seed.clean_code.explicit_incomplete_work"]
+        "citation_ids": ["seed.clean_code.explicit_incomplete_work"],
+        "line_start": 2,
+        "line_end": 2,
+        "evidence_terms": ["todo", "discounts"],
+        "support_concept_groups": [["incomplete", "todo"], ["explicit", "tradeoff"]]
       }
     ],
     "question_keywords": ["todo", "maintainability"],
@@ -34,7 +38,11 @@
         "id_prefix": "finding-print-",
         "category": "maintainability",
         "severity": "low",
-        "citation_ids": ["seed.clean_code.boundary_observability"]
+        "citation_ids": ["seed.clean_code.boundary_observability"],
+        "line_start": 2,
+        "line_end": 2,
+        "evidence_terms": ["print", "event"],
+        "support_concept_groups": [["print", "logging", "monitor"], ["production", "operational", "diagnostic"]]
       }
     ],
     "question_keywords": ["debug print", "maintainability"],
@@ -59,7 +67,11 @@
         "id_prefix": "finding-bare-except-",
         "category": "correctness",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+        "citation_ids": ["seed.clean_code.narrow_error_handling"],
+        "line_start": 4,
+        "line_end": 4,
+        "evidence_terms": ["except"],
+        "support_concept_groups": [["except", "exception", "error"], ["swallow", "hide", "debug"]]
       }
     ],
     "question_keywords": ["bare except", "correctness"],
@@ -82,7 +94,11 @@
         "id_prefix": "finding-mutable-default-",
         "category": "correctness",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+        "citation_ids": ["seed.clean_code.safe_python_defaults"],
+        "line_start": 1,
+        "line_end": 1,
+        "evidence_terms": ["events=[]"],
+        "support_concept_groups": [["default", "shared"], ["once", "calls", "state"]]
       }
     ],
     "question_keywords": ["mutable default", "correctness"],
@@ -105,7 +121,11 @@
         "id_prefix": "finding-long-function-",
         "category": "design",
         "severity": "medium",
-        "citation_ids": ["seed.clean_code.small_reviewable_units"]
+        "citation_ids": ["seed.clean_code.small_reviewable_units"],
+        "line_start": 1,
+        "line_end": 42,
+        "evidence_terms": ["transform", "1-42"],
+        "support_concept_groups": [["large", "long"], ["reason", "test", "review"]]
       }
     ],
     "question_keywords": ["function", "design"],
@@ -129,7 +149,11 @@
         "id_prefix": "finding-sql-interpolation-",
         "category": "security",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.parameterized_queries"]
+        "citation_ids": ["seed.clean_code.parameterized_queries"],
+        "line_start": 2,
+        "line_end": 2,
+        "evidence_terms": ["select", "user_id"],
+        "support_concept_groups": [["sql", "query"], ["untrusted", "parameter", "injection", "syntax"]]
       }
     ],
     "question_keywords": ["sql", "security"],
@@ -151,7 +175,11 @@
         "id_prefix": "finding-duplicated-functions-",
         "category": "design",
         "severity": "medium",
-        "citation_ids": ["seed.clean_code.single_source_of_behavior"]
+        "citation_ids": ["seed.clean_code.single_source_of_behavior"],
+        "line_start": 1,
+        "line_end": 7,
+        "evidence_terms": ["retail_total", "wholesale_total"],
+        "support_concept_groups": [["duplicate", "multiple"], ["change", "drift", "single"]]
       }
     ],
     "question_keywords": ["duplicate", "design"],
@@ -233,19 +261,31 @@
         "id_prefix": "finding-todo-",
         "category": "maintainability",
         "severity": "medium",
-        "citation_ids": ["seed.clean_code.explicit_incomplete_work"]
+        "citation_ids": ["seed.clean_code.explicit_incomplete_work"],
+        "line_start": 2,
+        "line_end": 2,
+        "evidence_terms": ["todo", "temporary"],
+        "support_concept_groups": [["incomplete", "todo"], ["explicit", "tradeoff"]]
       },
       {
         "id_prefix": "finding-print-",
         "category": "maintainability",
         "severity": "low",
-        "citation_ids": ["seed.clean_code.boundary_observability"]
+        "citation_ids": ["seed.clean_code.boundary_observability"],
+        "line_start": 3,
+        "line_end": 3,
+        "evidence_terms": ["print", "event"],
+        "support_concept_groups": [["print", "logging", "monitor"], ["production", "operational", "diagnostic"]]
       },
       {
         "id_prefix": "finding-mutable-default-",
         "category": "correctness",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+        "citation_ids": ["seed.clean_code.safe_python_defaults"],
+        "line_start": 1,
+        "line_end": 1,
+        "evidence_terms": ["events=[]"],
+        "support_concept_groups": [["default", "shared"], ["once", "calls", "state"]]
       }
     ],
     "question_keywords": ["todo", "debug print", "mutable default"],
@@ -268,13 +308,21 @@
         "id_prefix": "finding-bare-except-",
         "category": "correctness",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.narrow_error_handling"]
+        "citation_ids": ["seed.clean_code.narrow_error_handling"],
+        "line_start": 5,
+        "line_end": 5,
+        "evidence_terms": ["except"],
+        "support_concept_groups": [["except", "exception", "error"], ["swallow", "hide", "debug"]]
       },
       {
         "id_prefix": "finding-sql-interpolation-",
         "category": "security",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.parameterized_queries"]
+        "citation_ids": ["seed.clean_code.parameterized_queries"],
+        "line_start": 3,
+        "line_end": 3,
+        "evidence_terms": ["select", "user_id"],
+        "support_concept_groups": [["sql", "query"], ["untrusted", "parameter", "injection", "syntax"]]
       }
     ],
     "question_keywords": ["bare except", "sql"],

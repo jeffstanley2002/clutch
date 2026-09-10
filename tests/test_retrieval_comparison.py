@@ -4,7 +4,7 @@ from clutch.evals.retrieval_comparison import evaluate_retrievers
 from clutch.rag import LocalKnowledgeRetriever
 
 
-def test_local_retrieval_comparison_matches_v5_baseline_without_raw_text() -> None:
+def test_local_retrieval_comparison_matches_v6_baseline_without_raw_text() -> None:
     report = asyncio.run(
         evaluate_retrievers(
             {"local_lexical": LocalKnowledgeRetriever()},
@@ -16,7 +16,7 @@ def test_local_retrieval_comparison_matches_v5_baseline_without_raw_text() -> No
         )
     )
 
-    assert report.dataset_version == "2026-09-08.v5"
+    assert report.dataset_version == "2026-09-10.v6"
     assert report.corpus_size == 120
     assert report.all_strategies_available is False
     assert set(report.unavailable_strategies) == {

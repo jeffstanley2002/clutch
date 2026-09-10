@@ -150,7 +150,15 @@ def test_openai_provider_retries_ungrounded_output_once() -> None:
     assert result.model_name == "gpt-5.4-mini"
     assert result.confidence == 0.8
     assert result.findings == [
-        valid_finding.model_copy(update={"origin": "ai_generated"})
+        valid_finding.model_copy(
+            update={
+                "origin": "ai_generated",
+                "explanation": (
+                    f"{valid_finding.explanation} "
+                    f"Grounding: {valid_finding.explanation}"
+                ),
+            }
+        )
     ]
     assert result.attempt_count == 2
     assert result.validation_failure_count == 1
@@ -252,6 +260,27 @@ def test_openai_provider_generates_canonical_grounded_questions() -> None:
     assert result.prompt_version == "questions.v1"
     assert responses.requests[0]["store"] is False
     assert responses.requests[0]["max_output_tokens"] == 1_600
+
+
+def test_openai_provider_deduplicates_questions_for_one_finding() -> None:
+    context = _question_context()
+    citation_id = context.principles[0].citation.source_id
+    duplicate = {
+        "finding_id": context.findings[0].id,
+        "question": "How would you verify the safer default?",
+        "intent": "Assess reasoning about shared state.",
+        "difficulty": "medium",
+        "citation_ids": [citation_id],
+    }
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(FakeResponses([{"questions": [duplicate, duplicate]}])),
+    )
+
+    result = asyncio.run(provider.generate_questions(context))
+
+    assert len(result.questions) == 1
+    assert result.questions[0].id == "question-001"
 
 
 def test_question_generation_falls_back_after_grounding_validation() -> None:

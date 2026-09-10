@@ -128,7 +128,9 @@ async def synthesize_review(
             continue
         grounded_findings.append(
             finding.model_copy(
-                update={"citations": citations_by_category.get(finding.category, [])}
+                update={
+                    "citations": citations_by_category.get(finding.category, [])[:1]
+                }
             )
         )
 

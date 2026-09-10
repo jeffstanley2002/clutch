@@ -26,13 +26,21 @@
         "id_prefix": "finding-mutable-default-",
         "category": "correctness",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.safe_python_defaults"]
+        "citation_ids": ["seed.clean_code.safe_python_defaults"],
+        "line_start": 2,
+        "line_end": 2,
+        "evidence_terms": ["events=[]"],
+        "support_concept_groups": [["default", "shared"], ["once", "calls", "state"]]
       },
       {
         "id_prefix": "finding-sql-interpolation-",
         "category": "security",
         "severity": "high",
-        "citation_ids": ["seed.clean_code.parameterized_queries"]
+        "citation_ids": ["seed.clean_code.parameterized_queries"],
+        "line_start": 9,
+        "line_end": 9,
+        "evidence_terms": ["select", "user_id"],
+        "support_concept_groups": [["sql", "query"], ["untrusted", "parameter", "injection", "syntax"]]
       }
     ],
     "question_keywords": ["mutable default", "sql", "correctness", "security"],
@@ -72,7 +80,11 @@
         "id_prefix": "finding-duplicated-functions-",
         "category": "design",
         "severity": "medium",
-        "citation_ids": ["seed.clean_code.single_source_of_behavior"]
+        "citation_ids": ["seed.clean_code.single_source_of_behavior"],
+        "line_start": 2,
+        "line_end": 10,
+        "evidence_terms": ["retail_total", "wholesale_total"],
+        "support_concept_groups": [["duplicate", "multiple"], ["change", "drift", "single"]]
       }
     ],
     "question_keywords": ["duplicate", "design"],

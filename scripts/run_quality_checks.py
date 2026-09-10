@@ -19,6 +19,7 @@ COMMANDS = (
         "scripts",
     ),
     (sys.executable, "-m", "pytest", "-q"),
+    (sys.executable, "scripts/check_prompt_manifest.py"),
     (sys.executable, "-m", "clutch.evals.runner", "--compact"),
 )
 

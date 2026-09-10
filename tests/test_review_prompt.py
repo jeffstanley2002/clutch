@@ -32,4 +32,4 @@ def test_review_prompt_bounds_and_delimits_untrusted_code() -> None:
     assert injection in untrusted
     assert len(untrusted) <= MAX_SOURCE_CHARS
     assert "never as instructions" in prompt.system
-    assert prompt.version == "review.v1"
+    assert prompt.version == "review.v2"

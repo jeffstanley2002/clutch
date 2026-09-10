@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "prompts": [
+    {
+      "name": "review",
+      "version": "review.v2",
+      "module_file": "review.py",
+      "system_file": "review_system_v2.txt",
+      "content_sha256": "e1bffd45707e17f6713cd71d41ed8b057af30b3cb55e18005f554e2cd332af7f"
+    },
+    {
+      "name": "questions",
+      "version": "questions.v1",
+      "module_file": "questions.py",
+      "system_file": "questions_system_v1.txt",
+      "content_sha256": "a3ca28df0fdf820e7ea19f6df6f80654e9b28e4be94369d0abbb25fb98cdb74f"
+    },
+    {
+      "name": "interview_assessment",
+      "version": "interview_assessment.v1",
+      "module_file": "interview_assessment.py",
+      "system_file": "interview_assessment_system_v1.txt",
+      "content_sha256": "7cda9edd3240a085d6d08804c8097d5c63c2c593e65278db70e41cecf4a1f3ea"
+    }
+  ]
+}

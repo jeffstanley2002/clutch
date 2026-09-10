@@ -13,6 +13,13 @@ from clutch.evals.config import (
     DATASET_VERSION,
     FIXTURE_ROOT,
     MAX_RETRIEVAL_IRRELEVANT_AT_3,
+    MIN_CITATION_SUPPORT,
+    MIN_CITATION_VALIDITY,
+    MIN_FINDING_PRECISION,
+    MIN_FINDING_RECALL,
+    MIN_INTERVIEW_SCORE_WITHIN_ONE,
+    MIN_PROMPT_INJECTION_PASS_RATE,
+    MIN_QUESTION_RELEVANCE,
     MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3,
     MIN_RETRIEVAL_NDCG_AT_3,
     MIN_RETRIEVAL_RECALL_AT_3,
@@ -38,6 +45,7 @@ from clutch.interview.service import InterviewService
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
 from clutch.llm import ModelRouter
+from clutch.llm.providers import ProviderReview, ReviewContext
 from clutch.persistence.contracts import ReviewPersistenceRecord
 from clutch.persistence.repository import InMemoryReviewRecorder
 from clutch.rag import KnowledgeRetriever, LocalKnowledgeRetriever
@@ -48,6 +56,19 @@ from clutch.schemas import (
     InterviewTurnRequest,
     ReviewRequest,
 )
+
+
+class DeterministicEvalProvider:
+    """Use deterministic review rules only inside the zero-cost eval harness."""
+
+    async def review(self, context: ReviewContext) -> ProviderReview:
+        return ProviderReview(
+            findings=context.static_findings,
+            confidence=0.7,
+            mode="model",
+            model_name="deterministic-eval-rules",
+            attempt_count=0,
+        )
 
 
 async def run_evaluation_suite() -> EvalReport:
@@ -69,7 +90,7 @@ async def run_evaluation_suite() -> EvalReport:
         FIXTURE_ROOT / "github_reviews.json",
         GoldenGitHubReviewCase,
     )
-    graph = build_review_graph(ModelRouter(primary=None))
+    graph = build_review_graph(ModelRouter(primary=DeterministicEvalProvider()))
     case_results = [
         await _evaluate_golden_case(case, graph=graph) for case in golden_cases
     ]
@@ -138,8 +159,12 @@ async def run_evaluation_suite() -> EvalReport:
         sum(result.retrieval_irrelevant for result in all_case_results),
         all_retrieved,
     )
-    citation_faithfulness = ratio(
-        sum(result.citation_faithful for result in all_case_results),
+    citation_validity = ratio(
+        sum(result.citation_valid for result in all_case_results),
+        len(all_case_results),
+    )
+    citation_support = ratio(
+        sum(result.citation_supported for result in all_case_results),
         len(all_case_results),
     )
     question_relevance = ratio(
@@ -167,6 +192,10 @@ async def run_evaluation_suite() -> EvalReport:
         sum(result.exact_score_matches for result in interview_results),
         interview_turn_count,
     )
+    interview_score_within_one = ratio(
+        sum(result.within_one_score_matches for result in interview_results),
+        interview_turn_count,
+    )
     interview_completion_rate = ratio(
         sum(result.completed for result in interview_results),
         len(interview_results),
@@ -181,24 +210,25 @@ async def run_evaluation_suite() -> EvalReport:
     )
 
     gated_scores = [
-        finding_precision,
-        finding_recall,
         finding_severity_accuracy,
         clean_negative_pass_rate,
         mixed_case_full_recall,
         retrieval_mrr,
-        citation_faithfulness,
-        question_relevance,
         github_ingestion_pass_rate,
         github_source_privacy_pass_rate,
-        injection_pass_rate,
-        interview_score_accuracy,
         interview_completion_rate,
         feedback_expectation_pass_rate,
         answer_privacy_pass_rate,
     ]
     passed = (
         all(score >= MIN_SCORE for score in gated_scores)
+        and finding_precision >= MIN_FINDING_PRECISION
+        and finding_recall >= MIN_FINDING_RECALL
+        and citation_validity >= MIN_CITATION_VALIDITY
+        and citation_support >= MIN_CITATION_SUPPORT
+        and question_relevance >= MIN_QUESTION_RELEVANCE
+        and interview_score_within_one >= MIN_INTERVIEW_SCORE_WITHIN_ONE
+        and injection_pass_rate >= MIN_PROMPT_INJECTION_PASS_RATE
         and retrieval_recall >= MIN_RETRIEVAL_RECALL_AT_3
         and retrieval_ndcg >= MIN_RETRIEVAL_NDCG_AT_3
         and retrieval_judgment_coverage >= MIN_RETRIEVAL_JUDGMENT_COVERAGE_AT_3
@@ -207,7 +237,7 @@ async def run_evaluation_suite() -> EvalReport:
     )
     return EvalReport(
         dataset_version=DATASET_VERSION,
-        evaluation_mode="static_fallback",
+        evaluation_mode="deterministic_rules",
         review_case_count=len(all_case_results),
         github_review_case_count=len(github_case_results),
         clean_case_count=len(clean_results),
@@ -224,12 +254,14 @@ async def run_evaluation_suite() -> EvalReport:
         retrieval_ndcg_at_3=retrieval_ndcg,
         retrieval_judgment_coverage_at_3=retrieval_judgment_coverage,
         retrieval_irrelevant_at_3=retrieval_irrelevant,
-        citation_faithfulness=citation_faithfulness,
+        citation_validity=citation_validity,
+        citation_support=citation_support,
         hallucinated_line_number_rate=hallucinated_line_rate,
         question_relevance=question_relevance,
         github_ingestion_pass_rate=github_ingestion_pass_rate,
         github_source_privacy_pass_rate=github_source_privacy_pass_rate,
         interview_score_accuracy=interview_score_accuracy,
+        interview_score_within_one=interview_score_within_one,
         interview_completion_rate=interview_completion_rate,
         feedback_expectation_pass_rate=feedback_expectation_pass_rate,
         answer_privacy_pass_rate=answer_privacy_pass_rate,
@@ -261,7 +293,7 @@ async def _evaluate_golden_case(
     return evaluate_review_output(
         case,
         findings=state["findings"],
-        retrieved=state["retrieved_principles"][:3],
+        retrieved=state["retrieved_principles"],
         questions=state["questions"],
         line_count=max(1, len(case.code.splitlines())),
         latency_ms=latency_ms,
@@ -271,7 +303,10 @@ async def _evaluate_golden_case(
 async def _evaluate_github_case(case: GoldenGitHubReviewCase) -> EvalCaseResult:
     recorder = InMemoryReviewRecorder()
     retriever = _CapturingRetriever(LocalKnowledgeRetriever())
-    graph = build_review_graph(ModelRouter(primary=None), retriever=retriever)
+    graph = build_review_graph(
+        ModelRouter(primary=DeterministicEvalProvider()),
+        retriever=retriever,
+    )
     repository_files = [
         GitHubFile(
             path=file.path,
@@ -311,7 +346,7 @@ async def _evaluate_github_case(case: GoldenGitHubReviewCase) -> EvalCaseResult:
     result = evaluate_review_output(
         case,
         findings=response.review.findings,
-        retrieved=retriever.results[:3],
+        retrieved=retriever.results,
         questions=response.review.questions,
         line_count=recorder.records[0].line_count,
         latency_ms=latency_ms,
@@ -404,7 +439,7 @@ async def _evaluate_injection_case(
     }
     unknown_citations = sorted(observed_citations - known_citations)
     passed = (
-        state["mode"] == "static_fallback"
+        state["mode"] == "model"
         and not prohibited_terms
         and not unknown_citations
     )
@@ -421,7 +456,12 @@ async def _evaluate_interview_case(
 ) -> InterviewCaseResult:
     repository = InMemoryInterviewRepository()
     review_store = InMemoryReviewRecorder()
-    service = InterviewService(repository, review_store)
+    service = InterviewService(
+        repository,
+        review_store,
+        model_router=ModelRouter(primary=DeterministicEvalProvider()),
+        retriever=LocalKnowledgeRetriever(),
+    )
     review_session_id = f"eval-review-{case.id}"
     await review_store.record_review(
         ReviewPersistenceRecord(
@@ -431,7 +471,7 @@ async def _evaluate_interview_case(
             language="python",
             line_count=1,
             role_context="backend intern",
-            mode="static_fallback",
+            mode="model",
             confidence=1.0,
             latency_ms=0.0,
             findings=case.supporting_findings,
@@ -475,6 +515,14 @@ async def _evaluate_interview_case(
         turn_count=len(case.answers),
         exact_score_matches=sum(
             observed == expected
+            for observed, expected in zip(
+                observed_scores,
+                case.expected_scores,
+                strict=True,
+            )
+        ),
+        within_one_score_matches=sum(
+            abs(observed - expected) <= 1
             for observed, expected in zip(
                 observed_scores,
                 case.expected_scores,

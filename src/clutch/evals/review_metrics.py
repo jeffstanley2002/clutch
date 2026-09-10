@@ -1,7 +1,7 @@
 """Shared scoring for deterministic and credentialed review evaluations."""
 
 from clutch.evals.metrics import ndcg_at_k
-from clutch.evals.models import EvalCaseResult, ReviewExpectations
+from clutch.evals.models import EvalCaseResult, ExpectedFinding, ReviewExpectations
 from clutch.knowledge_base import CleanCodePrinciple
 from clutch.knowledge_base.clean_code import SEED_CLEAN_CODE_PRINCIPLES
 from clutch.schemas import CodeFinding, InterviewQuestion
@@ -24,7 +24,8 @@ def evaluate_review_output(
         findings,
         require_id_prefix=require_id_prefix,
     )
-    retrieved_ids = [principle.citation.source_id for principle in retrieved]
+    retrieved_ids_all = [principle.citation.source_id for principle in retrieved]
+    retrieved_ids = retrieved_ids_all[:3]
     retrieval_grades = [
         case.retrieval_judgments.get(source_id, 0) for source_id in retrieved_ids
     ]
@@ -35,13 +36,33 @@ def evaluate_review_output(
     known_citations = {
         principle.citation.source_id for principle in SEED_CLEAN_CODE_PRINCIPLES
     }
-    observed_citations = {
+    finding_citations = {
         citation.source_id for finding in findings for citation in finding.citations
     }
-    matched_citations_are_faithful = all(
-        set(case.expected_findings[expected_index].citation_ids)
-        <= {citation.source_id for citation in findings[finding_index].citations}
-        for expected_index, finding_index in matches.items()
+    question_citations = {
+        citation.source_id for question in questions for citation in question.citations
+    }
+    observed_citations = finding_citations | question_citations
+    citation_valid = (
+        all(finding.citations for finding in findings)
+        and all(question.citations for question in questions)
+        and observed_citations <= known_citations
+        and observed_citations <= set(retrieved_ids_all)
+        and all(
+            case.retrieval_judgments.get(source_id, 0) >= 2
+            for source_id in observed_citations
+        )
+    )
+    citation_supported = (
+        len(matches) == len(case.expected_findings)
+        and all(
+            _finding_has_expected_support(
+                expected=case.expected_findings[expected_index],
+                finding=findings[finding_index],
+                relevance_grades=case.retrieval_judgments,
+            )
+            for expected_index, finding_index in matches.items()
+        )
     )
     hallucinated_lines = sum(
         1
@@ -57,16 +78,23 @@ def evaluate_review_output(
     if case.kind == "clean":
         question_relevant = not questions
     else:
+        matched_finding_ids = {
+            findings[finding_index].id for finding_index in matches.values()
+        }
+        question_concept_groups = [
+            expected.support_concept_groups[0]
+            for expected in case.expected_findings
+        ]
         question_relevant = (
             len(questions) == expected_question_count
+            and {question.finding_id for question in questions}
+            == matched_finding_ids
             and all(question.finding_id in finding_ids for question in questions)
             and all(
-                keyword.lower() in question_text for keyword in case.question_keywords
+                any(term.lower() in question_text for term in concept_group)
+                for concept_group in question_concept_groups
             )
-            and all(
-                case.role_context.lower() in question.question.lower()
-                for question in questions
-            )
+            and all(question.citations for question in questions)
         )
 
     return EvalCaseResult(
@@ -99,11 +127,8 @@ def evaluate_review_output(
             list(case.retrieval_judgments.values()),
             k=3,
         ),
-        citation_faithful=(
-            len(matches) == len(case.expected_findings)
-            and observed_citations <= known_citations
-            and matched_citations_are_faithful
-        ),
+        citation_valid=citation_valid,
+        citation_supported=citation_supported,
         hallucinated_line_numbers=hallucinated_lines,
         question_relevant=question_relevant,
         latency_ms=latency_ms,
@@ -130,6 +155,12 @@ def match_expected_findings(
                     or findings[index].id.startswith(expected.id_prefix)
                 )
                 and findings[index].category == expected.category
+                and findings[index].line_start == expected.line_start
+                and findings[index].line_end == expected.line_end
+                and all(
+                    term.lower() in findings[index].evidence.lower()
+                    for term in expected.evidence_terms
+                )
             ),
             None,
         )
@@ -137,3 +168,21 @@ def match_expected_findings(
             matches[expected_index] = finding_index
             available_findings.remove(finding_index)
     return matches
+
+
+def _finding_has_expected_support(
+    *,
+    expected: ExpectedFinding,
+    finding: CodeFinding,
+    relevance_grades: dict[str, int],
+) -> bool:
+    cited_ids = {citation.source_id for citation in finding.citations}
+    explanation = finding.explanation.lower()
+    return (
+        set(expected.citation_ids) <= cited_ids
+        and all(relevance_grades.get(source_id, 0) >= 2 for source_id in cited_ids)
+        and all(
+            any(term.lower() in explanation for term in concept_group)
+            for concept_group in expected.support_concept_groups
+        )
+    )

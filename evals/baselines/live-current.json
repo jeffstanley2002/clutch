@@ -1,0 +1,66 @@
+{
+  "artifact_version": 1,
+  "generated_at": "2026-09-10",
+  "evaluation_mode": "live_model",
+  "dataset_version": "2026-09-10.v6",
+  "corpus_version": "2026-09-09.v1",
+  "model_name": "gpt-5.4-mini",
+  "prompt_versions": {
+    "review.v2": "e1bffd45707e17f6713cd71d41ed8b057af30b3cb55e18005f554e2cd332af7f",
+    "questions.v1": "a3ca28df0fdf820e7ea19f6df6f80654e9b28e4be94369d0abbb25fb98cdb74f",
+    "interview_assessment.v1": "7cda9edd3240a085d6d08804c8097d5c63c2c593e65278db70e41cecf4a1f3ea"
+  },
+  "review_case_ids": [
+    "bare-except",
+    "unsafe-sql",
+    "clean-pure-function",
+    "clean-parameterized-sql",
+    "mixed-boundary-state",
+    "mixed-errors-and-sql"
+  ],
+  "injection_case_ids": [
+    "comment-instruction",
+    "tool-call-string",
+    "readme-style-exfiltration"
+  ],
+  "interview_case_ids": [
+    "weak-repeated-gaps",
+    "strong-complete-reasoning",
+    "mixed-answer-quality"
+  ],
+  "metrics": {
+    "model_mode_rate": 1.0,
+    "finding_precision": 1.0,
+    "finding_recall": 1.0,
+    "finding_accuracy": 1.0,
+    "citation_validity": 1.0,
+    "citation_support": 1.0,
+    "hallucinated_line_number_rate": 0.0,
+    "question_relevance": 1.0,
+    "prompt_injection_pass_rate": 1.0,
+    "interview_score_accuracy": 0.3333333333333333,
+    "interview_score_within_one": 0.8333333333333334,
+    "interview_model_backed_rate": 1.0,
+    "interview_citation_validity": 1.0,
+    "answer_privacy_pass_rate": 1.0,
+    "schema_validation_failures": 0
+  },
+  "latency_ms": {
+    "average_end_to_end": 2941.1634478359097,
+    "p95_end_to_end": 5705.847792036366,
+    "review_synthesis_average": 1878.4673611064338,
+    "question_generation_average": 805.5294119985774,
+    "interview_assessment_average": 1842.4136943358462,
+    "retrieval_average": 1.967898214287642,
+    "interview_retrieval_average": 0.5710346643657734
+  },
+  "tokens": {
+    "input": 16411,
+    "output": 3659
+  },
+  "cost_usd": {
+    "total": 0.028781,
+    "per_review": 0.0047968333333333335
+  },
+  "passed": true
+}

@@ -1,0 +1,57 @@
+{
+  "artifact_version": 1,
+  "generated_at": "2026-09-10",
+  "evaluation_mode": "deterministic_rules",
+  "dataset_version": "2026-09-10.v6",
+  "corpus_version": "2026-09-09.v1",
+  "prompt_versions": {
+    "review.v2": "e1bffd45707e17f6713cd71d41ed8b057af30b3cb55e18005f554e2cd332af7f",
+    "questions.v1": "a3ca28df0fdf820e7ea19f6df6f80654e9b28e4be94369d0abbb25fb98cdb74f",
+    "interview_assessment.v1": "7cda9edd3240a085d6d08804c8097d5c63c2c593e65278db70e41cecf4a1f3ea"
+  },
+  "case_ids": [
+    "todo-marker",
+    "debug-print",
+    "bare-except",
+    "mutable-default",
+    "long-function",
+    "unsafe-sql",
+    "duplicated-logic",
+    "clean-pure-function",
+    "clean-parameterized-sql",
+    "clean-narrow-exception",
+    "mixed-boundary-state",
+    "mixed-errors-and-sql",
+    "multi-file-state-and-sql",
+    "multi-file-duplicated-behavior",
+    "multi-file-clean-boundaries"
+  ],
+  "injection_case_ids": [
+    "comment-instruction",
+    "tool-call-string",
+    "readme-style-exfiltration"
+  ],
+  "interview_case_ids": [
+    "weak-repeated-gaps",
+    "strong-complete-reasoning",
+    "mixed-answer-quality"
+  ],
+  "metrics": {
+    "finding_precision": 1.0,
+    "finding_recall": 1.0,
+    "citation_validity": 1.0,
+    "citation_support": 1.0,
+    "hallucinated_line_number_rate": 0.0,
+    "prompt_injection_pass_rate": 1.0,
+    "question_relevance": 1.0,
+    "interview_score_within_one": 1.0,
+    "retrieval_precision_at_3": 0.8,
+    "retrieval_recall_at_3": 0.5625,
+    "retrieval_mrr": 1.0,
+    "retrieval_ndcg_at_3": 0.9703499108635533
+  },
+  "average_latency_ms": 6.303,
+  "tokens": 0,
+  "cost_usd": 0.0,
+  "passed": true
+}

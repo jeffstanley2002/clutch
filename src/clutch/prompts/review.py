@@ -12,7 +12,7 @@ from clutch.schemas import CodeFinding, ParsedCode, ReviewRequest
 MAX_SOURCE_CHARS = 12_000
 MAX_CHUNKS = 6
 MAX_PRINCIPLES = 6
-PROMPT_VERSION = "review.v1"
+PROMPT_VERSION = "review.v2"
 
 
 class PromptBundle(BaseModel):
@@ -34,7 +34,7 @@ def build_review_prompt(
 
     system = (
         files("clutch.prompts")
-        .joinpath("review_system_v1.txt")
+        .joinpath("review_system_v2.txt")
         .read_text(encoding="utf-8")
         .strip()
     )
@@ -49,7 +49,23 @@ def build_review_prompt(
         for principle in principles[:MAX_PRINCIPLES]
     )
     static_signal_text = "\n".join(
-        f"- {finding.category}: {finding.message} ({finding.evidence})"
+        "- "
+        + json.dumps(
+            {
+                "finding_id": finding.id,
+                "category": finding.category,
+                "severity": finding.severity,
+                "evidence": finding.evidence,
+                "line_start": finding.line_start,
+                "line_end": finding.line_end,
+                "grounding_explanation": finding.explanation,
+                "citation_ids": [
+                    citation.source_id for citation in finding.citations
+                ],
+            },
+            ensure_ascii=True,
+            sort_keys=True,
+        )
         for finding in static_findings
     )
     user = f"""Target role: {request.role_context}

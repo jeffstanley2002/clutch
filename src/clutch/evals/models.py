@@ -10,6 +10,7 @@ from clutch.schemas import (
     FindingSeverity,
     InterviewQuestion,
     ReviewMode,
+    StageProvenance,
 )
 
 ReviewCaseKind = Literal["focused", "clean", "mixed"]
@@ -22,6 +23,18 @@ class ExpectedFinding(BaseModel):
     category: FindingCategory
     severity: FindingSeverity
     citation_ids: list[str] = Field(min_length=1)
+    line_start: int = Field(..., ge=1)
+    line_end: int = Field(..., ge=1)
+    evidence_terms: list[str] = Field(..., min_length=1)
+    support_concept_groups: list[list[str]] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def validate_atomic_identity(self) -> "ExpectedFinding":
+        if self.line_end < self.line_start:
+            raise ValueError("expected finding line range is reversed")
+        if any(not group for group in self.support_concept_groups):
+            raise ValueError("citation support concept groups cannot be empty")
+        return self
 
 
 class ReviewExpectations(BaseModel):
@@ -145,7 +158,8 @@ class EvalCaseResult(BaseModel):
     retrieval_irrelevant: int = Field(..., ge=0)
     retrieval_reciprocal_rank: float = Field(..., ge=0.0, le=1.0)
     retrieval_ndcg: float = Field(..., ge=0.0, le=1.0)
-    citation_faithful: bool
+    citation_valid: bool
+    citation_supported: bool
     hallucinated_line_numbers: int = Field(..., ge=0)
     question_relevant: bool
     latency_ms: float = Field(..., ge=0.0)
@@ -164,6 +178,7 @@ class InterviewCaseResult(BaseModel):
     case_id: str
     turn_count: int = Field(..., ge=1)
     exact_score_matches: int = Field(..., ge=0)
+    within_one_score_matches: int = Field(..., ge=0)
     completed: bool
     expected_strengths_met: bool
     expected_recurring_issues_met: bool
@@ -175,7 +190,7 @@ class InterviewCaseResult(BaseModel):
 
 class EvalReport(BaseModel):
     dataset_version: str
-    evaluation_mode: Literal["static_fallback"]
+    evaluation_mode: Literal["deterministic_rules"]
     review_case_count: int = Field(..., ge=1)
     github_review_case_count: int = Field(..., ge=1)
     clean_case_count: int = Field(..., ge=1)
@@ -192,12 +207,14 @@ class EvalReport(BaseModel):
     retrieval_ndcg_at_3: float = Field(..., ge=0.0, le=1.0)
     retrieval_judgment_coverage_at_3: float = Field(..., ge=0.0, le=1.0)
     retrieval_irrelevant_at_3: float = Field(..., ge=0.0, le=1.0)
-    citation_faithfulness: float = Field(..., ge=0.0, le=1.0)
+    citation_validity: float = Field(..., ge=0.0, le=1.0)
+    citation_support: float = Field(..., ge=0.0, le=1.0)
     hallucinated_line_number_rate: float = Field(..., ge=0.0, le=1.0)
     question_relevance: float = Field(..., ge=0.0, le=1.0)
     github_ingestion_pass_rate: float = Field(..., ge=0.0, le=1.0)
     github_source_privacy_pass_rate: float = Field(..., ge=0.0, le=1.0)
     interview_score_accuracy: float = Field(..., ge=0.0, le=1.0)
+    interview_score_within_one: float = Field(..., ge=0.0, le=1.0)
     interview_completion_rate: float = Field(..., ge=0.0, le=1.0)
     feedback_expectation_pass_rate: float = Field(..., ge=0.0, le=1.0)
     answer_privacy_pass_rate: float = Field(..., ge=0.0, le=1.0)
@@ -269,7 +286,7 @@ class LiveModelCaseResult(BaseModel):
     output_tokens: int | None = Field(default=None, ge=0)
     attempt_count: int = Field(default=0, ge=0)
     validation_failure_count: int = Field(default=0, ge=0)
-    fallback_reason: str | None = None
+    stages: list[StageProvenance] = Field(default_factory=list)
 
 
 class LiveModelInjectionCaseResult(BaseModel):
@@ -286,7 +303,36 @@ class LiveModelInjectionCaseResult(BaseModel):
     output_tokens: int | None = Field(default=None, ge=0)
     attempt_count: int = Field(default=0, ge=0)
     validation_failure_count: int = Field(default=0, ge=0)
-    fallback_reason: str | None = None
+    stages: list[StageProvenance] = Field(default_factory=list)
+
+
+class LiveModelInterviewCaseResult(BaseModel):
+    """Privacy-safe live interview assessment result."""
+
+    case_id: str = Field(..., min_length=1)
+    turn_count: int = Field(..., ge=1)
+    exact_score_matches: int = Field(..., ge=0)
+    within_one_score_matches: int = Field(..., ge=0)
+    model_backed_turns: int = Field(..., ge=0)
+    citation_valid: bool
+    answer_privacy_preserved: bool
+    latency_ms: float = Field(..., ge=0.0)
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    attempt_count: int = Field(default=0, ge=0)
+    validation_failure_count: int = Field(default=0, ge=0)
+    stages: list[StageProvenance] = Field(default_factory=list)
+
+
+class LiveStageMetrics(BaseModel):
+    """Aggregate native diagnostics for one production model/retrieval stage."""
+
+    call_count: int = Field(..., ge=1)
+    average_latency_ms: float = Field(..., ge=0.0)
+    p95_latency_ms: float = Field(..., ge=0.0)
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    estimated_cost_usd: float = Field(default=0.0, ge=0.0)
 
 
 class LiveModelEvalReport(BaseModel):
@@ -301,10 +347,11 @@ class LiveModelEvalReport(BaseModel):
     configured_max_cost_usd: float = Field(..., gt=0.0)
     selected_review_case_ids: list[str]
     selected_injection_case_ids: list[str]
+    selected_interview_case_ids: list[str] = Field(default_factory=list)
     review_case_count: int = Field(default=0, ge=0)
     injection_case_count: int = Field(default=0, ge=0)
+    interview_case_count: int = Field(default=0, ge=0)
     model_mode_rate: float | None = Field(default=None, ge=0.0, le=1.0)
-    fallback_rate: float | None = Field(default=None, ge=0.0, le=1.0)
     validation_failure_attempt_rate: float | None = Field(
         default=None,
         ge=0.0,
@@ -312,6 +359,7 @@ class LiveModelEvalReport(BaseModel):
     )
     finding_precision: float | None = Field(default=None, ge=0.0, le=1.0)
     finding_recall: float | None = Field(default=None, ge=0.0, le=1.0)
+    finding_accuracy: float | None = Field(default=None, ge=0.0, le=1.0)
     finding_severity_accuracy: float | None = Field(
         default=None,
         ge=0.0,
@@ -327,7 +375,30 @@ class LiveModelEvalReport(BaseModel):
         ge=0.0,
         le=1.0,
     )
-    citation_faithfulness: float | None = Field(default=None, ge=0.0, le=1.0)
+    citation_validity: float | None = Field(default=None, ge=0.0, le=1.0)
+    citation_support: float | None = Field(default=None, ge=0.0, le=1.0)
+    question_relevance: float | None = Field(default=None, ge=0.0, le=1.0)
+    interview_score_accuracy: float | None = Field(default=None, ge=0.0, le=1.0)
+    interview_score_within_one: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    interview_model_backed_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    interview_citation_validity: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
+    answer_privacy_pass_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+    )
     hallucinated_line_number_rate: float | None = Field(
         default=None,
         ge=0.0,
@@ -343,7 +414,14 @@ class LiveModelEvalReport(BaseModel):
     total_input_tokens: int = Field(default=0, ge=0)
     total_output_tokens: int = Field(default=0, ge=0)
     charged_cost_usd: float = Field(default=0.0, ge=0.0)
+    cost_per_review_usd: float = Field(default=0.0, ge=0.0)
+    schema_validation_failures: int = Field(default=0, ge=0)
+    stage_metrics: dict[str, LiveStageMetrics] = Field(default_factory=dict)
+    passed: bool = False
     cases: list[LiveModelCaseResult] = Field(default_factory=list)
     injection_cases: list[LiveModelInjectionCaseResult] = Field(
+        default_factory=list
+    )
+    interview_cases: list[LiveModelInterviewCaseResult] = Field(
         default_factory=list
     )

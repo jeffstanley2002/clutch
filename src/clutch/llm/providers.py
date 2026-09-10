@@ -685,7 +685,7 @@ def _normalize_grounding(
         for principle in context.principles
     }
     line_count = max(1, len(context.request.code.splitlines()))
-    normalized_findings: list[CodeFinding] = []
+    validated_model_findings: list[CodeFinding] = []
 
     for finding in output.findings:
         if not finding.citations:
@@ -705,13 +705,52 @@ def _normalize_grounding(
             and finding.line_end < finding.line_start
         ):
             raise ValueError("model finding line range is reversed")
-        normalized_findings.append(
+        validated_model_findings.append(
             finding.model_copy(
                 update={
                     "citations": [
                         allowed_citations[citation.source_id]
                         for citation in finding.citations
                     ]
+                }
+            )
+        )
+    if len(validated_model_findings) != len(context.static_findings):
+        raise ValueError("model finding inventory differs from static signals")
+
+    remaining = list(validated_model_findings)
+    normalized_findings: list[CodeFinding] = []
+    for signal in context.static_findings:
+        signal_citations = {
+            citation.source_id for citation in signal.citations
+        }
+        match = next(
+            (
+                finding
+                for finding in remaining
+                if finding.id == signal.id
+                and signal_citations
+                <= {citation.source_id for citation in finding.citations}
+            ),
+            None,
+        )
+        if match is None:
+            raise ValueError("model finding does not preserve its static signal")
+        remaining.remove(match)
+        normalized_findings.append(
+            match.model_copy(
+                update={
+                    "id": signal.id,
+                    "severity": signal.severity,
+                    "category": signal.category,
+                    "evidence": signal.evidence,
+                    "line_start": signal.line_start,
+                    "line_end": signal.line_end,
+                    "explanation": (
+                        f"{match.explanation.rstrip()} "
+                        f"Grounding: {signal.explanation}"
+                    ),
+                    "citations": signal.citations,
                 }
             )
         )
@@ -736,17 +775,17 @@ def _normalize_questions(
         )
     normalized: list[InterviewQuestion] = []
     seen_findings: set[str] = set()
-    for index, question in enumerate(output.questions[:3], start=1):
+    for question in output.questions[:3]:
         if question.finding_id not in findings_by_id:
             raise ValueError("model question contains an unknown finding ID")
         if question.finding_id in seen_findings:
-            raise ValueError("model questions must reference distinct findings")
+            continue
         if any(source_id not in citations_by_id for source_id in question.citation_ids):
             raise ValueError("model question contains an ungrounded citation")
         seen_findings.add(question.finding_id)
         normalized.append(
             InterviewQuestion(
-                id=f"question-{index:03d}",
+                id=f"question-{len(normalized) + 1:03d}",
                 finding_id=question.finding_id,
                 question=question.question,
                 intent=question.intent,
@@ -797,15 +836,21 @@ def _log_provider_failure(
 ) -> None:
     """Log bounded provider diagnostics without source, prompt, or payload data."""
 
+    failure_reason = type(exc).__name__
+    safe_detail = _safe_failure_detail(exc)
     logger.warning(
-        "model provider attempt failed",
+        "model provider attempt failed: stage=%s model=%s failure=%s detail=%s",
+        stage,
+        model,
+        failure_reason,
+        safe_detail,
         extra={
             "stage": stage,
             "model": model,
             "attempt_count": attempt_count,
             "validation_failure_count": validation_failure_count,
-            "failure_reason": type(exc).__name__,
-            "safe_failure_detail": _safe_failure_detail(exc),
+            "failure_reason": failure_reason,
+            "safe_failure_detail": safe_detail,
         },
     )
 
@@ -821,6 +866,11 @@ def _safe_failure_detail(exc: Exception) -> str:
             "model finding line_start exceeds source",
             "model finding line_end exceeds source",
             "model finding line range is reversed",
+            "model finding inventory differs from static signals",
+            "model finding does not preserve its static signal",
+            "model question contains an unknown finding ID",
+            "model question contains an ungrounded citation",
+            "model assessment contains an ungrounded citation",
         }
         if message in safe_messages:
             return message
