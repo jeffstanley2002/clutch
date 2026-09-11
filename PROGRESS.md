@@ -1341,3 +1341,41 @@ Next up:
 
 - Push the Blueprint update, paste the Redis URL when Render prompts, then wait
   for `/health` before updating Streamlit's `CLUTCH_API_BASE_URL`.
+
+## 2026-09-11 (Day 16 Stytch auth switch)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Replaced the Streamlit Google/OIDC login gate with Stytch email magic-link
+  login backed by Stytch's backend API.
+- Kept the existing opaque `user_<sha256>` progress profile shape, now derived
+  from the Stytch user identity.
+- Removed Google auth secrets from the sample Streamlit secrets file and
+  updated the free deployment runbook to use Stytch Redirect URLs.
+- Removed the now-unused `authlib` dependency from `pyproject.toml`.
+
+Learned / decided:
+
+- For the Streamlit Community Cloud deployment, Stytch keeps the public login
+  path focused on email magic links and avoids a separate consent-screen
+  publishing flow.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 4 passed.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+
+Open issues:
+
+- Hosted magic-link login still needs the real Stytch `project_id`, `secret`,
+  environment, and exact Streamlit redirect URL added in Streamlit Cloud
+  secrets.
+
+Next up:
+
+- Paste the `[stytch]` secrets into Streamlit Community Cloud, restart the app,
+  request a magic link, and verify that the redirected session shows the logout
+  control before running the hosted review smoke.

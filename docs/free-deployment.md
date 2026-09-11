@@ -17,11 +17,11 @@ the separate budget checkpoint in `CLOUD.md` is reopened.
 
 ## 0. What You Will Create
 
-You need accounts for GitHub, Render, Streamlit Community Cloud, Google Cloud,
+You need accounts for GitHub, Render, Streamlit Community Cloud, Stytch,
 OpenAI, Neon, and Langfuse. Redis is optional. The finished public path is:
 
 1. Recruiter opens the Streamlit URL.
-2. Google OIDC signs the recruiter in.
+2. Stytch sends an email magic link and verifies the recruiter.
 3. Streamlit calls Render with a server-side `CLUTCH_API_KEY`.
 4. Render calls OpenAI and uses Neon for durable derived results.
 5. Render sends privacy-reduced traces to Langfuse.
@@ -44,11 +44,10 @@ Create fresh values before copying anything into a hosted provider:
 Never commit these values. `.env`, `.env.local`, `.env.neon`, and `.neon` are
 ignored, and `node_modules` is excluded from source control and Docker context.
 
-Generate two different random values locally:
+Generate one random value locally:
 
 ```bash
 openssl rand -hex 32  # CLUTCH_API_KEY
-openssl rand -hex 32  # Streamlit auth.cookie_secret
 ```
 
 Do not paste the whole local `.env` into either provider. Use this map:
@@ -64,11 +63,10 @@ Do not paste the whole local `.env` into either provider. Use this map:
 | `GITHUB_TOKEN` | Render | Optional | Fine-grained read-only token; omit for public-repository-only demos |
 | `REDIS_URL` | Render | Optional | Upstash/Redis Cloud URL; omit for the first single-instance deploy |
 | `CLUTCH_API_BASE_URL` | Streamlit | Yes | Public Render URL after the backend is live |
-| `auth.redirect_uri` | Streamlit + Google | Yes | Exact Streamlit URL ending in `/oauth2callback` |
-| `auth.cookie_secret` | Streamlit | Yes | Second random value above |
-| `auth.client_id` | Streamlit | Yes | Google OAuth web client |
-| `auth.client_secret` | Streamlit | Yes | Google OAuth web client |
-| `auth.server_metadata_url` | Streamlit | Yes | Google's shared OIDC discovery URL shown below |
+| `stytch.project_id` | Streamlit | Yes | Stytch project dashboard |
+| `stytch.secret` | Streamlit | Yes | Stytch project dashboard secret key |
+| `stytch.environment` | Streamlit | Yes | `test` while using test keys; `live` after switching Stytch environments |
+| `stytch.redirect_url` | Streamlit + Stytch | Yes | Exact Streamlit app URL, e.g. `https://<streamlit-app>.streamlit.app` |
 
 `DIRECT_DATABASE_URL`, `CLUTCH_DB_*`, `LOCALSTACK_*`, and live-eval budget
 variables are local/admin-only and do not belong in either hosted app. The
@@ -163,21 +161,18 @@ still apply.
 Free Render services can cold-start after idle periods, so allow the first
 health request extra time.
 
-## 4. Create the Google Login Client
+## 4. Configure Stytch Magic Links
 
-1. In Google Auth Platform, configure **Branding** with the Clutch name and a
-   support email.
-2. Under **Audience**, choose External. While the app is in Testing, add your
-   own Google account as a test user.
-3. Under **Clients**, create a client with application type **Web application**.
-4. Add this exact authorized redirect URI after choosing the Streamlit subdomain:
+1. In Stytch, keep this project as **Consumer Auth**.
+2. Use the **Backend only** implementation path.
+3. Enable **Email Magic Links**.
+4. Under **Redirect URLs**, add the exact Streamlit URL after choosing the
+   Streamlit subdomain:
 
-   `https://<streamlit-app>.streamlit.app/oauth2callback`
+   `https://<streamlit-app>.streamlit.app`
 
-The scheme, hostname, path, and trailing slash must match exactly. For a
-recruiter-facing link, do not leave the Google app restricted to your own test
-user: move it to the appropriate production/published state after completing
-Google's current consent-screen requirements.
+Mark that URL as the default for Login and Signup. Keep the localhost redirect
+only for local testing.
 
 ## 5. Deploy Streamlit Community Cloud
 
@@ -190,25 +185,24 @@ After Render is healthy, create the Streamlit app with:
 - Python version: `3.11`
 
 Open **Advanced settings** and paste this TOML into **Secrets**. Keep the two
-`CLUTCH_*` keys above `[auth]`; TOML keys written after `[auth]` belong to that
+`CLUTCH_*` keys above `[stytch]`; TOML keys written after `[stytch]` belong to that
 table and the app will not find them as top-level settings.
 
 ```toml
 CLUTCH_API_BASE_URL = "https://<clutch-api>.onrender.com"
 CLUTCH_API_KEY = "<same rotated key configured on Render>"
 
-[auth]
-redirect_uri = "https://<streamlit-app>.streamlit.app/oauth2callback"
-cookie_secret = "<random-long-cookie-secret>"
-client_id = "<google-oauth-client-id>"
-client_secret = "<google-oauth-client-secret>"
-server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+[stytch]
+project_id = "<stytch-project-id>"
+secret = "<stytch-secret-key>"
+environment = "test"
+redirect_url = "https://<streamlit-app>.streamlit.app"
 ```
 
-Streamlit uses Google OIDC for user login and sends only an opaque hashed
-profile ID to FastAPI. It uses `CLUTCH_API_KEY` server-side when calling
-FastAPI; the key is not rendered into the browser page. If you edit any auth
-secret later, restart the Streamlit app so the OIDC configuration reloads.
+Streamlit uses Stytch email magic links for user login and sends only an opaque
+hashed profile ID to FastAPI. It uses `CLUTCH_API_KEY` server-side when calling
+FastAPI; the key is not rendered into the browser page. If you edit any Stytch
+secret later, restart the Streamlit app so the configuration reloads.
 
 ## 6. Hosted Smoke and Manual Checks
 
@@ -224,19 +218,20 @@ scripts/hosted_smoke.sh
 Then verify in the UI:
 
 - unauthenticated visitors see the Clutch landing/login screen;
-- Google login redirects back to the Streamlit app and shows a logout control;
+- Stytch emails a magic link, redirects back to the Streamlit app, and shows a
+  logout control;
 - pasted-code and public-GitHub reviews complete;
 - AI success and explicit fallback labels are accurate;
 - an interview assessment and completed feedback report render;
-- progress is tied to the signed-in Google identity and persists after a backend
+- progress is tied to the signed-in Stytch identity and persists after a backend
   restart;
 - the GitHub scope summary says it is not a full-codebase analysis; and
 - Render, Neon, and Langfuse contain no raw source, raw answers, prompts,
   provider payloads, or secrets.
 
-If login returns `redirect_uri_mismatch`, compare the deployed Streamlit URL,
-the `[auth].redirect_uri` value, and Google's authorized redirect URI character
-for character. If reviews return `401`, compare the Render and Streamlit copies
+If magic links do not return to the app, compare the deployed Streamlit URL,
+the `[stytch].redirect_url` value, and Stytch's Redirect URLs character for
+character. If reviews return `401`, compare the Render and Streamlit copies
 of `CLUTCH_API_KEY`. If the Streamlit page loads but review calls time out on the
 first attempt, open the Render `/health` URL once and retry after the free
 service wakes.
@@ -250,7 +245,6 @@ run passes; do not present it as a complete native-cost audit.
 
 - [Streamlit Community Cloud deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy)
 - [Streamlit secrets management](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
-- [Streamlit OIDC authentication](https://docs.streamlit.io/develop/concepts/connections/authentication)
 - [Render Blueprint specification](https://render.com/docs/blueprint-spec)
 - [Render free-service behavior](https://render.com/docs/free)
-- [Google OAuth web-server setup](https://developers.google.com/identity/protocols/oauth2/web-server)
+- [Stytch email magic links](https://stytch.com/docs/b2c/guides/magic-links/overview)

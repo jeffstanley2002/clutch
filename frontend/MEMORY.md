@@ -13,10 +13,10 @@ The Streamlit app implements a three-stage workflow rail:
   and privacy-safe supporting findings.
 - Progress: shows improved/persistent categories, evidence session IDs, practice
   tasks, and can save a snapshot.
-- Auth: when Streamlit OIDC `[auth]` secrets are configured, unauthenticated
-  users see a recruiter-facing landing/login screen, Google handles sign-in,
-  and the app derives a stable opaque `user_<sha256>` profile ID from the
-  signed-in identity.
+- Auth: when Stytch `[stytch]` secrets are configured, unauthenticated users see
+  a recruiter-facing landing/login screen, Stytch sends email magic links, and
+  the app derives a stable opaque `user_<sha256>` profile ID from the signed-in
+  identity.
 
 The full flow and a public GitHub review were browser-verified at desktop. The
 model-backed and forced-fallback review states, rule-based interview assessment,
@@ -38,9 +38,9 @@ top-level parsing of the hosted API settings in the Streamlit secrets example.
 - `CLUTCH_API_BASE_URL` and `CLUTCH_API_KEY` can come from environment variables
   or `st.secrets`, so the same app runs locally and on Streamlit Community
   Cloud.
-- Without Streamlit OIDC secrets, a local generated profile ID connects review,
-  interview, and progress for anonymous development. With OIDC secrets, the
-  hashed Google identity owns the profile ID.
+- Without Stytch secrets, a local generated profile ID connects review,
+  interview, and progress for anonymous development. With Stytch secrets, the
+  hashed Stytch user identity owns the profile ID.
 - UI state covers initial, validation, loading, success, empty, and service
   failure behavior.
 - The unauthenticated landing page is a hybrid marketing/product surface: it
@@ -49,9 +49,9 @@ top-level parsing of the hosted API settings in the Streamlit secrets example.
 - The landing hero uses a keyed native Streamlit container and columns. Raw HTML
   never spans the login widget, which keeps the workflow preview and login copy
   inside the same responsive card at desktop and 390px.
-- Deployment placeholders and dummy OAuth test credentials use reviewed,
-  line-local `detect-secrets` annotations; the repository does not suppress the
-  keyword detector globally or weaken the committed baseline.
+- Deployment placeholders use reviewed, line-local `detect-secrets`
+  annotations; the repository does not suppress the keyword detector globally or
+  weaken the committed baseline.
 - Every finding, question, assessment, citation, and final aggregation has a
   literal origin label. A warning appears whenever the applicable model did not
   complete; deterministic/template output is never described as AI-generated.

@@ -83,7 +83,7 @@ Implemented boundaries:
   cost in Japan Cloud API readback despite native model/version/usage fields;
   keep this limitation visible.
 - Deployment API-key auth and shared per-call/daily OpenAI spend reservations
-  are implemented; user accounts, rate limiting, and key-rotation automation
-  remain later hardening.
+  are implemented. Streamlit now uses Stytch email magic links for the hosted
+  user gate; rate limiting and key-rotation automation remain later hardening.
 - AWS needs account, region, budget, ingress, teardown, and credential approval;
   no paid resource has been provisioned.

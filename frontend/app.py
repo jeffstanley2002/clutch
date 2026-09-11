@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from hashlib import sha256
 from typing import Any, Literal, cast
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urlencode, urlparse
 from uuid import uuid4
 
 import requests
@@ -53,33 +53,130 @@ def _auth_configured() -> bool:
         "on",
     }:
         return False
-    try:
-        auth_config = st.secrets.get("auth", None)
-    except Exception:
-        return False
-    return bool(auth_config)
+    return _stytch_configured()
 
 
-def _user_value(name: str) -> str:
+def _stytch_setting(name: str, default: str = "") -> str:
+    env_name = f"STYTCH_{name.upper()}"
+    env_value = os.getenv(env_name, "").strip()
+    if env_value:
+        return env_value
     try:
-        value = st.user.get(name, "")
+        config = st.secrets.get("stytch", {})
+        value = config.get(name, default)
     except Exception:
-        value = getattr(st.user, name, "")
-    return str(value or "").strip()
+        value = default
+    return str(value).strip()
+
+
+def _stytch_configured() -> bool:
+    return bool(_stytch_setting("project_id") and _stytch_setting("secret"))
+
+
+def _stytch_base_url() -> str:
+    environment = _stytch_setting("environment", "test").lower()
+    if environment == "live":
+        return "https://api.stytch.com/v1"
+    return "https://test.stytch.com/v1"
+
+
+def _stytch_redirect_url() -> str:
+    configured = _stytch_setting("redirect_url")
+    if configured:
+        return configured
+    try:
+        query_params = dict(st.query_params)
+    except Exception:
+        query_params = {}
+    if "token" in query_params:
+        query_params.pop("token", None)
+    if "stytch_token_type" in query_params:
+        query_params.pop("stytch_token_type", None)
+    query_string = urlencode(query_params, doseq=True)
+    suffix = f"?{query_string}" if query_string else ""
+    return f"http://localhost:8501/{suffix}"
+
+
+def _stytch_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    project_id = _stytch_setting("project_id")
+    secret = _stytch_setting("secret")
+    response = requests.post(
+        f"{_stytch_base_url()}{path}",
+        auth=(project_id, secret),
+        json=payload,
+        timeout=20,
+    )
+    response.raise_for_status()
+    result: dict[str, Any] = response.json()
+    return result
+
+
+def _send_stytch_magic_link(email: str) -> None:
+    redirect_url = _stytch_redirect_url()
+    _stytch_post(
+        "/magic_links/email/login_or_create",
+        {
+            "email": email,
+            "login_magic_link_url": redirect_url,
+            "signup_magic_link_url": redirect_url,
+        },
+    )
+
+
+def _authenticate_stytch_magic_link(token: str) -> str:
+    result = _stytch_post(
+        "/magic_links/authenticate",
+        {"token": token, "session_duration_minutes": 60 * 24 * 7},
+    )
+    user = result.get("user", {})
+    emails = user.get("emails") if isinstance(user, dict) else None
+    email = ""
+    if isinstance(emails, list) and emails:
+        first_email = emails[0]
+        if isinstance(first_email, dict):
+            email = str(first_email.get("email") or "")
+    st.session_state.stytch_session_jwt = str(result["session_jwt"])
+    st.session_state.stytch_user_id = str(user.get("user_id") or email or token)
+    st.session_state.stytch_user_email = email
+    return st.session_state.stytch_user_id
+
+
+def _handle_stytch_redirect() -> None:
+    if not _stytch_configured():
+        return
+    try:
+        token = st.query_params.get("token")
+    except Exception:
+        token = None
+    if not token:
+        return
+    try:
+        _authenticate_stytch_magic_link(str(token))
+    except requests.RequestException as exc:
+        st.session_state.stytch_auth_error = str(exc)
+    except (KeyError, TypeError, ValueError) as exc:
+        st.session_state.stytch_auth_error = f"Invalid Stytch response: {exc}"
+    else:
+        st.session_state.pop("stytch_auth_error", None)
+        st.query_params.clear()
+        st.rerun()
+
+
+def _logout_stytch() -> None:
+    for key in (
+        "stytch_session_jwt",
+        "stytch_user_id",
+        "stytch_user_email",
+        "stytch_auth_error",
+        "stytch_link_sent_to",
+    ):
+        st.session_state.pop(key, None)
 
 
 def _authenticated_profile_id() -> str | None:
     if not _auth_configured():
         return None
-    user = st.user
-    if not getattr(user, "is_logged_in", False):
-        return None
-    identity = (
-        _user_value("sub")
-        or _user_value("email")
-        or _user_value("preferred_username")
-        or _user_value("name")
-    )
+    identity = str(st.session_state.get("stytch_user_id") or "").strip()
     if not identity:
         return None
     digest = sha256(identity.encode("utf-8")).hexdigest()
@@ -285,17 +382,46 @@ def _render_landing_gate() -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            st.button(
-                "Log in with Google",
-                key="landing_login",
-                type="primary",
-                on_click=st.login,
-            )
+            with st.form("stytch-login-form", clear_on_submit=False):
+                email = st.text_input(
+                    "Email",
+                    placeholder="you@example.com",
+                    autocomplete="email",
+                )
+                submitted = st.form_submit_button(
+                    "Email me a login link",
+                    type="primary",
+                )
+            if submitted:
+                if "@" not in email:
+                    st.warning("Enter a valid email address.")
+                else:
+                    try:
+                        _send_stytch_magic_link(email.strip())
+                    except requests.RequestException as exc:
+                        st.error(
+                            "Stytch could not send the login link. Check the "
+                            f"redirect URL and API keys, then retry. Detail: {exc}"
+                        )
+                    else:
+                        st.session_state.stytch_link_sent_to = email.strip()
+                        st.success("Check your inbox for the Clutch login link.")
+            if st.session_state.get("stytch_auth_error"):
+                st.error(
+                    "The login link could not be verified. Request a fresh link "
+                    f"and try again. Detail: {st.session_state.stytch_auth_error}"
+                )
+            if st.session_state.get("stytch_link_sent_to"):
+                st.caption(
+                    "Sent to "
+                    f"{st.session_state.stytch_link_sent_to}. "
+                    "Click the link in the same browser to finish signing in."
+                )
             st.markdown(
                 """
                 <p class="clutch-cta-copy">
-                    Sign in to run a private practice session, save progress,
-                    and return to your review history later.
+                    Sign in with an email magic link to run a private practice
+                    session, save progress, and return to your review history later.
                 </p>
                 """,
                 unsafe_allow_html=True,
@@ -348,7 +474,7 @@ def _render_landing_gate() -> None:
             <section class="clutch-panel">
                 <h2>Built for safe practice</h2>
                 <ul>
-                    <li>Google handles authentication.</li>
+                    <li>Stytch handles email magic-link authentication.</li>
                     <li>Raw code and raw answers are not stored durably.</li>
                     <li>Progress is tied to an opaque profile ID.</li>
                 </ul>
@@ -417,13 +543,15 @@ def _render_header() -> PageName:
         "Move from concrete code evidence to a practiced explanation, then track "
         "which engineering habits are changing across sessions."
     )
-    if _auth_configured() and getattr(st.user, "is_logged_in", False):
-        name = _user_value("name") or _user_value("email") or "Signed in"
+    if _auth_configured() and st.session_state.get("stytch_session_jwt"):
+        name = st.session_state.get("stytch_user_email") or "Signed in"
         account, action = st.columns([3, 1])
         with account:
             st.caption(f"Signed in as {name}")
         with action:
-            st.button("Log out", on_click=st.logout)
+            if st.button("Log out"):
+                _logout_stytch()
+                st.rerun()
     selected = st.segmented_control(
         "Workflow",
         options=["Review", "Interview", "Progress"],
@@ -1021,6 +1149,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+_handle_stytch_redirect()
 authenticated_profile_id = _authenticated_profile_id()
 if _auth_configured() and authenticated_profile_id is None:
     _render_landing_gate()
