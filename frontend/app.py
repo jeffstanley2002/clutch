@@ -75,7 +75,7 @@ def _stytch_configured() -> bool:
 
 def _stytch_base_url() -> str:
     environment = _stytch_setting("environment", "test").lower()
-    if environment == "live":
+    if environment in {"live", "production", "prod"}:
         return "https://api.stytch.com/v1"
     return "https://test.stytch.com/v1"
 
@@ -109,6 +109,21 @@ def _stytch_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     response.raise_for_status()
     result: dict[str, Any] = response.json()
     return result
+
+
+def _stytch_error_detail(exc: requests.RequestException) -> str:
+    response = getattr(exc, "response", None)
+    if response is not None:
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        if isinstance(body, dict) and body.get("error_message"):
+            error_type = body.get("error_type", "")
+            return f"{error_type}: {body['error_message']}" if error_type else str(
+                body["error_message"]
+            )
+    return str(exc)
 
 
 def _send_stytch_magic_link(email: str) -> None:
@@ -486,7 +501,8 @@ def _render_landing_gate() -> None:
                     except requests.RequestException as exc:
                         st.error(
                             "Stytch could not send the login link. Check the "
-                            f"redirect URL and API keys, then retry. Detail: {exc}"
+                            "redirect URL and API keys, then retry. Detail: "
+                            f"{_stytch_error_detail(exc)}"
                         )
                     else:
                         st.session_state.stytch_link_sent_to = email.strip()
