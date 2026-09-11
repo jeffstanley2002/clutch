@@ -1,6 +1,7 @@
 import ast
 import tomllib
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -76,6 +77,22 @@ def _review_result(*, mode: str = "static_fallback") -> dict[str, object]:
     }
 
 
+def _review_result_with_findings(count: int) -> dict[str, object]:
+    result = _review_result()
+    findings = cast(list[dict[str, Any]], result["findings"])
+    base_finding = findings[0]
+    result["findings"] = [
+        {
+            **base_finding,
+            "id": f"finding-{index}",
+            "message": f"Finding {index} needs attention",
+            "evidence": f"# TODO replace {index}",
+        }
+        for index in range(1, count + 1)
+    ]
+    return result
+
+
 def test_review_ui_labels_fallback_items_citations_and_github_scope() -> None:
     app = AppTest.from_file(str(APP_PATH)).run()
     app.session_state["review_result"] = _review_result()
@@ -104,6 +121,22 @@ def test_review_ui_labels_fallback_items_citations_and_github_scope() -> None:
     assert "Google Engineering Practices — #good-code-reviews" in markdown_text
 
 
+def test_review_ui_paginates_long_finding_lists() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+    app.session_state["review_result"] = _review_result_with_findings(12)
+    app.run()
+
+    caption_text = " ".join(item.value for item in app.caption)
+    markdown_text = " ".join(item.value for item in app.markdown)
+    button_labels = [item.label for item in app.button]
+    assert "Showing findings 1-5 of 12 · page 1 of 3" in caption_text
+    assert "Finding 1 needs attention" in markdown_text
+    assert "Finding 5 needs attention" in markdown_text
+    assert "Finding 6 needs attention" not in markdown_text
+    assert "Previous" in button_labels
+    assert "Next" in button_labels
+
+
 def test_review_ui_labels_successful_model_output() -> None:
     app = AppTest.from_file(str(APP_PATH)).run()
     app.session_state["review_result"] = _review_result(mode="model")
@@ -115,6 +148,38 @@ def test_review_ui_labels_successful_model_output() -> None:
     caption_text = " ".join(item.value for item in app.caption)
     assert "AI-generated review finding" in caption_text
     assert "AI-generated follow-up question" in caption_text
+
+
+def test_authenticated_workbench_keeps_logout_visible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CLUTCH_DISABLE_STREAMLIT_LOGIN", raising=False)
+    app = AppTest.from_file(str(APP_PATH))
+    app.secrets["stytch"] = {
+        "project_id": "project-test-id",
+        "secret": "secret-test-value",  # pragma: allowlist secret
+        "environment": "test",
+        "redirect_url": "http://localhost:8501",
+    }
+    app.session_state["stytch_session_jwt"] = "session-test-jwt"
+    app.session_state["stytch_user_id"] = "user-test-id"
+    app.session_state["stytch_user_email"] = "junior@example.com"
+
+    app.run()
+
+    caption_text = " ".join(item.value for item in app.caption)
+    button_labels = [item.label for item in app.button]
+    assert "Signed in as junior@example.com" in caption_text
+    assert "Log out" in button_labels
+    tree = ast.parse(APP_PATH.read_text(encoding="utf-8"))
+    assert any(
+        keyword.arg == "initial_sidebar_state"
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value == "expanded"
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        for keyword in node.keywords
+    )
 
 
 def test_stytch_configured_shows_landing_gate(

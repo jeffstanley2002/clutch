@@ -715,40 +715,30 @@ def _normalize_grounding(
                 }
             )
         )
-    if len(validated_model_findings) != len(context.static_findings):
-        logger.warning(
-            "grounding validation failed: model finding count mismatch "
-            "model_finding_count=%d static_finding_count=%d",
-            len(validated_model_findings),
-            len(context.static_findings),
-            extra={
-                "model_finding_count": len(validated_model_findings),
-                "static_finding_count": len(context.static_findings),
-            },
-        )
-        raise ValueError("model finding inventory differs from static signals")
+    signals_by_id = {signal.id: signal for signal in context.static_findings}
+    if len(signals_by_id) != len(context.static_findings):
+        raise ValueError("static finding IDs must be unique")
+    if context.static_findings and not validated_model_findings:
+        raise ValueError("model finding subset is empty despite static signals")
 
-    remaining = list(validated_model_findings)
+    seen_model_ids: set[str] = set()
     normalized_findings: list[CodeFinding] = []
-    for signal in context.static_findings:
+    for finding in validated_model_findings:
+        if finding.id in seen_model_ids:
+            raise ValueError("model finding duplicates a static signal")
+        seen_model_ids.add(finding.id)
+        signal = signals_by_id.get(finding.id)
+        if signal is None:
+            raise ValueError("model finding is not backed by a static signal")
         signal_citations = {
             citation.source_id for citation in signal.citations
         }
-        match = next(
-            (
-                finding
-                for finding in remaining
-                if finding.id == signal.id
-                and signal_citations
-                <= {citation.source_id for citation in finding.citations}
-            ),
-            None,
-        )
-        if match is None:
+        if not signal_citations <= {
+            citation.source_id for citation in finding.citations
+        }:
             raise ValueError("model finding does not preserve its static signal")
-        remaining.remove(match)
         normalized_findings.append(
-            match.model_copy(
+            finding.model_copy(
                 update={
                     "id": signal.id,
                     "severity": signal.severity,
@@ -757,7 +747,7 @@ def _normalize_grounding(
                     "line_start": signal.line_start,
                     "line_end": signal.line_end,
                     "explanation": (
-                        f"{match.explanation.rstrip()} "
+                        f"{finding.explanation.rstrip()} "
                         f"Grounding: {signal.explanation}"
                     ),
                     "citations": signal.citations,
@@ -876,7 +866,10 @@ def _safe_failure_detail(exc: Exception) -> str:
             "model finding line_start exceeds source",
             "model finding line_end exceeds source",
             "model finding line range is reversed",
-            "model finding inventory differs from static signals",
+            "static finding IDs must be unique",
+            "model finding subset is empty despite static signals",
+            "model finding duplicates a static signal",
+            "model finding is not backed by a static signal",
             "model finding does not preserve its static signal",
             "model question contains an unknown finding ID",
             "model question contains an ungrounded citation",

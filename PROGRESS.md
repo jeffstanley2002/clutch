@@ -1507,3 +1507,77 @@ Next up:
 
 - Redeploy the Streamlit app, then verify the hosted public/incognito load and
   note whether the skeleton duration is acceptable.
+
+## 2026-09-11 (Day 16 review grounding subset fix)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Fixed review grounding validation so a model can synthesize a grounded subset
+  of static findings instead of needing a one-to-one match with every static
+  signal.
+- Updated the review synthesis prompt to match the schema cap: use deterministic
+  signals as the only allowed inventory, but return up to 12 highest-impact
+  findings.
+- Added regression coverage for accepting a grounded subset and still rejecting
+  an empty model subset when static signals exist.
+
+Learned / decided:
+
+- The nanoGPT review path can produce more static signals than the strict model
+  schema allows, so exact count matching caused valid model output to be
+  mislabeled as a grounding failure and replaced by deterministic fallback.
+
+Verification:
+
+- `tests/test_model_router.py tests/test_review_prompt.py`: 15 passed.
+- Ruff passed for the touched provider/test files.
+- Mypy passed for `src/clutch/llm/providers.py` and `tests/test_model_router.py`.
+
+Open issues:
+
+- Rerun the nanoGPT resume analysis with the configured OpenAI provider to
+  confirm the live path now reports `mode: model` for grounded subset output.
+
+Next up:
+
+- Continue the hosted deployment smoke after confirming the nanoGPT review path.
+
+## 2026-09-11 (Day 16 authenticated UI pagination pass)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Forced the authenticated Streamlit workbench sidebar to start expanded so the
+  Review / Interview / Progress rail is visible after login.
+- Added a compact signed-in account bar with a Log out button above the active
+  page as a fallback if Streamlit Cloud or browser state collapses the sidebar.
+- Paginated long review finding lists at five findings per page with previous
+  and next controls and visible range text.
+- Added frontend regression coverage for logged-in logout visibility and long
+  finding pagination.
+
+Learned / decided:
+
+- The sidebar/logout code already existed, but Streamlit's default sidebar
+  state can be collapsed while the app hides host chrome; that combination makes
+  the navigation and logout affordance effectively disappear.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 7 passed.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Premium frontend strict audit passed with zero findings.
+
+Open issues:
+
+- Visually recheck the hosted authenticated page after redeploying because
+  Streamlit Cloud owner controls such as “Manage app” remain outside app code.
+
+Next up:
+
+- Redeploy Streamlit, log in through Stytch, verify the sidebar/account bar, and
+  rerun the nanoGPT review to confirm model subset output plus paginated results.

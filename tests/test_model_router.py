@@ -164,6 +164,77 @@ def test_openai_provider_retries_ungrounded_output_once() -> None:
     assert result.validation_failure_count == 1
 
 
+def test_openai_provider_accepts_grounded_subset_of_static_findings() -> None:
+    context = _context()
+    first_signal = context.static_findings[0]
+    second_signal = first_signal.model_copy(
+        update={
+            "id": "finding-extra",
+            "message": "The function has an additional maintainability issue.",
+            "evidence": "return bucket",
+        }
+    )
+    synthesized = first_signal.model_copy(
+        update={
+            "message": "Use a safer default value.",
+            "explanation": "The mutable default can leak state across calls.",
+            "suggestion": "Use None as the default and allocate a fresh list.",
+        }
+    )
+    responses = FakeResponses([{"findings": [synthesized], "confidence": 0.82}])
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+
+    result = asyncio.run(
+        provider.review(
+            context.model_copy(
+                update={"static_findings": [first_signal, second_signal]}
+            )
+        )
+    )
+
+    assert result.mode == "model"
+    assert result.confidence == 0.82
+    assert result.findings == [
+        synthesized.model_copy(
+            update={
+                "origin": "ai_generated",
+                "severity": first_signal.severity,
+                "category": first_signal.category,
+                "evidence": first_signal.evidence,
+                "line_start": first_signal.line_start,
+                "line_end": first_signal.line_end,
+                "explanation": (
+                    f"{synthesized.explanation} "
+                    f"Grounding: {first_signal.explanation}"
+                ),
+                "citations": first_signal.citations,
+            }
+        )
+    ]
+
+
+def test_review_synthesis_falls_back_when_model_drops_all_static_findings() -> None:
+    responses = FakeResponses(
+        [
+            {"findings": [], "confidence": 0.7},
+            {"findings": [], "confidence": 0.7},
+        ]
+    )
+    provider = OpenAIProvider(
+        api_key="test-key",  # pragma: allowlist secret
+        client=FakeClient(responses),
+    )
+
+    result = asyncio.run(ModelRouter(primary=provider).review(_context()))
+
+    assert result.mode == "static_fallback"
+    assert result.failure_category == "grounding_validation_failed"
+    assert result.validation_failure_count == 2
+
+
 def test_openai_provider_labels_bounded_validation_fallback() -> None:
     context = _context()
     invalid = {"findings": [], "confidence": 2.0}

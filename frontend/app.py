@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 
 PageName = Literal["Review", "Interview", "Progress"]
+FINDINGS_PER_PAGE = 5
 
 _STAGE_LABELS = {
     "retrieval": "Review retrieval",
@@ -186,6 +187,10 @@ def _logout_stytch() -> None:
         "stytch_link_sent_to",
     ):
         st.session_state.pop(key, None)
+
+
+def _is_authenticated() -> bool:
+    return bool(_auth_configured() and st.session_state.get("stytch_session_jwt"))
 
 
 def _authenticated_profile_id() -> str | None:
@@ -606,6 +611,7 @@ def _initialize_state(profile_id: str | None = None) -> None:
         "workflow_nav": "Review",
         "review_input_mode": "Paste code",
         "review_result": None,
+        "review_findings_page": 1,
         "github_ingestion": None,
         "review_role_context": "backend intern",
         "interview_result": None,
@@ -618,6 +624,7 @@ def _initialize_state(profile_id: str | None = None) -> None:
     if profile_id is not None and st.session_state.profile_id != profile_id:
         st.session_state.profile_id = profile_id
         st.session_state.review_result = None
+        st.session_state.review_findings_page = 1
         st.session_state.github_ingestion = None
         st.session_state.interview_result = None
         st.session_state.feedback_report = None
@@ -629,6 +636,10 @@ def _initialize_state(profile_id: str | None = None) -> None:
 
 def _queue_page(page: PageName) -> None:
     st.session_state.requested_page = page
+
+
+def _set_findings_page(page: int) -> None:
+    st.session_state.review_findings_page = page
 
 
 def _api_request(
@@ -701,7 +712,7 @@ def _render_sidebar_nav() -> PageName:
             icon=":material/mic:",
         )
         st.divider()
-        if _auth_configured() and st.session_state.get("stytch_session_jwt"):
+        if _is_authenticated():
             name = st.session_state.get("stytch_user_email") or "Signed in"
             st.caption(f":material/account_circle: Signed in as {name}")
             if st.button(
@@ -713,6 +724,26 @@ def _render_sidebar_nav() -> PageName:
                 st.rerun()
         st.caption(f"Practice profile `{st.session_state.profile_id[:8]}`")
     return cast(PageName, selected or "Review")
+
+
+def _render_account_bar() -> None:
+    if not _is_authenticated():
+        return
+
+    name = st.session_state.get("stytch_user_email") or "Signed in"
+    with st.container(key="account_bar"):
+        left, right = st.columns([0.78, 0.22], vertical_alignment="center")
+        with left:
+            st.caption(f":material/account_circle: Signed in as {name}")
+        with right:
+            if st.button(
+                "Log out",
+                icon=":material/logout:",
+                key="main_logout_button",
+                width="stretch",
+            ):
+                _logout_stytch()
+                st.rerun()
 
 
 def _origin_label(origin: str | None, *, item: str) -> str:
@@ -884,6 +915,60 @@ def _render_finding(finding: dict[str, Any]) -> None:
         _render_citations(finding.get("citations", []))
 
 
+def _render_findings(findings: list[dict[str, Any]]) -> None:
+    total = len(findings)
+    total_pages = max(1, (total + FINDINGS_PER_PAGE - 1) // FINDINGS_PER_PAGE)
+    current_page = int(st.session_state.get("review_findings_page", 1))
+    current_page = min(max(current_page, 1), total_pages)
+    st.session_state.review_findings_page = current_page
+
+    start_index = (current_page - 1) * FINDINGS_PER_PAGE
+    end_index = min(start_index + FINDINGS_PER_PAGE, total)
+    if total_pages > 1:
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.caption(
+                f"Showing findings {start_index + 1}-{end_index} of {total} "
+                f"· page {current_page} of {total_pages}"
+            )
+            st.button(
+                "Previous",
+                icon=":material/chevron_left:",
+                disabled=current_page <= 1,
+                on_click=_set_findings_page,
+                args=(current_page - 1,),
+            )
+            st.button(
+                "Next",
+                icon=":material/chevron_right:",
+                disabled=current_page >= total_pages,
+                on_click=_set_findings_page,
+                args=(current_page + 1,),
+            )
+
+    for finding in findings[start_index:end_index]:
+        _render_finding(finding)
+
+    if total_pages > 1:
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.caption(
+                f"Page {current_page} of {total_pages}"
+            )
+            st.button(
+                "Previous page",
+                icon=":material/chevron_left:",
+                disabled=current_page <= 1,
+                on_click=_set_findings_page,
+                args=(current_page - 1,),
+            )
+            st.button(
+                "Next page",
+                icon=":material/chevron_right:",
+                disabled=current_page >= total_pages,
+                on_click=_set_findings_page,
+                args=(current_page + 1,),
+            )
+
+
 def _render_review_page() -> None:
     st.subheader(
         f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="gray"
@@ -977,6 +1062,7 @@ def _render_review_page() -> None:
                 )
             else:
                 st.session_state.review_result = review
+                st.session_state.review_findings_page = 1
                 st.session_state.github_ingestion = ingestion
                 st.session_state.review_role_context = role_context.strip() or (
                     "backend intern"
@@ -1034,8 +1120,7 @@ def _render_review_page() -> None:
     _render_review_provenance(review)
     st.markdown("#### :material/flag: Findings")
     if review["findings"]:
-        for finding in review["findings"]:
-            _render_finding(finding)
+        _render_findings(review["findings"])
     else:
         st.success(
             "No deterministic issue was found in this snippet. This is not proof "
@@ -1414,7 +1499,12 @@ def _render_progress_page() -> None:
             st.toast("Progress snapshot saved.", icon=":material/save:")
 
 
-st.set_page_config(page_title="Clutch", page_icon="🗂️", layout="wide")
+st.set_page_config(
+    page_title="Clutch",
+    page_icon="🗂️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 st.markdown(
     """
     <style>
@@ -1457,6 +1547,16 @@ st.markdown(
     }
     [data-testid="stSidebar"] {
         border-right: 1px solid var(--clutch-border);
+    }
+    .st-key-account_bar {
+        margin-bottom: 1rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--clutch-border);
+        border-radius: 0.5rem;
+        background: var(--clutch-surface);
+    }
+    .st-key-account_bar [data-testid="stCaptionContainer"] {
+        margin-bottom: 0;
     }
     textarea, .stTextArea textarea {
         font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
@@ -1535,6 +1635,7 @@ if _auth_configured() and authenticated_profile_id is None:
 
 _initialize_state(authenticated_profile_id)
 active_page = _render_sidebar_nav()
+_render_account_bar()
 if active_page == "Review":
     _render_review_page()
 elif active_page == "Interview":

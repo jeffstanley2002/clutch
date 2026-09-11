@@ -59,6 +59,12 @@ guard that prevents `pandas` from being imported during initial app startup.
   stylesheet hides reachable Streamlit toolbar/menu chrome. Streamlit Community
   Cloud can still show owner/deployment controls such as “Manage app” to signed
   in owners outside the app DOM.
+- The authenticated workbench forces Streamlit's sidebar to start expanded and
+  also renders a compact signed-in/logout strip above the active page so account
+  controls remain reachable if hosted/browser state collapses the sidebar.
+- Long review result sets are paginated in the Review page at five findings per
+  page. The backend still returns the full result and the sidebar metric still
+  shows the total finding count.
 - Deployment placeholders use reviewed, line-local `detect-secrets`
   annotations; the repository does not suppress the keyword detector globally or
   weaken the committed baseline.

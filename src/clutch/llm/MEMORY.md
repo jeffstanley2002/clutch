@@ -32,6 +32,11 @@ template, and rule-based output.
   result instead of presenting partially trusted output. Known citation IDs are
   canonicalized from the local knowledge base so harmless title/URL paraphrases
   do not reject an otherwise grounded model response.
+- Review synthesis may return a grounded subset of static signals, capped by the
+  structured output schema at 12 findings. Every returned finding must still map
+  to a unique static signal and preserve its trusted ID, citation support,
+  severity, category, evidence, and line range; dropping all static signals is
+  still rejected.
 - `gpt-5.4-mini` and `text-embedding-3-small` are configurable defaults, not
   permanent model choices.
 - Built-in prices are $0.75/$4.50 per million input/output tokens for
