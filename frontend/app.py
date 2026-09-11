@@ -628,7 +628,7 @@ def _api_request(
         f"{api_base_url}{path}",
         json=payload,
         headers={"X-Clutch-API-Key": api_key} if api_key else None,
-        timeout=30,
+        timeout=90,
     )
     response.raise_for_status()
     result: dict[str, Any] = response.json()
