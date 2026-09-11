@@ -3,19 +3,23 @@
 from __future__ import annotations
 
 from mcp.server import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from clutch.github.client import GitHubAPIError
 from clutch.github.contracts import (
     FetchedRepository,
     PullRequestDiff,
     RepositoryFileIndex,
 )
 from clutch.github.service import (
+    GitHubIngestionError,
     GitHubIngestionService,
     github_ingestion_service_from_env,
 )
+from clutch.github.urls import GitHubUrlError
 
 READ_ONLY_ANNOTATIONS = ToolAnnotations(
     read_only_hint=True,
@@ -54,7 +58,10 @@ def build_github_mcp_server(
     ) -> RepositoryFileIndex:
         """List bounded, allowlisted text/code files from one GitHub repository."""
 
-        return await github.list_repo_files(repository_url, ref)
+        try:
+            return await github.list_repo_files(repository_url, ref)
+        except (GitHubAPIError, GitHubIngestionError, GitHubUrlError) as exc:
+            raise ToolError(str(exc)) from exc
 
     @server.tool(
         title="Fetch repository",
@@ -66,7 +73,10 @@ def build_github_mcp_server(
     ) -> FetchedRepository:
         """Fetch bounded allowlisted text/code files as explicitly untrusted data."""
 
-        return await github.fetch_repo(repository_url, ref)
+        try:
+            return await github.fetch_repo(repository_url, ref)
+        except (GitHubAPIError, GitHubIngestionError, GitHubUrlError) as exc:
+            raise ToolError(str(exc)) from exc
 
     @server.tool(
         title="Fetch pull request diff",
@@ -75,7 +85,10 @@ def build_github_mcp_server(
     async def fetch_pr_diff(pull_request_url: str) -> PullRequestDiff:
         """Fetch bounded textual patches for one GitHub pull request."""
 
-        return await github.fetch_pr_diff(pull_request_url)
+        try:
+            return await github.fetch_pr_diff(pull_request_url)
+        except (GitHubAPIError, GitHubIngestionError, GitHubUrlError) as exc:
+            raise ToolError(str(exc)) from exc
 
     return server
 

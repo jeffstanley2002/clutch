@@ -1656,3 +1656,124 @@ Next up:
 
 - Redeploy Streamlit, collapse the sidebar, and confirm the reopen button stays
   visible.
+
+## 2026-09-11 (Day 16 GitHub MCP error handling)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Diagnosed hosted `/review/github` failures from a Render traceback: GitHub
+  returned status 404 during `fetch_repo`, but the MCP client surfaced it as
+  "no structured output" and FastAPI returned 500.
+- Converted known GitHub MCP server failures into handled tool errors,
+  preserved them in `GitHubMcpClient`, and mapped unreadable repo/PR cases to a
+  clear 422 response at the FastAPI boundary.
+- Added regression coverage for MCP handled failures and the API route response.
+
+Learned / decided:
+
+- A GitHub 404 here usually means the repo/PR URL is wrong, deleted, private, or
+  inaccessible to the backend's configured `GITHUB_TOKEN`; the app should make
+  that recoverable instead of presenting it as processing failure.
+
+Verification:
+
+- `tests/test_github_mcp.py tests/test_review_api.py`: 23 passed.
+- Ruff passed for the touched MCP, GitHub client, backend, and test files.
+- Mypy passed for the same files.
+
+Open issues:
+
+- Hosted review still needs a real smoke with the exact repo/PR URL after
+  redeploy; private repositories still require a backend read-only token.
+
+Next up:
+
+- Redeploy the backend and retry the failing GitHub URL. If it still returns
+  422, verify the URL visibility and Render `GITHUB_TOKEN`.
+
+## 2026-09-11 (Day 16 GitHub URL and model fallback diagnosis)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Diagnosed the public-repository traceback as strict URL validation, not a
+  GitHub visibility problem: the request reached `fetch_repo`, then
+  `parse_repository_url` rejected a non-canonical copied URL shape.
+- Relaxed GitHub URL parsing to tolerate harmless copied-browser query strings
+  and fragments while still rejecting credentials, ports, unsafe segments, and
+  unsupported `/tree/...` paths.
+- Verified pasted-code fallback behavior locally. With `REDIS_URL` configured
+  but unavailable, review synthesis returns `budget_rejected` before any OpenAI
+  attempt. With Redis disabled in the sandbox, OpenAI attempts are made but fail
+  as `provider_error` because outbound API access is unavailable here.
+- Updated the frontend so review request failures can show safe backend
+  messages, and deterministic fallback banners include the safe fallback reason.
+
+Learned / decided:
+
+- Small or invalid Python snippets should not force deterministic mode by size.
+  Deterministic output means the configured AI path was unavailable, blocked, or
+  rejected; the malformed snippet may reduce static findings, but it is not the
+  reason the model path is skipped.
+
+Verification:
+
+- `tests/test_github_ingestion.py tests/test_github_mcp.py tests/test_review_api.py tests/test_frontend_provenance.py`:
+  37 passed.
+- Ruff passed for the touched GitHub, MCP, backend, frontend, and test files.
+- Mypy passed for the same files.
+
+Open issues:
+
+- A real OpenAI probe from Codex was not run because sending the user's pasted
+  code externally requires explicit approval.
+- Hosted backend still needs `/runtime/spend` and review provenance checked to
+  confirm whether Render's fallback is `budget_rejected`,
+  `model_not_configured`, or `provider_error`.
+
+Next up:
+
+- Redeploy backend/frontend, retry with a canonical GitHub repo URL and inspect
+  the review provenance. If synthesis says `budget_rejected`, fix hosted Redis
+  or temporarily remove `REDIS_URL`; if it says `model_not_configured`, set
+  `OPENAI_API_KEY`; if it says `provider_error`, inspect safe provider logs.
+
+## 2026-09-11 (Day 16 frontend GitHub URL validation)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Added pre-submit GitHub URL validation in the Streamlit review form.
+- Accepted supported repository and pull-request links before network work,
+  including copied-browser query strings/fragments.
+- Rejected empty values, non-HTTPS/non-GitHub links, unsafe segments, and
+  unsupported paths such as `/tree/...` with direct correction copy.
+- Added frontend validation coverage without importing/running the full
+  Streamlit app module in bare test mode.
+
+Learned / decided:
+
+- Backend validation remains the source of truth, but the frontend should catch
+  obvious shape errors before triggering the MCP/GitHub fetch path.
+
+Verification:
+
+- `tests/test_frontend_provenance.py tests/test_github_ingestion.py tests/test_github_mcp.py tests/test_review_api.py`:
+  38 passed.
+- Ruff passed for the touched frontend, GitHub, MCP, backend, and test files.
+- Mypy passed for the same files.
+- Premium frontend strict audit passed with zero findings.
+
+Open issues:
+
+- `/tree/...` and `/blob/...` links are still intentionally unsupported; adding
+  branch/file URL semantics should be a separate GitHub ingestion feature.
+
+Next up:
+
+- Redeploy frontend/backend and retry the hosted GitHub form with both a copied
+  README URL and a canonical repo URL.

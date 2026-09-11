@@ -31,10 +31,14 @@ def test_github_urls_are_strict_and_canonical() -> None:
     assert repository.owner == "openai"
     assert repository.repository == "openai-python"
     assert pull_request.pull_number == 123
+    copied_url = parse_repository_url(
+        "https://github.com/openai/openai-python?tab=readme-ov-file#readme"
+    )
+    assert copied_url.repository == "openai-python"
     for unsafe in (
         "http://github.com/openai/openai-python",
         "https://evil.example/openai/openai-python",
-        "https://github.com/openai/openai-python?ref=main",
+        "https://github.com/openai/openai-python/tree/main",
         "https://github.com/openai/../pull/1",
         "https://user:pass@github.com/openai/openai-python",  # pragma: allowlist secret
     ):

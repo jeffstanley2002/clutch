@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 import backend.app.main as main_module
 from backend.app.main import app
 from clutch.github.contracts import FetchedRepository, GitHubFile
+from clutch.github.mcp_client import GitHubMcpToolError
 from clutch.github.review import GitHubReviewService
 from clutch.review.service import ReviewService
 
@@ -402,3 +403,30 @@ def test_github_review_route_returns_ingestion_metadata(monkeypatch) -> None:  #
     assert response.json()["ingestion"]["source_type"] == "repository"
     assert response.json()["ingestion"]["files_included"] == ["app.py"]
     assert response.json()["review"]["findings"]
+
+
+def test_github_review_route_returns_clear_error_for_unreadable_repo(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    class FakeGateway:
+        async def fetch_repo(
+            self,
+            repository_url: str,
+            ref: str | None = None,
+        ) -> FetchedRepository:
+            raise GitHubMcpToolError("GitHub read request failed with status 404")
+
+        async def fetch_pr_diff(self, pull_request_url: str):  # type: ignore[no-untyped-def]
+            raise AssertionError("repository URL should not fetch a PR")
+
+    monkeypatch.setattr(
+        main_module,
+        "github_review_service",
+        GitHubReviewService(FakeGateway(), main_module.review_service),
+    )
+
+    response = client.post(
+        "/review/github",
+        json={"source_url": "https://github.com/acme/missing"},
+    )
+
+    assert response.status_code == 422
+    assert "GitHub could not find or read" in response.json()["detail"]

@@ -19,8 +19,10 @@ small allowlisted safe failure detail.
 The local counter is process-scoped; Redis uses an atomic UTC-day counter across
 replicas. Per-call/daily ceilings default to $0.10/$1.00. Unknown models require
 explicit price configuration, and an unavailable shared counter blocks paid
-calls so the review router can fall back before invoking the provider. Review,
-question, and assessment failures expose only labeled static/retrieval,
+calls so the review router can fall back before invoking the provider. A
+`budget_rejected` review fallback with zero attempts usually means the Redis
+spend counter blocked the call before OpenAI was contacted. Review, question,
+and assessment failures expose only labeled static/retrieval,
 template, and rule-based output.
 
 ## Decisions

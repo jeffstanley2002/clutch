@@ -63,8 +63,8 @@ def _validated_url(url: str) -> SplitResult:
     parts = urlsplit(normalized)
     if parts.scheme != "https" or parts.hostname != "github.com":
         raise GitHubUrlError("only HTTPS github.com URLs are supported")
-    if parts.username or parts.password or parts.port or parts.query or parts.fragment:
-        raise GitHubUrlError("credentials, ports, query strings, and fragments are not allowed")
+    if parts.username or parts.password or parts.port:
+        raise GitHubUrlError("credentials and ports are not allowed")
     return parts
 
 

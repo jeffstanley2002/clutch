@@ -68,7 +68,13 @@ guard that prevents `pandas` from being imported during initial app startup.
   shows the total finding count.
 - User-facing frontend errors are intentionally generic and action-oriented.
   They do not render raw exceptions, backend URLs, provider payload details, or
-  deployment configuration hints.
+  deployment configuration hints. Review request failures can preserve safe
+  backend messages, and deterministic fallback banners name the safe fallback
+  reason instead of only saying that no model call completed.
+- The GitHub review form validates URL shape before submitting. It accepts
+  canonical repository and pull-request links, plus harmless copied-browser
+  query strings/fragments, and rejects unsupported paths such as `/tree/...`
+  with correction copy before any backend/MCP call starts.
 - Deployment placeholders use reviewed, line-local `detect-secrets`
   annotations; the repository does not suppress the keyword detector globally or
   weaken the committed baseline.

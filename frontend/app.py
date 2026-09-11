@@ -35,6 +35,14 @@ _FAILURE_LABELS = {
 }
 
 
+class ApiRequestError(requests.RequestException):
+    """Safe API error text that can be shown in the Streamlit UI."""
+
+    def __init__(self, user_message: str) -> None:
+        super().__init__(user_message)
+        self.user_message = user_message
+
+
 def _setting(name: str, default: str = "") -> str:
     env_value = os.getenv(name, "").strip()
     if env_value:
@@ -644,9 +652,51 @@ def _api_request(
         headers={"X-Clutch-API-Key": api_key} if api_key else None,
         timeout=90,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise ApiRequestError(_safe_api_error_message(response)) from exc
     result: dict[str, Any] = response.json()
     return result
+
+
+def _safe_api_error_message(response: requests.Response) -> str:
+    default = "The request could not complete. Your input is still here; try again."
+    try:
+        payload = response.json()
+    except ValueError:
+        return default
+    detail = payload.get("detail") if isinstance(payload, dict) else None
+    if not isinstance(detail, str) or not detail.strip():
+        return default
+    return detail.strip()
+
+
+def _github_url_validation_message(source_url: str) -> str | None:
+    value = source_url.strip()
+    if not value:
+        return "Enter a GitHub repository or pull-request URL."
+
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or parsed.netloc != "github.com":
+        return "Use an HTTPS github.com link."
+
+    segments = [unquote(segment) for segment in parsed.path.strip("/").split("/")]
+    if any(not segment or segment in {".", ".."} for segment in segments):
+        return "Use a GitHub repository link like https://github.com/owner/repository."
+
+    is_repository = len(segments) == 2
+    is_pull_request = (
+        len(segments) == 4 and segments[2] == "pull" and segments[3].isdigit()
+    )
+    if is_repository or is_pull_request:
+        return None
+
+    return (
+        "Use a repository or pull request link like "
+        "https://github.com/owner/repository or "
+        "https://github.com/owner/repository/pull/123."
+    )
 
 
 _PAGE_ICONS = {
@@ -825,20 +875,34 @@ def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
 def _render_review_provenance(review: dict[str, Any]) -> None:
     mode = review.get("mode")
     provenance = review.get("provenance", [])
+    synthesis_reason = next(
+        (
+            _FAILURE_LABELS.get(
+                stage.get("failure_category"),
+                "the model path did not complete",
+            )
+            for stage in provenance
+            if stage.get("stage") == "review_synthesis"
+            and stage.get("failure_category")
+        ),
+        "the model path did not complete",
+    )
     if mode == "model":
         st.success(
             "AI-generated review synthesis completed.", icon=":material/auto_awesome:"
         )
     elif mode == "static_fallback":
         st.warning(
-            "No successful review model call occurred. These findings came from "
-            "deterministic static analysis, so they are not AI-generated.",
+            f"No successful review model call occurred because {synthesis_reason}. "
+            "These findings came from deterministic static analysis, so they are "
+            "not AI-generated.",
             icon=":material/rule:",
         )
     else:
         st.warning(
-            "No successful review model call occurred and no static issue matched. "
-            "This result used retrieval-only/static logic, not AI synthesis.",
+            f"No successful review model call occurred because {synthesis_reason}, "
+            "and no static issue matched. This result used retrieval-only/static "
+            "logic, not AI synthesis.",
             icon=":material/rule:",
         )
     for stage in provenance:
@@ -1005,8 +1069,10 @@ def _render_review_page() -> None:
     if submitted:
         if input_mode != "GitHub" and not code.strip():
             st.warning("Paste a Python snippet before starting the review.")
-        elif input_mode == "GitHub" and not source_url.strip():
-            st.warning("Enter a GitHub repository or pull-request URL.")
+        elif input_mode == "GitHub" and (
+            validation_message := _github_url_validation_message(source_url)
+        ):
+            st.warning(validation_message)
         else:
             # Stash the inputs and rerun immediately, rather than calling the
             # API inline here. That lets the next run render the sidebar as
@@ -1052,6 +1118,10 @@ def _render_review_page() -> None:
                         },
                     )
                     ingestion = None
+        except ApiRequestError as exc:
+            st.session_state.review_pending = None
+            st.session_state.review_error = exc.user_message
+            st.rerun()
         except requests.RequestException:
             # Clear the pending flag and rerun so the sidebar (rendered at
             # the top of this same run, before the call failed) redraws

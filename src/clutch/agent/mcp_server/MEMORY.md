@@ -10,6 +10,9 @@ stateless JSON Streamable HTTP on port 8001. Local bind defaults to loopback;
 Docker explicitly opts into `0.0.0.0`. DNS-rebinding protection allowlists
 localhost and the internal `github-mcp` host. `/health` is dependency-free.
 
+Known GitHub URL, ingestion, and API-read failures are raised as handled MCP
+tool errors so the application client can return a recoverable API response.
+
 ## Decisions
 
 - This is an external GitHub boundary, not a second agent.

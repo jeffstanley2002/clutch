@@ -14,6 +14,7 @@ from clutch.cache import (
     close_registered_caches,
 )
 from clutch.github.client import GitHubAPIError
+from clutch.github.mcp_client import GitHubMcpToolError
 from clutch.github.review import GitHubReviewSourceEmpty, github_review_service
 from clutch.github.service import GitHubIngestionError
 from clutch.github.urls import GitHubUrlError
@@ -126,6 +127,11 @@ async def review_github(request: GitHubReviewRequest) -> GitHubReviewResponse:
         return await github_review_service.review(request)
     except (GitHubUrlError, GitHubIngestionError, GitHubReviewSourceEmpty) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except GitHubMcpToolError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=_github_mcp_error_detail(str(exc)),
+        ) from exc
     except GitHubAPIError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -161,3 +167,15 @@ async def get_progress(profile_id: ProfileId) -> ProgressSnapshot:
 @app.post("/progress/{profile_id}/snapshots", response_model=ProgressSnapshot)
 async def save_progress_snapshot(profile_id: ProfileId) -> ProgressSnapshot:
     return await progress_service.save_snapshot(profile_id)
+
+
+def _github_mcp_error_detail(message: str) -> str:
+    if "status 404" in message:
+        return (
+            "GitHub could not find or read that repository or pull request. "
+            "Check that the URL is correct, public, and accessible to the app's "
+            "GitHub access token."
+        )
+    if "rate limit" in message.lower():
+        return message
+    return "GitHub content could not be read. Check the URL and try again."

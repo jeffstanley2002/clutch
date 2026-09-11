@@ -5,6 +5,7 @@ from mcp import Client
 
 from clutch.agent.mcp_server import build_github_mcp_server
 from clutch.agent.mcp_server.__main__ import _allowed_hosts, _bind_host
+from clutch.github.client import GitHubAPIError
 from clutch.github.contracts import (
     FetchedRepository,
     GitHubFile,
@@ -12,7 +13,7 @@ from clutch.github.contracts import (
     RepositoryFile,
     RepositoryFileIndex,
 )
-from clutch.github.mcp_client import GitHubMcpClient
+from clutch.github.mcp_client import GitHubMcpClient, GitHubMcpToolError
 
 
 class FakeGitHubService:
@@ -56,6 +57,25 @@ class FakeGitHubService:
         )
 
 
+class FailingGitHubService:
+    async def list_repo_files(
+        self,
+        repository_url: str,
+        ref: str | None = None,
+    ) -> RepositoryFileIndex:
+        raise GitHubAPIError("GitHub read request failed with status 404")
+
+    async def fetch_repo(
+        self,
+        repository_url: str,
+        ref: str | None = None,
+    ) -> FetchedRepository:
+        raise GitHubAPIError("GitHub read request failed with status 404")
+
+    async def fetch_pr_diff(self, pull_request_url: str) -> PullRequestDiff:
+        raise GitHubAPIError("GitHub read request failed with status 404")
+
+
 def test_mcp_server_exposes_exactly_three_read_only_tools() -> None:
     async def exercise() -> None:
         server = build_github_mcp_server(FakeGitHubService())  # type: ignore[arg-type]
@@ -81,6 +101,17 @@ def test_application_client_validates_mcp_structured_output() -> None:
 
         assert result.owner == "acme"
         assert result.files[0].content_is_untrusted is True
+
+    asyncio.run(exercise())
+
+
+def test_application_client_preserves_handled_mcp_tool_failures() -> None:
+    async def exercise() -> None:
+        server = build_github_mcp_server(FailingGitHubService())  # type: ignore[arg-type]
+        client = GitHubMcpClient(server)
+
+        with pytest.raises(GitHubMcpToolError, match="status 404"):
+            await client.fetch_repo("https://github.com/acme/missing")
 
     asyncio.run(exercise())
 

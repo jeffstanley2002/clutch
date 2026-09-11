@@ -11,6 +11,8 @@
 Factories choose in-memory/local adapters unless database, Redis, model, MCP,
 or tracing configuration is present. Model failures use typed labeled fallback
 results; only combined model/fallback failures become privacy-safe errors.
+GitHub MCP read failures are translated to clear 422 responses for the frontend,
+including missing/private/token-inaccessible repo and PR cases.
 Optional API-key middleware protects every non-health route and fails closed
 when auth is required but unconfigured. Shutdown closes the shared database
 engine, Redis/cache/spend clients, and Langfuse.

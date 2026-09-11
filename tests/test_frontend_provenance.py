@@ -2,6 +2,7 @@ import ast
 import tomllib
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import unquote, urlparse
 
 import pytest
 from streamlit.testing.v1 import AppTest
@@ -93,6 +94,39 @@ def _review_result_with_findings(count: int) -> dict[str, object]:
     return result
 
 
+def _load_github_url_validator() -> Any:
+    tree = ast.parse(APP_PATH.read_text(encoding="utf-8"))
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "_github_url_validation_message"
+    )
+    module = ast.Module(body=[function], type_ignores=[])
+    ast.fix_missing_locations(module)
+    namespace = {"unquote": unquote, "urlparse": urlparse}
+    exec(compile(module, str(APP_PATH), "exec"), namespace)  # noqa: S102
+    return namespace["_github_url_validation_message"]
+
+
+def test_github_url_validator_accepts_only_supported_repo_and_pr_links() -> None:
+    validate = _load_github_url_validator()
+
+    assert validate("https://github.com/openai/openai-python") is None
+    assert validate("https://github.com/openai/openai-python/pull/123") is None
+    assert (
+        validate("https://github.com/openai/openai-python?tab=readme-ov-file#readme")
+        is None
+    )
+    assert validate("") == "Enter a GitHub repository or pull-request URL."
+    assert validate("http://github.com/openai/openai-python") == (
+        "Use an HTTPS github.com link."
+    )
+    assert "repository or pull request link" in validate(
+        "https://github.com/openai/openai-python/tree/main"
+    )
+
+
 def test_review_ui_labels_fallback_items_citations_and_github_scope() -> None:
     app = AppTest.from_file(str(APP_PATH)).run()
     app.session_state["review_result"] = _review_result()
@@ -113,6 +147,7 @@ def test_review_ui_labels_fallback_items_citations_and_github_scope() -> None:
     caption_text = " ".join(item.value for item in app.caption)
     markdown_text = " ".join(item.value for item in app.markdown)
     assert "No successful review model call occurred" in warning_text
+    assert "because AI review is not available right now" in warning_text
     assert "Deterministic static finding" in caption_text
     assert "Template-generated follow-up question" in caption_text
     assert (
@@ -196,6 +231,9 @@ def test_frontend_error_copy_does_not_expose_raw_runtime_details() -> None:
     ]
     for fragment in forbidden_fragments:
         assert fragment not in source
+
+    assert "ApiRequestError" in source
+    assert "_safe_api_error_message(response)" in source
 
 
 def test_frontend_does_not_hide_streamlit_header_sidebar_toggle() -> None:
