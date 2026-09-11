@@ -22,7 +22,7 @@ def database_url_from_env() -> str:
     """Read a complete URL or safely assemble one from secret-friendly parts."""
 
     load_dotenv()
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    database_url = _clean_configured_database_url(os.getenv("DATABASE_URL", ""))
     if database_url:
         return database_url
 
@@ -46,8 +46,23 @@ def migration_database_url_from_env() -> str:
     """Prefer Neon's direct URL for migrations and administrative seeding."""
 
     load_dotenv()
-    direct_url = os.getenv("DIRECT_DATABASE_URL", "").strip()
+    direct_url = _clean_configured_database_url(
+        os.getenv("DIRECT_DATABASE_URL", "")
+    )
     return direct_url or database_url_from_env()
+
+
+def _clean_configured_database_url(configured_url: str) -> str:
+    """Tolerate common dashboard paste shapes without changing URL semantics."""
+
+    database_url = configured_url.strip()
+    if len(database_url) >= 2 and database_url[0] == database_url[-1]:
+        if database_url[0] in {"'", '"'}:
+            database_url = database_url[1:-1].strip()
+    for prefix in ("DATABASE_URL=", "DIRECT_DATABASE_URL="):
+        if database_url.startswith(prefix):
+            database_url = database_url.removeprefix(prefix).strip()
+    return database_url
 
 
 def normalize_async_database_url(database_url: str) -> str:

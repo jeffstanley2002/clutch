@@ -1333,6 +1333,9 @@ Open issues:
 - The Redis Blueprint prompt still needs to be pushed and synced in Render.
 - Render rejected the follow-up deploy; the Blueprint defaults were then
   hardened so boolean/numeric env values are quoted as strings.
+- Render then crashed on startup because the configured `DATABASE_URL` could not
+  be parsed; runtime URL loading now tolerates common dashboard paste shapes
+  such as surrounding quotes or a pasted `DATABASE_URL=` prefix.
 
 Next up:
 

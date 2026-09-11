@@ -166,6 +166,19 @@ def test_migration_url_prefers_direct_neon_connection(monkeypatch) -> None:
     assert migration_database_url_from_env() == "sqlite+aiosqlite:///direct.db"
 
 
+def test_database_url_from_env_tolerates_dashboard_paste_shapes(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        '"DATABASE_URL=postgresql://clutch@example-pooler.neon.tech/neondb'
+        '?sslmode=require&channel_binding=require"',
+    )
+
+    assert database_url_from_env() == (
+        "postgresql://clutch@example-pooler.neon.tech/neondb"
+        "?sslmode=require&channel_binding=require"
+    )
+
+
 def test_application_repositories_share_one_pool_and_close_it(monkeypatch) -> None:
     async def exercise() -> None:
         await close_application_database()
