@@ -258,13 +258,15 @@ def _render_landing_gate() -> None:
         }
         .clutch-trust-line {
             max-width: 34rem;
-            margin: 0.9rem 0 0;
+            margin: 1.1rem 0 0;
             color: #666666;
             font-size: 0.88rem;
             line-height: 1.5;
         }
         .clutch-signin-lead {
-            margin: 1.5rem 0 0.5rem;
+            margin: 2.25rem 0 0.85rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #E1E1DC;
             color: #171717;
             font-size: 0.95rem;
             font-weight: 600;
