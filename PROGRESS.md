@@ -1581,3 +1581,44 @@ Next up:
 
 - Redeploy Streamlit, log in through Stytch, verify the sidebar/account bar, and
   rerun the nanoGPT review to confirm model subset output plus paginated results.
+
+## 2026-09-11 (Day 16 frontend error redaction)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Removed the main-page signed-in account bar that duplicated sidebar account
+  controls.
+- Kept Log out in the authenticated sidebar while preserving the expanded
+  sidebar default.
+- Replaced frontend error messages that exposed raw exceptions, backend hints,
+  auth provider details, or deployment configuration text with user-facing
+  recovery copy.
+- Added a regression test that rejects reintroducing `Technical detail`,
+  raw auth detail, “check the backend”, FastAPI runtime hints, or redirect/API
+  key troubleshooting text in frontend error copy.
+
+Learned / decided:
+
+- The app should keep detailed runtime failure information in logs/traces, not
+  in the Streamlit UI. Users only need to know what happened and what they can
+  safely do next.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 8 passed.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Premium frontend strict audit passed with zero findings.
+
+Open issues:
+
+- Recheck the hosted authenticated page after redeploying to confirm the sidebar
+  remains visible and Streamlit Cloud owner chrome is the only remaining
+  non-app control.
+
+Next up:
+
+- Redeploy Streamlit, log in through Stytch, and verify generic error states by
+  temporarily pointing the app at an unavailable API from secrets or local env.

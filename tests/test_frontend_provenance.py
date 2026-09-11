@@ -150,7 +150,7 @@ def test_review_ui_labels_successful_model_output() -> None:
     assert "AI-generated follow-up question" in caption_text
 
 
-def test_authenticated_workbench_keeps_logout_visible(
+def test_authenticated_workbench_keeps_sidebar_logout_visible(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("CLUTCH_DISABLE_STREAMLIT_LOGIN", raising=False)
@@ -180,6 +180,22 @@ def test_authenticated_workbench_keeps_logout_visible(
         if isinstance(node, ast.Call)
         for keyword in node.keywords
     )
+
+
+def test_frontend_error_copy_does_not_expose_raw_runtime_details() -> None:
+    source = APP_PATH.read_text(encoding="utf-8")
+
+    forbidden_fragments = [
+        "Technical detail",
+        "Detail:",
+        "_stytch_error_detail",
+        "check the backend",
+        "FastAPI is running",
+        "redirect URL and API keys",
+        "f\"{exc}",
+    ]
+    for fragment in forbidden_fragments:
+        assert fragment not in source
 
 
 def test_stytch_configured_shows_landing_gate(

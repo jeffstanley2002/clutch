@@ -23,15 +23,15 @@ _STAGE_LABELS = {
     "final_aggregation": "Final report aggregation",
 }
 _FAILURE_LABELS = {
-    "model_not_configured": "no model credentials were configured",
-    "budget_rejected": "the model spend ceiling rejected the call",
-    "provider_error": "the model provider did not complete the call",
-    "schema_validation_failed": "the model response failed schema validation",
-    "grounding_validation_failed": "the model response failed grounding validation",
-    "retrieval_failed": "retrieval did not complete",
-    "fallback_failed": "the fallback path did not complete",
-    "persistence_failed": "derived result persistence did not complete",
-    "unknown": "the stage failed for a safely redacted reason",
+    "model_not_configured": "AI review is not available right now",
+    "budget_rejected": "AI review is temporarily paused",
+    "provider_error": "AI review did not complete",
+    "schema_validation_failed": "AI review returned an unusable result",
+    "grounding_validation_failed": "AI review returned an unsupported result",
+    "retrieval_failed": "supporting references could not be loaded",
+    "fallback_failed": "the backup review path did not complete",
+    "persistence_failed": "this result could not be saved",
+    "unknown": "this step did not complete",
 }
 
 
@@ -112,21 +112,6 @@ def _stytch_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _stytch_error_detail(exc: requests.RequestException) -> str:
-    response = getattr(exc, "response", None)
-    if response is not None:
-        try:
-            body = response.json()
-        except ValueError:
-            body = None
-        if isinstance(body, dict) and body.get("error_message"):
-            error_type = body.get("error_type", "")
-            return f"{error_type}: {body['error_message']}" if error_type else str(
-                body["error_message"]
-            )
-    return str(exc)
-
-
 def _send_stytch_magic_link(email: str) -> None:
     redirect_url = _stytch_redirect_url()
     _stytch_post(
@@ -168,10 +153,10 @@ def _handle_stytch_redirect() -> None:
         return
     try:
         _authenticate_stytch_magic_link(str(token))
-    except requests.RequestException as exc:
-        st.session_state.stytch_auth_error = str(exc)
-    except (KeyError, TypeError, ValueError) as exc:
-        st.session_state.stytch_auth_error = f"Invalid Stytch response: {exc}"
+    except requests.RequestException:
+        st.session_state.stytch_auth_error = True
+    except (KeyError, TypeError, ValueError):
+        st.session_state.stytch_auth_error = True
     else:
         st.session_state.pop("stytch_auth_error", None)
         st.query_params.clear()
@@ -503,11 +488,10 @@ def _render_landing_gate() -> None:
                 else:
                     try:
                         _send_stytch_magic_link(email.strip())
-                    except requests.RequestException as exc:
+                    except requests.RequestException:
                         st.error(
-                            "Stytch could not send the login link. Check the "
-                            "redirect URL and API keys, then retry. Detail: "
-                            f"{_stytch_error_detail(exc)}"
+                            "The login link could not be sent. Check the email "
+                            "address and try again in a moment."
                         )
                     else:
                         st.session_state.stytch_link_sent_to = email.strip()
@@ -515,7 +499,7 @@ def _render_landing_gate() -> None:
             if st.session_state.get("stytch_auth_error"):
                 st.error(
                     "The login link could not be verified. Request a fresh link "
-                    f"and try again. Detail: {st.session_state.stytch_auth_error}"
+                    "and try again."
                 )
             if st.session_state.get("stytch_link_sent_to"):
                 st.caption(
@@ -724,26 +708,6 @@ def _render_sidebar_nav() -> PageName:
                 st.rerun()
         st.caption(f"Practice profile `{st.session_state.profile_id[:8]}`")
     return cast(PageName, selected or "Review")
-
-
-def _render_account_bar() -> None:
-    if not _is_authenticated():
-        return
-
-    name = st.session_state.get("stytch_user_email") or "Signed in"
-    with st.container(key="account_bar"):
-        left, right = st.columns([0.78, 0.22], vertical_alignment="center")
-        with left:
-            st.caption(f":material/account_circle: Signed in as {name}")
-        with right:
-            if st.button(
-                "Log out",
-                icon=":material/logout:",
-                key="main_logout_button",
-                width="stretch",
-            ):
-                _logout_stytch()
-                st.rerun()
 
 
 def _origin_label(origin: str | None, *, item: str) -> str:
@@ -998,7 +962,7 @@ def _render_review_page() -> None:
                 placeholder="https://github.com/owner/repository",
                 help=(
                     "HTTPS github.com URLs only. Public repositories need no token; "
-                    "private access remains backend-only."
+                    "private access is handled server-side."
                 ),
             )
             ref = st.text_input(
@@ -1054,11 +1018,10 @@ def _render_review_page() -> None:
                             },
                         )
                         ingestion = None
-            except requests.RequestException as exc:
+            except requests.RequestException:
                 st.error(
-                    "The review service could not complete this request. Keep the "
-                    "code here, check that FastAPI is running, then try again. "
-                    f"Technical detail: {exc}"
+                    "The review could not complete. Your input is still here; "
+                    "try again in a moment."
                 )
             else:
                 st.session_state.review_result = review
@@ -1190,10 +1153,10 @@ def _load_feedback(session_id: str) -> dict[str, Any] | None:
     try:
         with st.spinner("Assembling the final feedback report…"):
             return _api_request("GET", f"/interview/{session_id}/feedback")
-    except requests.RequestException as exc:
+    except requests.RequestException:
         st.error(
             "The final report could not be loaded. The interview is still complete; "
-            f"retry after checking the backend. Technical detail: {exc}"
+            "try again in a moment."
         )
         return None
 
@@ -1289,10 +1252,10 @@ def _render_interview_page() -> None:
                             "questions": review["questions"],
                         },
                     )
-            except requests.RequestException as exc:
+            except requests.RequestException:
                 st.error(
-                    "The interview could not start. Check the backend and try "
-                    f"again. Technical detail: {exc}"
+                    "The interview could not start. Your review is still saved; "
+                    "try again in a moment."
                 )
             else:
                 st.session_state.interview_result = interview
@@ -1376,10 +1339,10 @@ def _render_interview_page() -> None:
                     "answer": answer,
                 },
             )
-    except requests.RequestException as exc:
+    except requests.RequestException:
         st.error(
-            "The answer was not accepted. Your text remains here; check the backend "
-            f"and try again. Technical detail: {exc}"
+            "The answer was not accepted. Your text remains here; try again in a "
+            "moment."
         )
     else:
         st.session_state.interview_result = next_state
@@ -1396,10 +1359,9 @@ def _load_progress() -> dict[str, Any] | None:
                 "GET",
                 f"/progress/{st.session_state.profile_id}",
             )
-    except requests.RequestException as exc:
+    except requests.RequestException:
         st.error(
-            "Progress could not be loaded. Check the backend and try again. "
-            f"Technical detail: {exc}"
+            "Progress could not be loaded. Try again in a moment."
         )
         return None
 
@@ -1489,10 +1451,10 @@ def _render_progress_page() -> None:
                     "POST",
                     f"/progress/{st.session_state.profile_id}/snapshots",
                 )
-        except requests.RequestException as exc:
+        except requests.RequestException:
             st.error(
                 "The snapshot was not saved. The current summary is unchanged; "
-                f"try again after checking the backend. Technical detail: {exc}"
+                "try again in a moment."
             )
         else:
             st.session_state.progress_result = saved
@@ -1547,16 +1509,6 @@ st.markdown(
     }
     [data-testid="stSidebar"] {
         border-right: 1px solid var(--clutch-border);
-    }
-    .st-key-account_bar {
-        margin-bottom: 1rem;
-        padding: 0.55rem 0.7rem;
-        border: 1px solid var(--clutch-border);
-        border-radius: 0.5rem;
-        background: var(--clutch-surface);
-    }
-    .st-key-account_bar [data-testid="stCaptionContainer"] {
-        margin-bottom: 0;
     }
     textarea, .stTextArea textarea {
         font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
@@ -1635,7 +1587,6 @@ if _auth_configured() and authenticated_profile_id is None:
 
 _initialize_state(authenticated_profile_id)
 active_page = _render_sidebar_nav()
-_render_account_bar()
 if active_page == "Review":
     _render_review_page()
 elif active_page == "Interview":
