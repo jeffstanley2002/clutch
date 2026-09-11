@@ -1331,6 +1331,8 @@ Verification:
 Open issues:
 
 - The Redis Blueprint prompt still needs to be pushed and synced in Render.
+- Render rejected the follow-up deploy; the Blueprint defaults were then
+  hardened so boolean/numeric env values are quoted as strings.
 
 Next up:
 

@@ -10,9 +10,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.11
       - key: CLUTCH_REQUIRE_AUTH
-        value: true
+        value: "true"
       - key: LANGFUSE_OBSERVE_DECORATOR_IO_CAPTURE_ENABLED
-        value: false
+        value: "false"
       - key: DATABASE_URL
         sync: false
       - key: OPENAI_API_KEY
@@ -24,15 +24,15 @@ services:
       - key: CLUTCH_RETRIEVAL_STRATEGY
         value: local_lexical
       - key: CLUTCH_MODEL_PER_REQUEST_USD
-        value: 0.10
+        value: "0.10"
       - key: CLUTCH_MODEL_DAILY_USD
-        value: 1.00
+        value: "1.00"
       - key: GITHUB_TOKEN
         sync: false
       - key: GITHUB_MCP_URL
         value: ""
       - key: LANGFUSE_TRACING_ENABLED
-        value: true
+        value: "true"
       - key: LANGFUSE_PUBLIC_KEY
         sync: false
       - key: LANGFUSE_SECRET_KEY
