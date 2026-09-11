@@ -717,7 +717,10 @@ def _normalize_grounding(
         )
     if len(validated_model_findings) != len(context.static_findings):
         logger.warning(
-            "grounding validation failed: model finding count mismatch",
+            "grounding validation failed: model finding count mismatch "
+            "model_finding_count=%d static_finding_count=%d",
+            len(validated_model_findings),
+            len(context.static_findings),
             extra={
                 "model_finding_count": len(validated_model_findings),
                 "static_finding_count": len(context.static_findings),
