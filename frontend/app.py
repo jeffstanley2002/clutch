@@ -8,7 +8,6 @@ from typing import Any, Literal, cast
 from urllib.parse import unquote, urlencode, urlparse
 from uuid import uuid4
 
-import pandas as pd
 import requests
 import streamlit as st
 
@@ -1348,6 +1347,8 @@ def _render_progress_page() -> None:
             icon=":material/replay:",
         )
     if progress["improved_areas"] or progress["persistent_issues"]:
+        import pandas as pd
+
         st.bar_chart(
             pd.Series(
                 {

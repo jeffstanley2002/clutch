@@ -26,8 +26,9 @@ review, interview-assessment, and progress screenshots from the five-service
 Compose stack live under `docs/images/` and are embedded in the README.
 `DESIGN.md` passes the premium strict audit and official linter with zero
 errors or warnings. Streamlit AppTest covers model/fallback origins, anchored
-links, the exact GitHub scope message, the auth landing gate, and correct
-top-level parsing of the hosted API settings in the Streamlit secrets example.
+links, the exact GitHub scope message, the auth landing gate, correct top-level
+parsing of the hosted API settings in the Streamlit secrets example, and a
+guard that prevents `pandas` from being imported during initial app startup.
 
 ## Decisions
 
@@ -70,3 +71,6 @@ top-level parsing of the hosted API settings in the Streamlit secrets example.
 - No user-account picker, historical snapshot list, report export format, or
   backend-side JWT verification; Streamlit owns user login for the v1 demo.
 - SSE/live token streaming is deferred until interview behavior is richer.
+- Streamlit Community Cloud can still show its host-owned dark skeleton while a
+  sleeping app wakes or starts. The app can reduce this window, but cannot fully
+  replace that wrapper screen from inside Streamlit code.

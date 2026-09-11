@@ -1,3 +1,4 @@
+import ast
 import tomllib
 from pathlib import Path
 
@@ -158,3 +159,20 @@ def test_streamlit_secrets_example_keeps_api_settings_at_root() -> None:
     assert secrets["stytch"]["environment"] == "test"
     assert "CLUTCH_API_BASE_URL" not in secrets["stytch"]
     assert "CLUTCH_API_KEY" not in secrets["stytch"]
+
+
+def test_frontend_does_not_eagerly_import_progress_chart_dependency() -> None:
+    tree = ast.parse(APP_PATH.read_text(encoding="utf-8"))
+    top_level_imports = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.Import | ast.ImportFrom)
+    ]
+
+    imported_modules = {
+        alias.name.split(".", maxsplit=1)[0]
+        for node in top_level_imports
+        for alias in node.names
+    }
+
+    assert "pandas" not in imported_modules

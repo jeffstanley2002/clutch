@@ -1473,3 +1473,37 @@ Next up:
 
 - If the landing reads well, redeploy Streamlit and check the public/incognito
   view.
+
+## 2026-09-11 (Day 16 hosted startup loading pass)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Identified the attached dark skeleton as Streamlit Community Cloud wrapper UI
+  shown before the Streamlit script has finished waking/starting, not a Clutch
+  page state.
+- Removed the eager top-level `pandas` import from the Streamlit app. Progress
+  now imports it only when rendering the chart, so the landing/review path does
+  less work before first paint.
+- Added a frontend regression test that prevents reintroducing `pandas` as an
+  initial app-start import.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 5 passed in the project `.venv`.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+- Premium frontend strict audit passed with zero findings.
+
+Open issues:
+
+- Streamlit Community Cloud can still show its own dark skeleton while a sleeping
+  app wakes. This code change shortens the startup window; fully removing that
+  host-owned screen would require moving off Streamlit Community Cloud or adding
+  an external keep-warm/hosting strategy.
+
+Next up:
+
+- Redeploy the Streamlit app, then verify the hosted public/incognito load and
+  note whether the skeleton duration is acceptable.
