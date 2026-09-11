@@ -871,7 +871,7 @@ def _render_finding(finding: dict[str, Any]) -> None:
 
 def _render_review_page() -> None:
     st.subheader(
-        f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="violet"
+        f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="gray"
     )
     st.write(
         "Paste Python or fetch a public GitHub repository/PR through the read-only "
@@ -969,6 +969,7 @@ def _render_review_page() -> None:
                 st.session_state.interview_result = None
                 st.session_state.feedback_report = None
                 st.session_state.progress_result = None
+                st.rerun()
 
     review = st.session_state.review_result
     if review is None:
@@ -1158,7 +1159,7 @@ def _render_feedback_report(report: dict[str, Any]) -> None:
 
 def _render_interview_page() -> None:
     st.subheader(
-        f"{_PAGE_ICONS['Interview']} 2 · Practice the explanation", divider="violet"
+        f"{_PAGE_ICONS['Interview']} 2 · Practice the explanation", divider="gray"
     )
     review = st.session_state.review_result
     if review is None or not review.get("questions"):
@@ -1305,7 +1306,7 @@ def _load_progress() -> dict[str, Any] | None:
 
 def _render_progress_page() -> None:
     st.subheader(
-        f"{_PAGE_ICONS['Progress']} 3 · Track the pattern", divider="violet"
+        f"{_PAGE_ICONS['Progress']} 3 · Track the pattern", divider="gray"
     )
     st.write(
         "Progress is based on repeated finding categories for this generated "
@@ -1401,6 +1402,15 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    #MainMenu,
+    header {
+        visibility: hidden;
+        height: 0;
+    }
 
     :root {
         --clutch-bg: #F7F6F3;
