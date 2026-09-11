@@ -1478,6 +1478,19 @@ st.markdown(
         visibility: hidden;
         height: 0;
     }
+    /* The sidebar's "reopen" control lives inside stToolbar, so the rule
+       above hides it once a user collapses the sidebar, leaving no way
+       back in (nav and logout live only in the sidebar). Force it back
+       to visible and pin it so it stays clickable despite the
+       zero-height parent. */
+    [data-testid="stExpandSidebarButton"] {
+        visibility: visible !important;
+        height: auto !important;
+        position: fixed !important;
+        top: 0.6rem;
+        left: 0.6rem;
+        z-index: 999999;
+    }
 
     :root {
         --clutch-bg: #F7F6F3;
