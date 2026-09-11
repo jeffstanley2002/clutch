@@ -119,7 +119,9 @@ Recommended path:
 
 1. In Render, choose **New → Blueprint** and connect this GitHub repository.
 2. Select the deployment branch and let Render read the root `render.yaml`.
-3. Enter every value marked `sync: false` when Render prompts for it.
+3. Enter every value marked `sync: false` when Render prompts for it. Paste
+   `REDIS_URL` too if you want shared cache/spend state from the first deploy;
+   leave it empty only when deploying without Redis.
 4. Confirm the free plan, then apply the Blueprint.
 5. Wait for `/health` to pass and copy the service's
    `https://<clutch-api>.onrender.com` URL.
@@ -146,16 +148,17 @@ Set these Render secrets (`DATABASE_URL`, `OPENAI_API_KEY`, and
 - `LANGFUSE_SECRET_KEY=<rotated key>`
 - `GITHUB_TOKEN=<rotated fine-grained token>` only if private repositories are
   part of the demo
-- `REDIS_URL=<Redis Cloud URL>` only if shared retrieval/spend caching is needed
+- `REDIS_URL=<Redis Cloud URL>` for shared retrieval/spend caching
 
 The blueprint supplies the non-secret defaults, including `gpt-5.4-mini`,
 `text-embedding-3-small`, `CLUTCH_RETRIEVAL_STRATEGY=local_lexical`, API-key
 enforcement, spend ceilings, in-process GitHub MCP, and redacted Langfuse IO.
 Set `LANGFUSE_BASE_URL` to the region containing the rotated project.
 
-Redis is optional for a single free Render instance. Add `REDIS_URL` later only
-if shared cache/spend counters across replicas are needed. Without Redis, the
-same per-call and per-process daily model ceilings still apply.
+Redis is optional for a single free Render instance, but the Blueprint now
+prompts for `REDIS_URL` so Redis can be enabled during first deploy. Without
+Redis, leave it empty; the same per-call and per-process daily model ceilings
+still apply.
 
 Free Render services can cold-start after idle periods, so allow the first
 health request extra time.

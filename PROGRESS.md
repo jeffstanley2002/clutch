@@ -1310,3 +1310,29 @@ Next up:
 
 - Push the security-gate repair, confirm the GitHub Actions run is green, then
   continue the Render and Streamlit Community Cloud deployment runbook.
+
+## 2026-09-11 (Day 16 Render Redis Blueprint prompt)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Added `REDIS_URL` as a `sync: false` Render Blueprint environment variable so
+  first deploy can collect the Redis connection string instead of requiring a
+  manual post-deploy service edit.
+- Updated the free deployment runbook and infrastructure memory to reflect that
+  Redis remains optional, but can now be enabled during the initial Blueprint
+  flow.
+
+Verification:
+
+- Parsed `render.yaml` successfully with Ruby YAML.
+
+Open issues:
+
+- The Redis Blueprint prompt still needs to be pushed and synced in Render.
+
+Next up:
+
+- Push the Blueprint update, paste the Redis URL when Render prompts, then wait
+  for `/health` before updating Streamlit's `CLUTCH_API_BASE_URL`.

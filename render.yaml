@@ -41,3 +41,5 @@ services:
         value: https://jp.cloud.langfuse.com
       - key: CLUTCH_API_KEY
         sync: false
+      - key: REDIS_URL
+        sync: false

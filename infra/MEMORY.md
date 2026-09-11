@@ -50,7 +50,8 @@ flags rather than default resources.
   Streamlit Cloud UI deployment. The runbook maps every hosted secret to its
   provider, distinguishes pooled runtime from direct admin database URLs, and
   keeps Streamlit's `CLUTCH_*` settings above `[auth]` so TOML parses them at the
-  root.
+  root. The Render Blueprint prompts for optional `REDIS_URL` so shared
+  retrieval-cache and spend-counter state can be enabled during first deploy.
 - Local app runtime can run without app containers: keep Docker Postgres/Redis
   and LocalStack up, then run MCP, FastAPI, and Streamlit from `.venv`.
 
