@@ -58,7 +58,8 @@ guard that prevents `pandas` from being imported during initial app startup.
 - `.streamlit/config.toml` sets `[client].toolbarMode = "viewer"` and the app
   stylesheet hides reachable Streamlit toolbar/menu chrome. Streamlit Community
   Cloud can still show owner/deployment controls such as “Manage app” to signed
-  in owners outside the app DOM.
+  in owners outside the app DOM. Do not hide Streamlit's `header` element: it
+  contains the sidebar reopen control after the sidebar is collapsed.
 - The authenticated workbench forces Streamlit's sidebar to start expanded; the
   signed-in identity and Log out action live in the sidebar rather than in a
   main-page account strip.

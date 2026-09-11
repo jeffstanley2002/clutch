@@ -196,8 +196,7 @@ def _render_landing_gate() -> None:
 
         [data-testid="stToolbar"],
         [data-testid="stDecoration"],
-        #MainMenu,
-        header {
+        #MainMenu {
             visibility: hidden;
             height: 0;
         }
@@ -1475,8 +1474,7 @@ st.markdown(
     [data-testid="stToolbar"],
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"],
-    #MainMenu,
-    header {
+    #MainMenu {
         visibility: hidden;
         height: 0;
     }

@@ -198,6 +198,13 @@ def test_frontend_error_copy_does_not_expose_raw_runtime_details() -> None:
         assert fragment not in source
 
 
+def test_frontend_does_not_hide_streamlit_header_sidebar_toggle() -> None:
+    source = APP_PATH.read_text(encoding="utf-8")
+
+    assert "header {" not in source
+    assert "header," not in source
+
+
 def test_stytch_configured_shows_landing_gate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

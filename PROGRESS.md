@@ -1622,3 +1622,37 @@ Next up:
 
 - Redeploy Streamlit, log in through Stytch, and verify generic error states by
   temporarily pointing the app at an unavailable API from secrets or local env.
+
+## 2026-09-11 (Day 16 sidebar reopen fix)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Fixed the collapsed-sidebar trap by no longer hiding Streamlit's `header`
+  element in either the landing gate or authenticated workbench styles.
+- Kept the toolbar/menu chrome hidden while preserving the built-in sidebar
+  reopen affordance.
+- Added a frontend regression test that prevents reintroducing `header` hiding.
+
+Learned / decided:
+
+- Streamlit's sidebar reopen control lives in the header area, so hiding the
+  whole header makes a collapsed sidebar feel permanently gone.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 9 passed.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Premium frontend strict audit passed with zero findings.
+
+Open issues:
+
+- Recheck visually on Streamlit Cloud after redeploy because the exact header
+  affordance is host/version controlled.
+
+Next up:
+
+- Redeploy Streamlit, collapse the sidebar, and confirm the reopen button stays
+  visible.
