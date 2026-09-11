@@ -1,14 +1,19 @@
+[client]
+toolbarMode = "viewer"
+
 [theme]
-primaryColor = "#365FD9"
-backgroundColor = "#F5F7FB"
+primaryColor = "#267A5B"
+backgroundColor = "#F7F6F3"
 secondaryBackgroundColor = "#FFFFFF"
-textColor = "#172033"
+textColor = "#171717"
 font = "sans serif"
-baseRadius = "0.55rem"
-buttonRadius = "0.55rem"
+baseRadius = "0.5rem"
+buttonRadius = "0.5rem"
 showWidgetBorder = true
 baseFontSize = 16
+linkColor = "#267A5B"
+codeFont = "monospace"
 
 [theme.sidebar]
-backgroundColor = "#EEF2F8"
+backgroundColor = "#F1F1EE"
 secondaryBackgroundColor = "#FFFFFF"

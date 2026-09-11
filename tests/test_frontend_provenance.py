@@ -132,12 +132,20 @@ def test_stytch_configured_shows_landing_gate(
 
     assert any("Email me a login link" in item.label for item in app.button)
     markdown_text = " ".join(item.value for item in app.markdown)
-    assert "Clutch turns code review into interview prep" in markdown_text
-    assert "From code to signal" in markdown_text
-    assert "Stytch handles email magic-link authentication" in markdown_text
+    assert "Review your code. Explain your decisions." in markdown_text
+    assert "Evidence-based review" in markdown_text
+    assert "Interview practice" in markdown_text
+    assert "Example finding" in markdown_text
+    assert "AI review pipeline" in markdown_text
+    assert "GitHub reads go through one scoped, read-only MCP server" in markdown_text
+    assert "Prompt-injection tests treat code and README text as untrusted" in markdown_text
     assert "Recruiters" not in markdown_text
+    assert "recruiters" not in markdown_text
+    assert "demo" not in markdown_text
     assert "pretending to be AI" not in markdown_text
-    assert "Review the evidence" not in markdown_text
+    assert "CodeFinding[] -> InterviewQuestion[] -> FeedbackReport" not in markdown_text
+    assert "Every model-facing boundary is typed" not in markdown_text
+    assert "0 raw" not in markdown_text
 
 
 def test_streamlit_secrets_example_keeps_api_settings_at_root() -> None:

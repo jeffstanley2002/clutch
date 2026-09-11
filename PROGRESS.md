@@ -1379,3 +1379,97 @@ Next up:
 - Paste the `[stytch]` secrets into Streamlit Community Cloud, restart the app,
   request a magic link, and verify that the redirected session shows the logout
   control before running the hosted review smoke.
+
+## 2026-09-11 (Day 16 landing polish)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Increased the landing hero's spacing around the Stytch email magic-link form
+  so the login box no longer sits tightly under the capability chips.
+- Reworked the unauthenticated landing copy to foreground AI Engineer portfolio
+  signals: Pydantic structured outputs, RAG citations, the read-only MCP GitHub
+  boundary, prompt-injection guardrails, evals, tracing, caching, and
+  privacy-safe persistence.
+- Added Streamlit `toolbarMode = "viewer"` and app CSS hiding for reachable
+  top-right Streamlit toolbar/menu chrome; removed old local config keys that
+  were ignored by the project Streamlit version.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 4 passed in the project `.venv`.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+- Streamlit config readback shows `toolbarMode = "viewer"` with no invalid-key
+  warnings in the project `.venv`.
+
+Open issues:
+
+- Streamlit Community Cloud may still show owner-only controls such as
+  “Manage app” to the signed-in app owner; verify the public/incognito view
+  after redeploying.
+
+Next up:
+
+- Deploy the updated Streamlit app, then verify the public landing page in an
+  incognito window before continuing the hosted review smoke.
+
+## 2026-09-11 (Day 16 technical landing pass)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Replaced the landing hero's simple practice-loop cards with a recruiter-facing
+  review-to-interview pipeline preview: input, parse + RAG, agent, and evaluate.
+- Added a typed-output sample line
+  `CodeFinding[] -> InterviewQuestion[] -> FeedbackReport` to make the schema
+  boundary visible on the first screen.
+- Added an implementation-evidence strip with current rubric corpus, golden
+  review, prompt-injection, and raw-data retention signals.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 4 passed in the project `.venv`.
+- Ruff passed for `frontend/app.py` and `tests/test_frontend_provenance.py`.
+- Mypy passed for `frontend/app.py`.
+
+Open issues:
+
+- Final visual judgment should happen in the running local Streamlit app and
+  again in an incognito hosted view after redeploying.
+
+Next up:
+
+- Refresh the local frontend, check the first viewport and mobile width, then
+  deploy if the updated landing page reads well.
+
+## 2026-09-11 (Day 16 public landing copy correction)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Removed recruiter/demo framing from the unauthenticated landing page so it
+  reads as a public product page for users.
+- Removed the typed schema-chain sample and the “0 raw” metric from the landing
+  page, replacing them with user-facing review, practice, scope, and progress
+  highlights.
+- Updated the landing test to guard against reintroducing recruiter/demo copy or
+  the removed schema/raw-retention callouts.
+
+Verification:
+
+- `tests/test_frontend_provenance.py`: 4 passed in the project `.venv`.
+- Ruff and mypy had already passed after the app copy edits; the final test-only
+  assertion wording change was then rechecked with pytest.
+
+Open issues:
+
+- Refresh the running local frontend and visually confirm the public wording.
+
+Next up:
+
+- If the landing reads well, redeploy Streamlit and check the public/incognito
+  view.

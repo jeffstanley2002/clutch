@@ -1,60 +1,61 @@
 ---
-version: alpha
+version: v3-editorial
 name: "Clutch"
-description: "A focused code-review workbench that turns evidence into interview practice."
+description: "A restrained, evidence-led code-review workbench that turns findings into interview practice."
 colors:
-  primary: "#365FD9"
-  primary-strong: "#2448B5"
-  focus: "#88A4FF"
-  background: "#F5F7FB"
+  bg: "#F7F6F3"
   surface: "#FFFFFF"
-  surface-muted: "#EEF2F8"
-  text: "#172033"
-  text-muted: "#5E6A7D"
-  border: "#D9E0EC"
-  warning: "#C77700"
-  danger: "#B42318"
+  surface-2: "#F1F1EE"
+  border: "#E1E1DC"
+  accent: "#267A5B"
+  accent-strong: "#1B5C44"
+  accent-muted: "#E3F0E9"
+  text: "#171717"
+  text-muted: "#666666"
+  warning: "#8A5A00"
+  danger: "#B3261E"
+  success: "#267A5B"
 typography:
   sans:
-    fontFamily: '"Avenir Next", Avenir, "Segoe UI", sans-serif'
+    fontFamily: '"Inter", "Avenir Next", "Segoe UI", sans-serif'
   mono:
-    fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace'
+    fontFamily: '"JetBrains Mono", "SFMono-Regular", Consolas, monospace'
 rounded:
-  DEFAULT: "0.55rem"
+  DEFAULT: "0.5rem"
   sm: "0.35rem"
-  md: "0.55rem"
-  lg: "0.8rem"
+  md: "0.5rem"
+  lg: "0.6rem"
 spacing:
   section-gap: "2rem"
   page-max: "76rem"
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.surface}"
+    backgroundColor: "{colors.accent}"
+    textColor: "#FFFFFF"
     rounded: "{rounded.md}"
   button-primary-hover:
-    backgroundColor: "{colors.primary-strong}"
+    backgroundColor: "{colors.accent-strong}"
   focus-ring:
-    backgroundColor: "{colors.focus}"
-    size: "3px"
+    backgroundColor: "{colors.accent}"
+    size: "2px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
     rounded: "{rounded.md}"
   card-muted:
-    backgroundColor: "{colors.surface-muted}"
+    backgroundColor: "{colors.surface-2}"
     textColor: "{colors.text-muted}"
   divider:
     backgroundColor: "{colors.border}"
     height: "1px"
   status-warning:
     backgroundColor: "{colors.warning}"
-    textColor: "{colors.text}"
+    textColor: "#FFFFFF"
   status-danger:
     backgroundColor: "{colors.danger}"
-    textColor: "{colors.surface}"
+    textColor: "#FFFFFF"
   provenance-label:
-    backgroundColor: "{colors.surface-muted}"
+    backgroundColor: "{colors.surface-2}"
     textColor: "{colors.text-muted}"
 ---
 
@@ -62,13 +63,34 @@ components:
 
 ## Overview
 
+### v3 direction note
+
+Clutch went through two prior visual registers: v1 was a restrained light
+"annotated review notebook" (cobalt accent, no gradients); v2 was a bold,
+requested dark-mode departure with a violet-to-cyan gradient. v3 reverses
+course deliberately, after concrete feedback that v2 read as a generic
+"AI-generated landing page" — gradient headline text, glowing dots, glass
+panels, a purple/blue palette associated with contemporary AI-product
+branding, and an abstract workflow diagram in place of the actual product.
+v3 keeps v1's restraint and v2's native-Streamlit-widget habits (badges,
+`st.status`, `st.metric`, `st.toast`, sidebar navigation), but returns to a
+light, editorial developer-tool palette with a green accent, shows an actual
+annotated code-review mock in the hero instead of an abstract pipeline
+diagram, and rewrites marketing copy to describe concrete product behavior
+instead of generic transformation language ("X turns Y into Z"). The
+evidence-first product principles (provenance, grounded citations, honest
+confidence, no fake certainty) are unchanged across all three versions.
+
 ### Creative North Star
 
-Clutch should feel like an engineer's annotated review notebook: precise,
-calm, and evidence-led, with blue review marks connecting a concrete code
-observation to the question it creates. The authenticated product is a working
-surface; its public sign-in gate should preview that same workflow rather than
-switching to a generic marketing aesthetic.
+Clutch should read as a serious, practical developer tool — closer to a
+code-review or linting product than an AI marketing site. The hero shows the
+product itself (an annotated finding with a follow-up question) in the first
+few seconds rather than asking the visitor to interpret an abstract workflow
+diagram. One muted green accent marks primary actions and the small set of
+semantic tags; it is not a gradient and does not glow. The authenticated
+workbench and the public sign-in gate share the same restrained palette and
+component language.
 
 ### Product context and register
 
@@ -79,33 +101,47 @@ switching to a generic marketing aesthetic.
 - **Locale and language policy:** English-only v1. User code remains verbatim.
 - **Usage scene:** Laptop-first, focused sessions with dense code and concise
   feedback; narrow layouts must still reflow without horizontal page scroll.
-- **Register:** Product.
+- **Register:** Product, editorial, developer-tool — not marketing/SaaS.
 - **Memorable signature:** Each review moves from evidence to an interviewer
-  follow-up, visually joined by the same restrained cobalt accent.
-- **Restraint:** Code, findings, citations, and recovery guidance take priority
-  over decoration or animation.
-- **Anti-references:** Avoid cyberpunk terminal styling, acid-on-black AI
-  dashboards, generic gradient hero cards, and gamified interview scoring.
+  follow-up; the hero demonstrates this directly with one real-looking
+  annotated finding instead of describing it abstractly.
+- **Restraint:** Code, findings, citations, and recovery guidance take
+  priority over decoration. No gradients, glassmorphism, glow, or ambient
+  motion anywhere in the product.
+- **Anti-references:** Avoid cyberpunk terminal styling, dark purple/blue
+  "AI product" gradients and glow, gamified interview scoring, oversized
+  gradient display type, generic two-column SaaS hero layouts, and vague
+  transformation copy ("X turns Y into Z").
+- **Copy discipline:** Prefer concrete, observable behavior over abstract
+  claims. E.g. "Questions an interviewer might ask next" beats "realistic
+  follow-up questions"; "Review a pull request before the interview" beats
+  "GitHub repo review."
 - **Token ownership/runtime mapping:** This file owns visual intent and exact
-  design tokens. `.streamlit/config.toml` maps supported theme tokens; the small
-  style adapter in `frontend/app.py` maps font, focus, textarea, width, and
-  scrollbar behavior that Streamlit does not expose in its theme file.
+  design tokens. `.streamlit/config.toml` maps supported theme tokens; the
+  small style adapter in `frontend/app.py` maps font, focus, textarea, width,
+  and scrollbar behavior that Streamlit does not expose in its theme file.
 
 ## Colors
 
-Cobalt `primary` marks the single main action and connective review emphasis.
-Blue-gray surfaces keep long code sessions quiet. `warning` and `danger` are
-semantic only and must always appear with text, never as the sole signal.
-`focus` is deliberately lighter than the action color so keyboard location is
-unambiguous. In forced-colors mode, system colors own focus and scrollbars.
+The app runs on a warm off-white (`bg`) page with white (`surface`) cards and
+a light neutral (`surface-2`) for the sidebar and code chrome. One muted green
+`accent` marks the primary action, links, active nav, and the small set of
+semantic tags (e.g. a finding's category); `accent-muted` is its pale
+background for tag chips. `warning` and `danger` are semantic only and must
+always appear with text or an icon, never as the sole signal. `focus` reuses
+`accent` at 2px so keyboard location is visible without introducing a second
+color. In forced-colors mode, system colors own focus and scrollbars.
 
 ## Typography
 
-Use Avenir Next where available, then Segoe UI and system sans for product
-copy. Code and technical evidence use SFMono-Regular or a platform monospace.
-Sentence case is standard; uppercase is reserved for short utility eyebrows
-and severity labels. Body copy stays at a 16px baseline with compact but
-readable line lengths.
+Use Inter where available, then Avenir Next, Segoe UI, and system sans for
+product copy. Code and technical evidence use JetBrains Mono, SFMono-Regular,
+or a platform monospace. Sentence case is standard; short uppercase tags
+(severity, category, difficulty, status badges) are the only intentional use
+of letter-spacing and all-caps — never body copy or headlines. Hero headline
+sizing stays in the 56–72px range at most (`clamp(2.1rem, 3.6vw, 3.4rem)`),
+well short of full-bleed display type. Body copy stays at a 16px baseline
+with compact but readable line lengths (~17–19px in the hero column).
 
 ## Layout
 
@@ -113,50 +149,66 @@ The workbench uses one centered column up to 76rem. Input precedes results so
 keyboard and screen-reader order follows the task. Major sections use a 2rem
 rhythm; related finding details stay inside one bordered container. At narrow
 widths, all content stacks and code owns any necessary internal overflow.
-Loading, errors, and empty guidance occupy the result region without moving the
-input controls.
+Loading, errors, and empty guidance occupy the result region without moving
+the input controls.
 
-The public sign-in gate uses one bordered, cobalt-ruled hero with two balanced
-columns: concise product value and login on the left, the real three-step
-practice loop on the right. The login explanation stays directly below its
-button. At narrow widths, the value, action, and workflow preview become one
-natural reading order without horizontal page overflow.
+The public sign-in gate uses one thin-bordered white hero card with two
+balanced columns: a plain wordmark, a concrete two-line headline, one short
+paragraph, a trust line, and the sign-in form on the left; an actual annotated
+code-review mock (filename, code, one finding with tag/explanation, one
+interview follow-up) on the right, labeled "Example finding" so it is never
+mistaken for a live result. Below the hero, three plain feature blocks
+(heading + one sentence, no cards or icons) state real product behavior, and
+the three technical-credibility panels (pipeline / agent boundary /
+production signals) stay as simple bordered cards for portfolio-review
+readers. At narrow widths, the columns stack in natural reading order without
+horizontal overflow. The authenticated workbench moves navigation into the
+sidebar (wordmark, workflow switcher, live session metrics) so the main
+column is reserved for the active page.
 
 ## Elevation & Depth
 
-Hierarchy comes from surface tone, border, spacing, and type—not decorative
-shadows. Static finding and question cards remain flat. Overlays may use the
-Streamlit platform elevation until the app introduces a shared overlay system.
+Hierarchy comes from surface tone, thin 1px borders, spacing, and type — not
+shadows, glow, or gradient fills. Cards are flat at rest and on hover; the
+code and explanation inside a card are the loudest thing in it. Overlays
+(`st.status`, `st.expander`) use the Streamlit platform elevation.
 
 ## Shapes
 
-Controls and review containers use the 0.55rem working radius. The 0.8rem large
-radius is reserved for high-level grouped surfaces. Avoid pills except for
-compact status tokens whose shape communicates their token-like behavior.
+Controls and containers use a 0.5rem working radius — small and square-ish,
+not pill-like. The 0.6rem large radius is reserved for the hero and other
+high-level grouped surfaces. Pills/rounded-full shapes are reserved for
+short status tags (severity, difficulty, origin badges); marketing chips and
+decorative pill rows are avoided.
 
 ## Components
 
 ### Foundational visual states
 
-Interactive controls need visible hover, pressed, disabled/busy, and a 3px
-`focus` outline. Loading uses one stable spinner message. Empty states explain
-what useful input looks like; errors state the failure and the next recovery
-step. Success, warning, and error never rely on color alone.
+Interactive controls need visible hover, pressed, disabled/busy, and a 2px
+`accent` focus outline. Loading uses one stable spinner message. Empty states
+explain what useful input looks like; errors state the failure and the next
+recovery step. Success, warning, and error never rely on color alone.
 
 ### Buttons and actions
 
-One solid cobalt action starts a review. Secondary actions use Streamlit's
-neutral treatment. Button labels use concrete verbs and retain their geometry
-while busy. Destructive actions are out of scope for read-only v1.
+One solid `accent`-filled primary action starts a review, starts/submits an
+interview turn, or saves a snapshot; each carries a concrete-verb label (e.g.
+"Email me a login link", "Review code", "Submit answer") and a matching
+Material icon — never vague labels like "Get started" or "Explore." Secondary
+actions use Streamlit's neutral treatment. Buttons retain their geometry
+while busy and never scale, glow, or lift on hover. Destructive actions are
+out of scope for read-only v1.
 
 ### Navigation and data display
 
-The product uses one horizontal workflow rail—Review → Interview → Progress—
-because these are actual stages in the practice loop. Streamlit's segmented
-control owns its keyboard and selection behavior. Navigation remains above the
-active work surface, uses the same stage names everywhere, and stacks naturally
-with the document at narrow widths. Request metadata is utility copy,
-subordinate to findings and questions.
+Workflow navigation—Review → Interview → Progress—lives in the sidebar as a
+segmented control, alongside the wordmark and live session metrics
+(confidence, finding count, interview turn) rendered with `st.metric`.
+Streamlit's segmented control owns its keyboard and selection behavior. The
+same stage names are used everywhere, and the sidebar stacks above the main
+column at narrow widths. Request metadata is utility copy, subordinate to
+findings and questions.
 
 GitHub scope is always rendered as a compact factual line—files included,
 files skipped, truncation, and `full-codebase analysis: no`. This line is part
@@ -165,45 +217,61 @@ of the result contract, not optional diagnostic decoration.
 ### Provenance and trust labels
 
 Every finding, follow-up question, interview assessment, retrieved citation,
-and final aggregation names its origin in text. Model success uses the calm
-primary/success treatment; missing or failed model calls use a persistent
-warning adjacent to the affected output. Provenance labels stay visually quiet
-through `surface-muted` and `text-muted`, but they appear before the content
-they qualify so a user never needs to infer whether AI ran. A disclosure may
-show model, prompt version, tokens, latency, estimated cost, and safe failure
-category; it never shows raw prompts, code, answers, or provider payloads.
+and final aggregation names its origin in text. Model success uses
+`st.success` with an icon; missing or failed model calls use a persistent
+`st.warning` adjacent to the affected output. Provenance labels stay visually
+quiet through `surface-2` and `text-muted` captions, but they appear before
+the content they qualify so a user never needs to infer whether AI ran.
+Per-stage disclosure uses one collapsed `st.status` row per stage (icon
+communicates running/complete/error) that expands to badges and `st.metric`
+values for model, prompt version, tokens, latency, and estimated cost; it
+never shows raw prompts, code, answers, or provider payloads.
 
 ### Forms and overlays
 
-Labels name user concepts: “Target role” and “Python code.” Help text states
-limits and privacy behavior. Validation preserves input and gives a correction.
-The code textarea has a generous fixed starting height and no manual resize.
-No browser-native alerts or destructive confirmation flows are used.
+Labels name user concepts: "Target role" and "Python code." Help text states
+limits and privacy behavior. Validation preserves input and gives a
+correction. The code textarea has a generous fixed starting height and no
+manual resize. No browser-native alerts or destructive confirmation flows are
+used.
 
 ### Iconography
 
-Use Streamlit's established icons only when an icon improves scanning. Actions
-retain text labels; decorative code or AI glyphs are avoided.
+Use Streamlit's established Material icons only when an icon improves
+scanning (button actions, sidebar metrics, status states). No decorative
+glowing dots, AI glyphs, or ornamental icon use in marketing copy.
 
 ### Motion
 
-Motion communicates loading or a state transition only. Do not add ambient or
-decorative animation. Respect the platform's reduced-motion behavior.
+Motion communicates loading, a state transition, or a one-time completion
+moment only (`st.balloons` on finishing an interview, `st.toast` for a
+transient save confirmation). No hover lift, glow, or ambient/looping
+animation anywhere. Respect the platform's reduced-motion behavior.
 
 ### Content and data visualization
 
-Voice is direct and practical: identify evidence, explain why it matters, and
-name the next action. Confidence is supporting metadata, not a performance
-score. Future charts require a textual summary and use semantic colors from
-this palette.
+Voice is direct, concrete, and practical: identify evidence, explain why it
+matters, and name the next action. Avoid abstract marketing formulas
+("X turns Y into Z") and vague feature claims; describe observable behavior
+instead. Confidence is supporting metadata, shown as an `st.metric`, not a
+performance score or leaderboard. Progress charts (`st.bar_chart`) summarize
+only real derived counts (e.g. improved vs. recurring categories), never a
+fabricated trend, and use the `accent` color from this palette.
 
 ## Do's and Don'ts
 
 - **Do:** Keep the evidence-to-question relationship visible and predictable.
+- **Do:** Show the actual product (an annotated finding) in the hero instead
+  of an abstract workflow diagram.
 - **Do:** Explain empty, error, and fallback states in plain language.
 - **Do:** State bounded GitHub analysis scope and output provenance literally.
-- **Don't:** Style the product like a terminal or imply model certainty it does
-  not have.
-- **Don't:** Use “AI” as a generic label for deterministic or template output.
-- **Don't:** Let metadata, badges, or decoration compete with submitted code and
-  actionable findings.
+- **Do:** Reach for native Streamlit widgets (`st.badge`, `st.status`,
+  `st.metric`, `st.toast`) before hand-rolled HTML wherever one exists.
+- **Don't:** Use gradients, glassmorphism, glow, or a dark purple/blue palette
+  — these read as generic contemporary AI-product branding, not as this
+  product.
+- **Don't:** Imply model certainty the system does not have, or gamify the
+  interview score into a leaderboard/streak mechanic.
+- **Don't:** Use "AI" as a generic label for deterministic or template output.
+- **Don't:** Use vague CTAs ("Get started", "Explore") or abstract
+  transformation copy where a concrete action or behavior would do.

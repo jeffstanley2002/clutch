@@ -43,12 +43,21 @@ top-level parsing of the hosted API settings in the Streamlit secrets example.
   hashed Stytch user identity owns the profile ID.
 - UI state covers initial, validation, loading, success, empty, and service
   failure behavior.
-- The unauthenticated landing page is a hybrid marketing/product surface: it
-  explains the project, shows the review-to-interview-to-progress flow, and
-  names the concrete AI-engineering proof points before login.
+- The unauthenticated landing page is a public product surface: it explains the
+  project, shows a compact review-to-interview loop preview, and names the main
+  user-facing strengths before login: cited findings, GitHub review, interview
+  follow-ups, progress history, and private practice sessions. Keep recruiter
+  and demo-specific language off the page; avoid exposing internal schema-chain
+  shorthand or raw-retention slogans in the hero.
 - The landing hero uses a keyed native Streamlit container and columns. Raw HTML
   never spans the login widget, which keeps the workflow preview and login copy
-  inside the same responsive card at desktop and 390px.
+  inside the same responsive card at desktop and 390px. The Stytch form has an
+  explicit hero-local margin/padding treatment so the magic-link box does not
+  sit tightly against the capability chips.
+- `.streamlit/config.toml` sets `[client].toolbarMode = "viewer"` and the app
+  stylesheet hides reachable Streamlit toolbar/menu chrome. Streamlit Community
+  Cloud can still show owner/deployment controls such as “Manage app” to signed
+  in owners outside the app DOM.
 - Deployment placeholders use reviewed, line-local `detect-secrets`
   annotations; the repository does not suppress the keyword detector globally or
   weaken the committed baseline.

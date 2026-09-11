@@ -8,6 +8,7 @@ from typing import Any, Literal, cast
 from urllib.parse import unquote, urlencode, urlparse
 from uuid import uuid4
 
+import pandas as pd
 import requests
 import streamlit as st
 
@@ -187,148 +188,233 @@ def _render_landing_gate() -> None:
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        [data-testid="stToolbar"],
+        [data-testid="stDecoration"],
+        #MainMenu,
+        header {
+            visibility: hidden;
+            height: 0;
+        }
+        html, .stApp {
+            font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+            background: #F7F6F3;
+        }
         [data-testid="stMainBlockContainer"] {
-            padding-top: 1.75rem;
+            padding-top: 2rem;
             padding-bottom: 3rem;
         }
         .st-key-landing_hero {
-            position: relative;
-            overflow: hidden;
-            padding: clamp(1.4rem, 3vw, 2.6rem);
-            border: 1px solid #d9e0ec;
-            border-top: 4px solid #365fd9;
-            border-radius: 0.8rem;
-            background: #ffffff;
+            padding: clamp(1.4rem, 3vw, 2.4rem);
+            border: 1px solid #E1E1DC;
+            border-radius: 0.5rem;
+            background: #FFFFFF;
         }
         .st-key-landing_hero [data-testid="stHorizontalBlock"] {
-            gap: clamp(1.75rem, 4vw, 4rem);
+            gap: clamp(1.75rem, 4vw, 3.5rem);
         }
-        .clutch-eyebrow {
-            color: #365fd9;
-            font-size: 0.82rem;
+        .clutch-wordmark {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.4rem;
+        }
+        .clutch-wordmark-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 0.35rem;
+            background: #267A5B;
+            color: #FFFFFF;
             font-weight: 700;
-            letter-spacing: 0.045em;
-            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .clutch-wordmark-word {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #171717;
         }
         .clutch-hero-title {
-            max-width: 14ch;
-            margin: 0.7rem 0 1rem;
-            color: #172033;
-            font-size: clamp(2.7rem, 5vw, 4.6rem);
-            line-height: 0.96;
-            letter-spacing: -0.035em;
+            max-width: 16ch;
+            margin: 0 0 1rem;
+            color: #171717;
+            font-size: clamp(2.1rem, 3.6vw, 3.4rem);
+            line-height: 1.12;
+            letter-spacing: -0.01em;
+            font-weight: 700;
         }
         .clutch-hero-title > a {
             display: none;
         }
         .clutch-hero-copy {
-            max-width: 37rem;
+            max-width: 34rem;
             margin: 0;
-            color: #42506a;
-            font-size: clamp(1rem, 1.35vw, 1.14rem);
-            line-height: 1.65;
+            color: #444444;
+            font-size: 1.05rem;
+            line-height: 1.6;
         }
-        .clutch-proof-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.55rem;
-            margin: 1.25rem 0 0;
-        }
-        .clutch-chip {
-            border: 1px solid #c8d3e6;
-            border-radius: 999px;
-            color: #33415c;
-            background: #f5f7fb;
-            padding: 0.42rem 0.7rem;
+        .clutch-trust-line {
+            max-width: 34rem;
+            margin: 0.9rem 0 0;
+            color: #666666;
             font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        .clutch-signin-lead {
+            margin: 1.5rem 0 0.5rem;
+            color: #171717;
+            font-size: 0.95rem;
             font-weight: 600;
         }
+        .st-key-landing_hero [data-testid="stForm"] {
+            margin-top: 0.25rem;
+            padding: 1.1rem 1.15rem;
+            background: #FBFBFA;
+            border-color: #E1E1DC;
+            border-radius: 0.5rem;
+        }
+        .st-key-landing_hero [data-testid="stForm"] label p {
+            font-weight: 600;
+            color: #171717;
+        }
         .st-key-landing_hero [data-testid="stButton"] {
-            margin-top: 1.4rem;
+            margin-top: 0.6rem;
         }
         .st-key-landing_hero button[kind="primary"] {
-            min-height: 3rem;
-            padding-inline: 1.15rem;
-            font-weight: 700;
+            min-height: 2.75rem;
+            padding-inline: 1.1rem;
+            font-weight: 600;
         }
-        .clutch-preview {
-            display: grid;
-            gap: 0.7rem;
+        .clutch-cta-copy {
+            max-width: 34rem;
+            color: #666666;
+            font-size: 0.86rem;
+            line-height: 1.5;
+            margin: 0.6rem 0 0;
         }
         .clutch-preview-label {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            margin-bottom: 0.15rem;
-            color: #5e6a7d;
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
+            margin: 0 0 0.6rem;
+            color: #666666;
+            font-size: 0.82rem;
+            font-style: italic;
         }
-        .clutch-preview-label::after {
-            content: "";
-            flex: 1;
-            height: 1px;
-            background: #d9e0ec;
+        .clutch-code-card {
+            border: 1px solid #E1E1DC;
+            border-radius: 0.5rem;
+            background: #FBFBFA;
+            overflow: hidden;
         }
-        .clutch-note {
-            border: 1px solid #d9e0ec;
-            border-left: 4px solid #365fd9;
-            border-radius: 0.55rem;
-            background: #f8faff;
-            padding: 0.95rem 1rem;
-            color: #4c5a72;
-            font-size: 0.94rem;
+        .clutch-code-filename {
+            padding: 0.5rem 0.85rem;
+            border-bottom: 1px solid #E1E1DC;
+            color: #666666;
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 0.8rem;
+        }
+        .clutch-code-body {
+            display: block;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+            margin: 0;
+            padding: 0.9rem 0.85rem;
+            color: #171717;
+            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 0.85rem;
             line-height: 1.55;
         }
-        .clutch-note strong {
-            display: block;
-            margin-bottom: 0.3rem;
-            color: #172033;
+        .clutch-finding {
+            border-top: 1px solid #E1E1DC;
+            padding: 0.95rem 0.85rem;
         }
-        .clutch-note code {
-            white-space: normal;
-            color: #2448b5;
-            background: #eef2f8;
-            border-radius: 0.35rem;
-            padding: 0.12rem 0.3rem;
+        .clutch-finding-tag {
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.3rem;
+            background: #E3F0E9;
+            color: #1B5C44;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        .clutch-finding h3 {
+            margin: 0 0 0.4rem;
+            color: #171717;
+            font-size: 0.98rem;
+        }
+        .clutch-finding p {
+            margin: 0;
+            color: #444444;
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+        .clutch-followup {
+            border-top: 1px solid #E1E1DC;
+            padding: 0.95rem 0.85rem;
+        }
+        .clutch-followup span {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #666666;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .clutch-followup p {
+            margin: 0;
+            color: #171717;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+        .clutch-features {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.75rem;
+            margin-top: 2rem;
+            padding-top: 1.75rem;
+            border-top: 1px solid #E1E1DC;
+        }
+        .clutch-feature h3 {
+            margin: 0 0 0.4rem;
+            color: #171717;
+            font-size: 1rem;
+        }
+        .clutch-feature p {
+            margin: 0;
+            color: #666666;
+            font-size: 0.92rem;
+            line-height: 1.55;
         }
         .clutch-sections {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 1rem;
-            margin-top: 1.1rem;
+            margin-top: 1.75rem;
         }
         .clutch-panel {
-            border: 1px solid #d9e0ec;
-            border-radius: 0.55rem;
-            background: #ffffff;
+            border: 1px solid #E1E1DC;
+            border-radius: 0.5rem;
+            background: #FFFFFF;
             padding: 1.1rem;
-            min-height: 11.5rem;
         }
         .clutch-panel h2 {
-            margin: 0 0 0.7rem;
-            color: #172033;
-            font-size: 1.05rem;
-            letter-spacing: 0;
+            margin: 0 0 0.65rem;
+            color: #171717;
+            font-size: 1rem;
+            font-weight: 600;
         }
         .clutch-panel p,
         .clutch-panel li {
-            color: #4c5a72;
+            color: #666666;
             line-height: 1.6;
-            font-size: 0.96rem;
+            font-size: 0.92rem;
         }
         .clutch-panel ul {
             padding-left: 1.1rem;
             margin-bottom: 0;
-        }
-        .clutch-cta-copy {
-            max-width: 34rem;
-            color: #5e6a7d;
-            font-size: 0.9rem;
-            line-height: 1.55;
-            margin: 0.65rem 0 0;
         }
         @media (max-width: 820px) {
             .st-key-landing_hero [data-testid="stHorizontalBlock"] {
@@ -338,15 +424,12 @@ def _render_landing_gate() -> None:
                 flex: 1 1 100%;
                 width: 100%;
             }
-            .clutch-sections {
+            .clutch-sections,
+            .clutch-features {
                 grid-template-columns: 1fr;
             }
-            .clutch-panel {
-                min-height: 0;
-            }
             .clutch-hero-title {
-                max-width: 12ch;
-                font-size: clamp(2.6rem, 13vw, 4rem);
+                max-width: none;
             }
         }
         </style>
@@ -356,29 +439,30 @@ def _render_landing_gate() -> None:
 
     with st.container(key="landing_hero"):
         copy, preview = st.columns(
-            [1.08, 0.92], gap="large", vertical_alignment="center"
+            [1.05, 0.95], gap="large", vertical_alignment="top"
         )
         with copy:
             st.markdown(
                 """
-                <div class="clutch-eyebrow">
-                    AI code review + interview practice
+                <div class="clutch-wordmark">
+                    <span class="clutch-wordmark-mark">C</span>
+                    <span class="clutch-wordmark-word">Clutch</span>
                 </div>
                 <h1 class="clutch-hero-title">
-                    Clutch turns code review into interview prep.
+                    Review your code. Explain your decisions.
                 </h1>
                 <p class="clutch-hero-copy">
-                    Paste Python or review a GitHub repo, get cited findings,
-                    practice the follow-up questions an interviewer would ask,
-                    and track the engineering habits that improve over time.
+                    Paste a Python file or connect a GitHub pull request.
+                    Clutch shows what needs attention, why it matters, and
+                    which questions an interviewer might ask next.
                 </p>
-                <div class="clutch-proof-row" aria-label="Product capabilities">
-                    <span class="clutch-chip">Cited code findings</span>
-                    <span class="clutch-chip">GitHub repo review</span>
-                    <span class="clutch-chip">Practice interview loop</span>
-                    <span class="clutch-chip">Progress history</span>
-                    <span class="clutch-chip">Privacy-aware tracing</span>
-                </div>
+                <p class="clutch-trust-line">
+                    Designed for developers preparing for backend and AI
+                    engineering interviews.
+                </p>
+                <p class="clutch-signin-lead">
+                    Sign in to start a private review
+                </p>
                 """,
                 unsafe_allow_html=True,
             )
@@ -420,8 +504,8 @@ def _render_landing_gate() -> None:
             st.markdown(
                 """
                 <p class="clutch-cta-copy">
-                    Sign in with an email magic link to run a private practice
-                    session, save progress, and return to your review history later.
+                    We'll email a one-time sign-in link — no password needed.
+                    Your review history stays private to your account.
                 </p>
                 """,
                 unsafe_allow_html=True,
@@ -429,23 +513,23 @@ def _render_landing_gate() -> None:
         with preview:
             st.markdown(
                 """
-                <div class="clutch-preview" aria-label="Clutch workflow preview">
-                    <div class="clutch-preview-label">
-                        The practice loop
+                <p class="clutch-preview-label">Example finding</p>
+                <div class="clutch-code-card" aria-label="Example code review">
+                    <div class="clutch-code-filename">review.py</div>
+                    <div class="clutch-code-body">def get_user(user_id):<br>&nbsp;&nbsp;&nbsp;&nbsp;users = load_users()<br>&nbsp;&nbsp;&nbsp;&nbsp;return [u for u in users if u["id"] == user_id][0]</div>
+                    <div class="clutch-finding">
+                        <span class="clutch-finding-tag">Correctness</span>
+                        <h3>Possible IndexError</h3>
+                        <p>
+                            This raises <code>IndexError</code> if no user
+                            matches the id, instead of a clear, catchable
+                            error. Return <code>None</code> or raise a
+                            domain-specific <code>NotFoundError</code>.
+                        </p>
                     </div>
-                    <div class="clutch-note">
-                        <strong>1. Review evidence</strong>
-                        <code># TODO validate discounts before launch</code>
-                    </div>
-                    <div class="clutch-note">
-                        <strong>2. Explain the tradeoff</strong>
-                        Generated questions probe scope, ownership, testing, and
-                        failure modes.
-                    </div>
-                    <div class="clutch-note">
-                        <strong>3. Track progress</strong>
-                        Derived snapshots show recurring issues and next practice
-                        tasks without storing raw code.
+                    <div class="clutch-followup">
+                        <span>Interview follow-up</span>
+                        <p>Why did you choose this error-handling strategy?</p>
                     </div>
                 </div>
                 """,
@@ -454,29 +538,43 @@ def _render_landing_gate() -> None:
 
     st.markdown(
         """
+        <div class="clutch-features" aria-label="Product highlights">
+            <div class="clutch-feature">
+                <h3>Evidence-based review</h3>
+                <p>Every finding includes the relevant code, impact, and reasoning.</p>
+            </div>
+            <div class="clutch-feature">
+                <h3>Interview practice</h3>
+                <p>Turn review findings into realistic technical follow-up questions.</p>
+            </div>
+            <div class="clutch-feature">
+                <h3>Private progress</h3>
+                <p>Track recurring issues without exposing your practice sessions.</p>
+            </div>
+        </div>
         <div class="clutch-sections">
             <section class="clutch-panel">
-                <h2>From code to signal</h2>
+                <h2>AI review pipeline</h2>
                 <ul>
-                    <li>Findings cite clean-code and review guidance.</li>
-                    <li>Each issue includes evidence, impact, and a fix path.</li>
-                    <li>GitHub ingestion is read-only and scope-bounded.</li>
+                    <li>Tree-sitter extracts Python structure and line ranges.</li>
+                    <li>Hybrid-ready retrieval grounds findings in a rubric corpus.</li>
+                    <li>Strict schemas validate findings, questions, and reports.</li>
                 </ul>
             </section>
             <section class="clutch-panel">
-                <h2>Practice the explanation</h2>
+                <h2>Agent + tool boundary</h2>
                 <ul>
-                    <li>Review, interview, feedback, and progress are one flow.</li>
-                    <li>Questions probe design choices and tradeoffs.</li>
-                    <li>Answer feedback turns weak spots into next tasks.</li>
+                    <li>FastAPI exposes the system beyond the Streamlit client.</li>
+                    <li>LangGraph coordinates review, retrieval, and interview turns.</li>
+                    <li>GitHub reads go through one scoped, read-only MCP server.</li>
                 </ul>
             </section>
             <section class="clutch-panel">
-                <h2>Built for safe practice</h2>
+                <h2>Production signals</h2>
                 <ul>
-                    <li>Stytch handles email magic-link authentication.</li>
-                    <li>Raw code and raw answers are not stored durably.</li>
-                    <li>Progress is tied to an opaque profile ID.</li>
+                    <li>Prompt-injection tests treat code and README text as untrusted.</li>
+                    <li>Langfuse traces are privacy-reduced and redact raw inputs.</li>
+                    <li>Evals, Redis caching, and deployment docs show operating judgment.</li>
                 </ul>
             </section>
         </div>
@@ -536,32 +634,67 @@ def _api_request(
     return result
 
 
-def _render_header() -> PageName:
-    st.caption("READ-ONLY REVIEW  /  PYTHON  /  INTERVIEW PRACTICE")
-    st.title("Turn code review into interview practice")
-    st.write(
-        "Move from concrete code evidence to a practiced explanation, then track "
-        "which engineering habits are changing across sessions."
-    )
-    if _auth_configured() and st.session_state.get("stytch_session_jwt"):
-        name = st.session_state.get("stytch_user_email") or "Signed in"
-        account, action = st.columns([3, 1])
-        with account:
-            st.caption(f"Signed in as {name}")
-        with action:
-            if st.button("Log out"):
+_PAGE_ICONS = {
+    "Review": ":material/search:",
+    "Interview": ":material/forum:",
+    "Progress": ":material/trending_up:",
+}
+
+
+def _render_sidebar_nav() -> PageName:
+    review = st.session_state.get("review_result")
+    interview = st.session_state.get("interview_result")
+    with st.sidebar:
+        st.markdown(
+            """
+            <div class="clutch-brand">
+                <span class="clutch-brand-mark">C</span>
+                <span class="clutch-brand-word">Clutch</span>
+            </div>
+            <p class="clutch-sidebar-tagline">
+                Review code, then practice explaining it.
+            </p>
+            """,
+            unsafe_allow_html=True,
+        )
+        selected = st.segmented_control(
+            "Workflow",
+            options=["Review", "Interview", "Progress"],
+            format_func=lambda page: page,
+            key="workflow_nav",
+            selection_mode="single",
+            label_visibility="collapsed",
+        )
+        st.divider()
+        with st.container(horizontal=True):
+            st.metric(
+                "Confidence",
+                f"{review['confidence']:.0%}" if review else "—",
+                icon=":material/verified:",
+            )
+            st.metric(
+                "Findings",
+                len(review["findings"]) if review else "—",
+                icon=":material/flag:",
+            )
+        st.metric(
+            "Interview turn",
+            interview["turn_number"] if interview and not interview["completed"]
+            else ("Done" if interview and interview["completed"] else "—"),
+            icon=":material/mic:",
+        )
+        st.divider()
+        if _auth_configured() and st.session_state.get("stytch_session_jwt"):
+            name = st.session_state.get("stytch_user_email") or "Signed in"
+            st.caption(f":material/account_circle: Signed in as {name}")
+            if st.button(
+                "Log out",
+                icon=":material/logout:",
+                width="stretch",
+            ):
                 _logout_stytch()
                 st.rerun()
-    selected = st.segmented_control(
-        "Workflow",
-        options=["Review", "Interview", "Progress"],
-        key="workflow_nav",
-        selection_mode="single",
-    )
-    st.caption(
-        "Review → Interview → Progress  ·  Practice profile "
-        f"{st.session_state.profile_id[:8]}"
-    )
+        st.caption(f"Practice profile `{st.session_state.profile_id[:8]}`")
     return cast(PageName, selected or "Review")
 
 
@@ -612,46 +745,70 @@ def _render_citations(citations: list[dict[str, Any]]) -> None:
 def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
     if not provenance:
         return
-    with st.expander("How this result was produced"):
+    with st.expander(":material/route: How this result was produced"):
         for stage in provenance:
             stage_name = str(stage.get("stage") or "unknown")
             label = _STAGE_LABELS.get(stage_name, stage_name)
-            details = [str(stage.get("status", "unknown")).replace("_", " ")]
-            if stage.get("model_name"):
-                details.append(str(stage["model_name"]))
-            if stage.get("prompt_version"):
-                details.append(str(stage["prompt_version"]))
-            input_tokens = stage.get("input_tokens")
-            output_tokens = stage.get("output_tokens")
-            if isinstance(input_tokens, int) or isinstance(output_tokens, int):
-                details.append(f"{(input_tokens or 0) + (output_tokens or 0):,} tokens")
-            details.append(f"{float(stage.get('latency_ms') or 0):,.1f} ms")
-            estimated_cost = float(stage.get("estimated_cost_usd") or 0)
-            if estimated_cost > 0:
-                details.append(f"estimated ${estimated_cost:.6f}")
-            failure_category = stage.get("failure_category")
-            if failure_category:
-                details.append(
-                    _FAILURE_LABELS.get(failure_category, str(failure_category))
-                )
-            st.markdown(f"**{label}**  ")
-            st.caption(" · ".join(details))
+            status = str(stage.get("status", "unknown"))
+            state: Literal["running", "complete", "error"] = (
+                "complete" if status == "completed" else "error"
+                if status in {"failed", "fallback"} else "running"
+            )
+            with st.status(label, state=state, expanded=False):
+                with st.container(horizontal=True):
+                    st.badge(
+                        status.replace("_", " "),
+                        color="green" if state == "complete" else "orange",
+                    )
+                    if stage.get("model_name"):
+                        st.badge(str(stage["model_name"]), color="violet")
+                    if stage.get("prompt_version"):
+                        st.badge(str(stage["prompt_version"]), color="gray")
+                input_tokens = stage.get("input_tokens")
+                output_tokens = stage.get("output_tokens")
+                metric_cols = st.container(horizontal=True)
+                with metric_cols:
+                    if isinstance(input_tokens, int) or isinstance(
+                        output_tokens, int
+                    ):
+                        st.metric(
+                            "Tokens",
+                            f"{(input_tokens or 0) + (output_tokens or 0):,}",
+                        )
+                    st.metric(
+                        "Latency", f"{float(stage.get('latency_ms') or 0):,.0f} ms"
+                    )
+                    estimated_cost = float(stage.get("estimated_cost_usd") or 0)
+                    if estimated_cost > 0:
+                        st.metric("Est. cost", f"${estimated_cost:.6f}")
+                failure_category = stage.get("failure_category")
+                if failure_category:
+                    st.caption(
+                        "⚠️ "
+                        + _FAILURE_LABELS.get(
+                            failure_category, str(failure_category)
+                        )
+                    )
 
 
 def _render_review_provenance(review: dict[str, Any]) -> None:
     mode = review.get("mode")
     provenance = review.get("provenance", [])
     if mode == "model":
-        st.success("AI-generated review synthesis completed.")
+        st.success(
+            "AI-generated review synthesis completed.", icon=":material/auto_awesome:"
+        )
     elif mode == "static_fallback":
         st.warning(
             "No successful review model call occurred. These findings came from "
-            "deterministic static analysis, so they are not AI-generated."
+            "deterministic static analysis, so they are not AI-generated.",
+            icon=":material/rule:",
         )
     else:
         st.warning(
             "No successful review model call occurred and no static issue matched. "
-            "This result used retrieval-only/static logic, not AI synthesis."
+            "This result used retrieval-only/static logic, not AI synthesis.",
+            icon=":material/rule:",
         )
     for stage in provenance:
         if (
@@ -667,22 +824,53 @@ def _render_review_provenance(review: dict[str, Any]) -> None:
     _render_stage_provenance(provenance)
 
 
+BadgeColor = Literal["red", "orange", "yellow", "blue", "green", "violet", "gray"]
+
+_SEVERITY_COLOR: dict[str, BadgeColor] = {
+    "critical": "red",
+    "high": "orange",
+    "medium": "yellow",
+    "low": "blue",
+}
+_SEVERITY_ICON = {
+    "critical": ":material/report:",
+    "high": ":material/warning:",
+    "medium": ":material/info:",
+    "low": ":material/circle:",
+}
+_DIFFICULTY_COLOR: dict[str, BadgeColor] = {
+    "easy": "green",
+    "medium": "yellow",
+    "hard": "red",
+}
+
+
 def _render_finding(finding: dict[str, Any]) -> None:
+    severity = str(finding["severity"]).lower()
+    color = _SEVERITY_COLOR.get(severity, "gray")
     with st.container(border=True):
-        st.caption(_origin_label(finding.get("origin"), item="finding"))
-        st.markdown(f"**{finding['severity'].upper()} · {finding['category']}**")
-        st.markdown(f"### {finding['message']}")
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.badge(
+                severity.upper(),
+                icon=_SEVERITY_ICON.get(severity, ":material/circle:"),
+                color=color,
+            )
+            st.badge(finding["category"].replace("_", " "), color="gray")
+            st.caption(_origin_label(finding.get("origin"), item="finding"))
+        st.markdown(f"#### {finding['message']}")
         if finding.get("line_start"):
             line_end = finding.get("line_end") or finding["line_start"]
-            st.caption(f"Lines {finding['line_start']}-{line_end}")
+            st.caption(f":material/code: Lines {finding['line_start']}-{line_end}")
         st.code(finding["evidence"], language="python")
         st.write(finding["explanation"])
-        st.info(finding["suggestion"])
+        st.info(finding["suggestion"], icon=":material/lightbulb:")
         _render_citations(finding.get("citations", []))
 
 
 def _render_review_page() -> None:
-    st.subheader("1 · Review the evidence")
+    st.subheader(
+        f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="violet"
+    )
     st.write(
         "Paste Python or fetch a public GitHub repository/PR through the read-only "
         "MCP boundary. Durable history contains only hashes and derived metadata."
@@ -726,6 +914,7 @@ def _render_review_page() -> None:
         submitted = st.form_submit_button(
             "Review GitHub source" if input_mode == "GitHub" else "Review code",
             type="primary",
+            icon=":material/rocket_launch:",
         )
 
     if submitted:
@@ -809,12 +998,23 @@ def _render_review_page() -> None:
             for path in ingestion["files_included"]:
                 st.code(path, language=None)
 
-    st.caption(
-        f"Confidence: {review['confidence']:.0%} · "
-        f"Request: {review['request_id']} · {review['latency_ms']:.1f} ms"
-    )
+    with st.container(horizontal=True):
+        st.metric(
+            "Confidence",
+            f"{review['confidence']:.0%}",
+            icon=":material/verified:",
+        )
+        st.metric(
+            "Findings", len(review["findings"]), icon=":material/flag:"
+        )
+        st.metric(
+            "Latency",
+            f"{review['latency_ms']:.0f} ms",
+            icon=":material/timer:",
+        )
+    st.caption(f"Request `{review['request_id']}`")
     _render_review_provenance(review)
-    st.markdown("#### Findings")
+    st.markdown("#### :material/flag: Findings")
     if review["findings"]:
         for finding in review["findings"]:
             _render_finding(finding)
@@ -826,11 +1026,17 @@ def _render_review_page() -> None:
 
     questions = review.get("questions", [])
     if questions:
-        st.markdown("#### Interview follow-ups")
+        st.markdown("#### :material/forum: Interview follow-ups")
         for question in questions:
             with st.container(border=True):
-                st.caption(_origin_label(question.get("origin"), item="question"))
-                st.markdown(f"**{question['difficulty'].upper()}**")
+                with st.container(horizontal=True, vertical_alignment="center"):
+                    st.badge(
+                        question["difficulty"].upper(),
+                        color=_DIFFICULTY_COLOR.get(
+                            question["difficulty"].lower(), "gray"
+                        ),
+                    )
+                    st.caption(_origin_label(question.get("origin"), item="question"))
                 st.write(question["question"])
                 st.caption(question["intent"])
                 if question.get("finding_id"):
@@ -839,31 +1045,39 @@ def _render_review_page() -> None:
         st.button(
             "Practice these questions",
             type="primary",
+            icon=":material/forum:",
             on_click=_queue_page,
             args=("Interview",),
         )
 
 
 def _render_assessment(assessment: dict[str, Any]) -> None:
-    st.caption(_origin_label(assessment.get("origin"), item="assessment"))
-    st.markdown(f"#### Answer feedback · {assessment['score']}/5")
-    st.write(assessment["feedback"])
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**What worked**")
-        if assessment["strengths"]:
-            for strength in assessment["strengths"]:
-                st.write(f"• {strength}")
-        else:
-            st.caption("No strong signal yet—add more explicit reasoning.")
-    with right:
-        st.markdown("**Strengthen next**")
-        if assessment["gaps"]:
-            for gap in assessment["gaps"]:
-                st.write(f"• {gap}")
-        else:
-            st.caption("No major gap detected in this answer.")
-    _render_citations(assessment.get("citations", []))
+    with st.container(border=True):
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.metric(
+                "Answer score",
+                f"{assessment['score']}/5",
+                icon=":material/star:",
+            )
+            st.caption(_origin_label(assessment.get("origin"), item="assessment"))
+        st.progress(min(max(assessment["score"], 0), 5) / 5)
+        st.write(assessment["feedback"])
+        left, right = st.columns(2)
+        with left:
+            st.markdown(":material/thumb_up: **What worked**")
+            if assessment["strengths"]:
+                for strength in assessment["strengths"]:
+                    st.write(f"• {strength}")
+            else:
+                st.caption("No strong signal yet—add more explicit reasoning.")
+        with right:
+            st.markdown(":material/target: **Strengthen next**")
+            if assessment["gaps"]:
+                for gap in assessment["gaps"]:
+                    st.write(f"• {gap}")
+            else:
+                st.caption("No major gap detected in this answer.")
+        _render_citations(assessment.get("citations", []))
     provenance = assessment.get("provenance")
     if provenance:
         _render_stage_provenance([provenance])
@@ -882,7 +1096,7 @@ def _load_feedback(session_id: str) -> dict[str, Any] | None:
 
 
 def _render_feedback_report(report: dict[str, Any]) -> None:
-    st.markdown("### Final feedback report")
+    st.markdown("### :material/summarize: Final feedback report")
     st.caption(
         report.get(
             "aggregation_label",
@@ -890,24 +1104,38 @@ def _render_feedback_report(report: dict[str, Any]) -> None:
         )
     )
     st.caption(_origin_label(report.get("origin"), item="report"))
+    with st.container(horizontal=True):
+        st.metric(
+            "Strengths", len(report["strengths"]), icon=":material/thumb_up:"
+        )
+        st.metric(
+            "Recurring issues",
+            len(report["recurring_issues"]),
+            icon=":material/warning:",
+        )
+        st.metric(
+            "Practice tasks",
+            len(report["recommended_tasks"]),
+            icon=":material/checklist:",
+        )
     st.write(report["interview_readiness_summary"])
     strengths, issues = st.columns(2)
     with strengths:
-        st.markdown("#### Demonstrated strengths")
+        st.markdown("#### :material/thumb_up: Demonstrated strengths")
         if report["strengths"]:
             for strength in report["strengths"]:
                 st.success(strength)
         else:
             st.caption("No repeated strength signal yet.")
     with issues:
-        st.markdown("#### Recurring issues")
+        st.markdown("#### :material/replay: Recurring issues")
         if report["recurring_issues"]:
             for issue in report["recurring_issues"]:
                 st.warning(issue)
         else:
             st.caption("No issue repeated across the completed answers.")
 
-    st.markdown("#### Recommended practice")
+    st.markdown("#### :material/checklist: Recommended practice")
     for task in report["recommended_tasks"]:
         with st.container(border=True):
             st.write(task)
@@ -927,7 +1155,9 @@ def _render_feedback_report(report: dict[str, Any]) -> None:
 
 
 def _render_interview_page() -> None:
-    st.subheader("2 · Practice the explanation")
+    st.subheader(
+        f"{_PAGE_ICONS['Interview']} 2 · Practice the explanation", divider="violet"
+    )
     review = st.session_state.review_result
     if review is None or not review.get("questions"):
         st.info(
@@ -943,7 +1173,7 @@ def _render_interview_page() -> None:
             "Answer aloud or in writing as if an interviewer asked the question. "
             "Clutch stores only an answer hash and rubric-signal summary."
         )
-        if st.button("Start interview", type="primary"):
+        if st.button("Start interview", type="primary", icon=":material/play_arrow:"):
             try:
                 with st.spinner("Preparing the first question…"):
                     interview = _api_request(
@@ -976,7 +1206,14 @@ def _render_interview_page() -> None:
             )
         _render_assessment(assessment)
     if interview["completed"]:
-        st.success("Interview complete. Your structured report is ready.")
+        st.success(
+            "Interview complete. Your structured report is ready.",
+            icon=":material/celebration:",
+        )
+        celebrated = st.session_state.setdefault("_celebrated_interviews", set())
+        if interview["interview_session_id"] not in celebrated:
+            celebrated.add(interview["interview_session_id"])
+            st.balloons()
         if st.session_state.feedback_report is None:
             st.session_state.feedback_report = _load_feedback(
                 interview["interview_session_id"]
@@ -987,15 +1224,19 @@ def _render_interview_page() -> None:
         st.button(
             "View progress",
             type="primary",
+            icon=":material/trending_up:",
             on_click=_queue_page,
             args=("Progress",),
         )
         return
 
     question = interview["question"]
-    st.caption(
-        f"QUESTION {interview['turn_number']}  /  {question['difficulty'].upper()}"
-    )
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.badge(f"QUESTION {interview['turn_number']}", color="violet")
+        st.badge(
+            question["difficulty"].upper(),
+            color=_DIFFICULTY_COLOR.get(question["difficulty"].lower(), "gray"),
+        )
     with st.container(border=True):
         st.caption(_origin_label(question.get("origin"), item="question"))
         st.markdown(f"### {question['question']}")
@@ -1014,7 +1255,9 @@ def _render_interview_page() -> None:
             ),
             key="interview_answer",
         )
-        answered = st.form_submit_button("Submit answer", type="primary")
+        answered = st.form_submit_button(
+            "Submit answer", type="primary", icon=":material/send:"
+        )
     if not answered:
         return
     if not answer.strip():
@@ -1059,14 +1302,16 @@ def _load_progress() -> dict[str, Any] | None:
 
 
 def _render_progress_page() -> None:
-    st.subheader("3 · Track the pattern")
+    st.subheader(
+        f"{_PAGE_ICONS['Progress']} 3 · Track the pattern", divider="violet"
+    )
     st.write(
         "Progress is based on repeated finding categories for this generated "
         "practice profile—not on a vague model score."
     )
     if st.session_state.progress_result is None:
         st.session_state.progress_result = _load_progress()
-    if st.button("Refresh progress"):
+    if st.button("Refresh progress", icon=":material/refresh:"):
         st.session_state.progress_result = _load_progress()
 
     progress = st.session_state.progress_result
@@ -1074,31 +1319,65 @@ def _render_progress_page() -> None:
         return
     st.caption(progress["time_window"])
     if not progress["evidence_sessions"]:
-        st.info(progress["next_practice_tasks"][0])
-        st.button("Start a review", on_click=_queue_page, args=("Review",))
+        st.info(progress["next_practice_tasks"][0], icon=":material/info:")
+        st.button(
+            "Start a review",
+            icon=":material/rocket_launch:",
+            on_click=_queue_page,
+            args=("Review",),
+        )
         return
+
+    with st.container(horizontal=True):
+        st.metric(
+            "Sessions",
+            len(progress["evidence_sessions"]),
+            icon=":material/history:",
+        )
+        st.metric(
+            "Improved areas",
+            len(progress["improved_areas"]),
+            icon=":material/trending_up:",
+        )
+        st.metric(
+            "Recurring issues",
+            len(progress["persistent_issues"]),
+            icon=":material/replay:",
+        )
+    if progress["improved_areas"] or progress["persistent_issues"]:
+        st.bar_chart(
+            pd.Series(
+                {
+                    "Improved": len(progress["improved_areas"]),
+                    "Recurring": len(progress["persistent_issues"]),
+                },
+                name="count",
+            ),
+            color="#7C6CFF",
+            horizontal=True,
+        )
 
     improved, persistent = st.columns(2)
     with improved:
-        st.markdown("#### Improved areas")
+        st.markdown("#### :material/trending_up: Improved areas")
         if progress["improved_areas"]:
             for area in progress["improved_areas"]:
                 st.success(area.replace("_", " ").title())
         else:
             st.caption("Complete another review to reveal improvements.")
     with persistent:
-        st.markdown("#### Recurring issues")
+        st.markdown("#### :material/replay: Recurring issues")
         if progress["persistent_issues"]:
             for issue in progress["persistent_issues"]:
                 st.warning(issue.replace("_", " ").title())
         else:
             st.caption("No category has repeated across the current evidence.")
 
-    st.markdown("#### Next practice tasks")
+    st.markdown("#### :material/checklist: Next practice tasks")
     for task in progress["next_practice_tasks"]:
         with st.container(border=True):
             st.write(task)
-    if st.button("Save progress snapshot"):
+    if st.button("Save progress snapshot", icon=":material/save:"):
         try:
             with st.spinner("Saving the derived snapshot…"):
                 saved = _api_request(
@@ -1112,37 +1391,107 @@ def _render_progress_page() -> None:
             )
         else:
             st.session_state.progress_result = saved
-            st.success("Progress snapshot saved.")
+            st.toast("Progress snapshot saved.", icon=":material/save:")
 
 
-st.set_page_config(page_title="Clutch", page_icon="CL", layout="wide")
+st.set_page_config(page_title="Clutch", page_icon="🗂️", layout="wide")
 st.markdown(
     """
     <style>
-    .stApp {
-        font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+        --clutch-bg: #F7F6F3;
+        --clutch-surface: #FFFFFF;
+        --clutch-surface-2: #F1F1EE;
+        --clutch-border: #E1E1DC;
+        --clutch-text: #171717;
+        --clutch-text-muted: #666666;
+        --clutch-accent: #267A5B;
+        --clutch-accent-strong: #1B5C44;
+        --clutch-accent-muted: #E3F0E9;
+        --clutch-danger: #B3261E;
+        --clutch-warning: #8A5A00;
+        --clutch-success: #267A5B;
+    }
+
+    html, .stApp {
+        font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+        background: var(--clutch-bg);
     }
     [data-testid="stMainBlockContainer"] {
         max-width: 76rem;
-        padding-top: 3rem;
+        padding-top: 2rem;
     }
     [data-testid="stCaptionContainer"] {
-        color: #5e6a7d;
+        color: var(--clutch-text-muted);
     }
-    textarea {
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace !important;
+    [data-testid="stSidebar"] {
+        border-right: 1px solid var(--clutch-border);
+    }
+    textarea, .stTextArea textarea {
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
         resize: none !important;
     }
+    code, pre, [data-testid="stCode"] {
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
+    }
     *:focus-visible {
-        outline: 3px solid #88a4ff !important;
+        outline: 2px solid var(--clutch-accent) !important;
         outline-offset: 2px !important;
     }
     html {
-        scrollbar-color: #a8b4c9 #eef2f8;
+        scrollbar-color: #C7C7C0 #F1F1EE;
         scrollbar-width: thin;
     }
     @media (forced-colors: active) {
         html { scrollbar-color: auto; }
+    }
+
+    /* Primary buttons: solid, flat, no gradient/glow */
+    button[kind="primary"], .stFormSubmitButton button[kind="primary"] {
+        background: var(--clutch-accent) !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    button[kind="primary"]:hover {
+        background: var(--clutch-accent-strong) !important;
+    }
+
+    /* Cards: thin border, minimal radius, no gradient fill */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 0.5rem !important;
+    }
+
+    .clutch-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.2rem;
+    }
+    .clutch-brand-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.85rem;
+        height: 1.85rem;
+        border-radius: 0.4rem;
+        background: var(--clutch-accent);
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+    .clutch-brand-word {
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--clutch-text);
+    }
+    .clutch-sidebar-tagline {
+        color: var(--clutch-text-muted);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin: 0.1rem 0 1.1rem;
     }
     </style>
     """,
@@ -1156,7 +1505,7 @@ if _auth_configured() and authenticated_profile_id is None:
     st.stop()
 
 _initialize_state(authenticated_profile_id)
-active_page = _render_header()
+active_page = _render_sidebar_nav()
 if active_page == "Review":
     _render_review_page()
 elif active_page == "Interview":
