@@ -38,7 +38,7 @@ from clutch.schemas import (
 
 DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 MAX_MODEL_ATTEMPTS = 2
-MAX_REVIEW_OUTPUT_TOKENS = 4_000
+MAX_REVIEW_OUTPUT_TOKENS = 10_000
 MAX_QUESTION_OUTPUT_TOKENS = 1_600
 MAX_INTERVIEW_ASSESSMENT_OUTPUT_TOKENS = 1_200
 logger = logging.getLogger(__name__)
@@ -716,6 +716,13 @@ def _normalize_grounding(
             )
         )
     if len(validated_model_findings) != len(context.static_findings):
+        logger.warning(
+            "grounding validation failed: model finding count mismatch",
+            extra={
+                "model_finding_count": len(validated_model_findings),
+                "static_finding_count": len(context.static_findings),
+            },
+        )
         raise ValueError("model finding inventory differs from static signals")
 
     remaining = list(validated_model_findings)
