@@ -600,6 +600,10 @@ def _initialize_state(profile_id: str | None = None) -> None:
         "interview_result": None,
         "feedback_report": None,
         "progress_result": None,
+        "review_pending": None,
+        "interview_pending": None,
+        "review_error": None,
+        "interview_error": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -655,6 +659,15 @@ _PAGE_ICONS = {
 def _render_sidebar_nav() -> PageName:
     review = st.session_state.get("review_result")
     interview = st.session_state.get("interview_result")
+    # A review or interview submission runs its API call synchronously on the
+    # same script run that renders this sidebar. If the user switches tabs
+    # while that call is in flight, Streamlit abandons the running script for
+    # the new one, so the pending result never gets saved and the page comes
+    # back blank. Locking navigation until the pending call finishes avoids
+    # that lost-work state.
+    nav_locked = bool(
+        st.session_state.get("review_pending") or st.session_state.get("interview_pending")
+    )
     with st.sidebar:
         st.markdown(
             """
@@ -675,7 +688,13 @@ def _render_sidebar_nav() -> PageName:
             key="workflow_nav",
             selection_mode="single",
             label_visibility="collapsed",
+            disabled=nav_locked,
         )
+        if nav_locked:
+            st.caption(
+                ":material/hourglass_top: Processing — navigation is locked "
+                "until this finishes."
+            )
         st.divider()
         with st.container(horizontal=True):
             st.metric(
@@ -702,6 +721,7 @@ def _render_sidebar_nav() -> PageName:
                 "Log out",
                 icon=":material/logout:",
                 width="stretch",
+                disabled=nav_locked,
             ):
                 _logout_stytch()
                 st.rerun()
@@ -988,51 +1008,78 @@ def _render_review_page() -> None:
         elif input_mode == "GitHub" and not source_url.strip():
             st.warning("Enter a GitHub repository or pull-request URL.")
         else:
-            try:
-                with st.spinner(
-                    "Reviewing structure, evidence, and interview signals…"
-                ):
-                    if input_mode == "GitHub":
-                        github_result = _api_request(
-                            "POST",
-                            "/review/github",
-                            payload={
-                                "source_url": source_url,
-                                "ref": ref.strip() or None,
-                                "role_context": role_context,
-                                "session_id": st.session_state.profile_id,
-                            },
-                        )
-                        review = github_result["review"]
-                        ingestion = github_result["ingestion"]
-                    else:
-                        review = _api_request(
-                            "POST",
-                            "/review",
-                            payload={
-                                "code": code,
-                                "language": "python",
-                                "role_context": role_context,
-                                "session_id": st.session_state.profile_id,
-                            },
-                        )
-                        ingestion = None
-            except requests.RequestException:
-                st.error(
-                    "The review could not complete. Your input is still here; "
-                    "try again in a moment."
-                )
-            else:
-                st.session_state.review_result = review
-                st.session_state.review_findings_page = 1
-                st.session_state.github_ingestion = ingestion
-                st.session_state.review_role_context = role_context.strip() or (
-                    "backend intern"
-                )
-                st.session_state.interview_result = None
-                st.session_state.feedback_report = None
-                st.session_state.progress_result = None
-                st.rerun()
+            # Stash the inputs and rerun immediately, rather than calling the
+            # API inline here. That lets the next run render the sidebar as
+            # locked *before* the blocking call starts, so a tab switch can't
+            # abandon this run mid-flight (see _render_sidebar_nav).
+            st.session_state.review_pending = {
+                "input_mode": input_mode,
+                "code": code,
+                "source_url": source_url,
+                "ref": ref,
+                "role_context": role_context,
+            }
+            st.rerun()
+
+    pending = st.session_state.review_pending
+    if pending is not None:
+        try:
+            with st.spinner(
+                "Reviewing structure, evidence, and interview signals…"
+            ):
+                if pending["input_mode"] == "GitHub":
+                    github_result = _api_request(
+                        "POST",
+                        "/review/github",
+                        payload={
+                            "source_url": pending["source_url"],
+                            "ref": pending["ref"].strip() or None,
+                            "role_context": pending["role_context"],
+                            "session_id": st.session_state.profile_id,
+                        },
+                    )
+                    review = github_result["review"]
+                    ingestion = github_result["ingestion"]
+                else:
+                    review = _api_request(
+                        "POST",
+                        "/review",
+                        payload={
+                            "code": pending["code"],
+                            "language": "python",
+                            "role_context": pending["role_context"],
+                            "session_id": st.session_state.profile_id,
+                        },
+                    )
+                    ingestion = None
+        except requests.RequestException:
+            # Clear the pending flag and rerun so the sidebar (rendered at
+            # the top of this same run, before the call failed) redraws
+            # unlocked. The error message can't be shown inline here since
+            # rerun() abandons the rest of this run — stash it so the next
+            # run can display it instead.
+            st.session_state.review_pending = None
+            st.session_state.review_error = (
+                "The review could not complete. Your input is still here; "
+                "try again in a moment."
+            )
+            st.rerun()
+        else:
+            st.session_state.review_result = review
+            st.session_state.review_findings_page = 1
+            st.session_state.github_ingestion = ingestion
+            st.session_state.review_role_context = pending["role_context"].strip() or (
+                "backend intern"
+            )
+            st.session_state.interview_result = None
+            st.session_state.feedback_report = None
+            st.session_state.progress_result = None
+            st.session_state.review_pending = None
+            st.rerun()
+
+    review_error = st.session_state.pop("review_error", None)
+    if review_error is not None:
+        st.error(review_error)
 
     review = st.session_state.review_result
     if review is None:
@@ -1233,12 +1280,28 @@ def _render_interview_page() -> None:
         return
 
     interview = st.session_state.interview_result
+    pending = st.session_state.interview_pending
+    # Popped once and reused below — only one of the two branches that can
+    # display it is ever reached in a given run.
+    interview_error = st.session_state.pop("interview_error", None)
     if interview is None:
         st.write(
             "Answer aloud or in writing as if an interviewer asked the question. "
             "Clutch stores only an answer hash and rubric-signal summary."
         )
-        if st.button("Start interview", type="primary", icon=":material/play_arrow:"):
+        if interview_error is not None:
+            st.error(interview_error)
+        if pending is None:
+            if st.button(
+                "Start interview", type="primary", icon=":material/play_arrow:"
+            ):
+                # Stash-then-rerun so the sidebar renders locked before the
+                # blocking call starts (see _render_sidebar_nav) — otherwise
+                # switching tabs mid-call abandons this run and the result is
+                # lost.
+                st.session_state.interview_pending = {"type": "start"}
+                st.rerun()
+        else:
             try:
                 with st.spinner("Preparing the first question…"):
                     interview = _api_request(
@@ -1252,13 +1315,19 @@ def _render_interview_page() -> None:
                         },
                     )
             except requests.RequestException:
-                st.error(
+                # Clear pending and rerun so the sidebar (already drawn
+                # locked earlier in this run) redraws unlocked; stash the
+                # message since rerun() abandons the rest of this run.
+                st.session_state.interview_pending = None
+                st.session_state.interview_error = (
                     "The interview could not start. Your review is still saved; "
                     "try again in a moment."
                 )
+                st.rerun()
             else:
                 st.session_state.interview_result = interview
                 st.session_state.feedback_report = None
+                st.session_state.interview_pending = None
                 st.rerun()
         return
 
@@ -1310,6 +1379,7 @@ def _render_interview_page() -> None:
 
     if st.session_state.pop("clear_interview_answer", False):
         st.session_state.interview_answer = ""
+    answering = pending is not None and pending.get("type") == "answer"
     with st.form("answer-form", clear_on_submit=False):
         answer = st.text_area(
             "Your answer",
@@ -1319,36 +1389,58 @@ def _render_interview_page() -> None:
                 "verify it…"
             ),
             key="interview_answer",
+            disabled=answering,
         )
         answered = st.form_submit_button(
-            "Submit answer", type="primary", icon=":material/send:"
+            "Submit answer",
+            type="primary",
+            icon=":material/send:",
+            disabled=answering,
         )
+
+    if interview_error is not None:
+        st.error(interview_error)
+
+    if answering:
+        try:
+            with st.spinner("Assessing the reasoning and preparing the next step…"):
+                next_state = _api_request(
+                    "POST",
+                    "/interview/turn",
+                    payload={
+                        "interview_session_id": pending["interview_session_id"],
+                        "answer": pending["answer"],
+                    },
+                )
+        except requests.RequestException:
+            # Clear pending and rerun so the sidebar redraws unlocked;
+            # stash the message since rerun() abandons the rest of this run.
+            st.session_state.interview_pending = None
+            st.session_state.interview_error = (
+                "The answer was not accepted. Your text remains here; try again "
+                "in a moment."
+            )
+            st.rerun()
+        else:
+            st.session_state.interview_result = next_state
+            st.session_state.feedback_report = None
+            st.session_state.progress_result = None
+            st.session_state.clear_interview_answer = True
+            st.session_state.interview_pending = None
+            st.rerun()
+        return
+
     if not answered:
         return
     if not answer.strip():
         st.warning("Write an answer before submitting this turn.")
         return
-    try:
-        with st.spinner("Assessing the reasoning and preparing the next step…"):
-            next_state = _api_request(
-                "POST",
-                "/interview/turn",
-                payload={
-                    "interview_session_id": interview["interview_session_id"],
-                    "answer": answer,
-                },
-            )
-    except requests.RequestException:
-        st.error(
-            "The answer was not accepted. Your text remains here; try again in a "
-            "moment."
-        )
-    else:
-        st.session_state.interview_result = next_state
-        st.session_state.feedback_report = None
-        st.session_state.progress_result = None
-        st.session_state.clear_interview_answer = True
-        st.rerun()
+    st.session_state.interview_pending = {
+        "type": "answer",
+        "interview_session_id": interview["interview_session_id"],
+        "answer": answer,
+    }
+    st.rerun()
 
 
 def _load_progress() -> dict[str, Any] | None:
