@@ -38,6 +38,14 @@ jobs:
             const browser = await chromium.launch();
             const page = await browser.newPage();
             await page.goto(process.env.APP_URL, { waitUntil: 'networkidle', timeout: 60000 });
+
+            const wakeButton = page.getByText('Yes, get this app back up!');
+            if (await wakeButton.isVisible().catch(() => false)) {
+              console.log('App was asleep, clicking wake button');
+              await wakeButton.click();
+              await page.waitForTimeout(15000);
+            }
+
             await page.waitForTimeout(5000);
             await browser.close();
           })().catch((err) => {
