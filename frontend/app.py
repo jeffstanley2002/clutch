@@ -490,11 +490,7 @@ def _render_landing_gate() -> None:
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        '<div class="clutch-masthead"><span>CODE REVIEW / INTERVIEW PRACTICE</span>'
-        '<a href="https://github.com/jeffstanley2002/clutch">View source ↗</a></div>',
-        unsafe_allow_html=True,
-    )
+    
     with st.container(key="landing_hero"):
         copy, preview = st.columns([1.05, 0.95], gap="large", vertical_alignment="top")
         with copy:
@@ -646,7 +642,6 @@ def _render_landing_gate() -> None:
         </div>
         </details>
         <div class="clutch-footer">Built for thoughtful practice.
-        <a href="https://github.com/jeffstanley2002/clutch#readme">Read the project notes ↗</a></div>
         """,
         unsafe_allow_html=True,
     )
