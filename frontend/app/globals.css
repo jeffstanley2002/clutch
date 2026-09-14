@@ -733,6 +733,46 @@ li {
 .account button:hover {
   background: var(--surface);
 }
+.confirm-dialog {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0;
+  max-width: min(360px, calc(100vw - 32px));
+  width: 100%;
+  color: var(--text);
+  background: var(--surface);
+}
+.confirm-dialog::backdrop {
+  background: rgba(23, 23, 23, 0.4);
+}
+.confirm-dialog-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.confirm-dialog-body h2 {
+  font-size: 17px;
+}
+.confirm-dialog-body p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+.button.danger:hover:not(:disabled) {
+  background: #8f1e18;
+  border-color: #8f1e18;
+}
 .workspace-main {
   flex: 1;
   min-width: 0;

@@ -83,6 +83,7 @@ export function Workspace() {
   const [notice, setNotice] = useState("");
   const [page, setPage] = useState(0);
   const lock = useRef(false);
+  const signOutDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
@@ -222,6 +223,17 @@ export function Workspace() {
         setNotice("Interview complete. You can now load your feedback report.");
     });
   }
+  function signOut() {
+    signOutDialog.current?.close();
+    void run("Signing out…", async () => {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error("Sign-out failed. Try again shortly.");
+      setCode("");
+      setUrl("");
+      setAnswer("");
+      window.location.replace("/");
+    });
+  }
   const count = review?.findings.length ?? 0;
   return (
     <div className="workspace">
@@ -282,25 +294,38 @@ export function Workspace() {
               aria-label="Log out"
               title="Log out"
               disabled={!!busy}
-              onClick={() =>
-                void run("Signing out…", async () => {
-                  const response = await fetch("/api/auth/logout", {
-                    method: "POST",
-                  });
-                  if (!response.ok)
-                    throw new Error("Sign-out failed. Try again shortly.");
-                  setCode("");
-                  setUrl("");
-                  setAnswer("");
-                  window.location.replace("/");
-                })
-              }
+              onClick={() => signOutDialog.current?.showModal()}
             >
               <LogOut size={17} />
             </button>
           )}
         </div>
       </aside>
+      <dialog
+        ref={signOutDialog}
+        className="confirm-dialog"
+        aria-labelledby="sign-out-title"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) signOutDialog.current?.close();
+        }}
+      >
+        <form method="dialog" className="confirm-dialog-body">
+          <h2 id="sign-out-title">Sign out?</h2>
+          <p>You&rsquo;ll need to sign in again to get back to your workspace.</p>
+          <div className="confirm-dialog-actions">
+            <button type="submit" className="button">
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="button primary danger"
+              onClick={signOut}
+            >
+              Sign out
+            </button>
+          </div>
+        </form>
+      </dialog>
       <div className="workspace-main">
         <header className="workspace-top">
           <span>
