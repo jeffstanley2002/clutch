@@ -2,7 +2,7 @@
 
 ## Daily orientation
 
-Clutch is a read-only code-review and interview-practice system. Streamlit is
+Clutch is a read-only code-review and interview-practice system. Next.js is
 one client; FastAPI is the service boundary; one LangGraph agent performs typed
 review orchestration.
 
@@ -23,7 +23,10 @@ Redis is optional, and Langfuse receives privacy-reduced traces.
 
 ## Current boundaries
 
-- Streamlit renders Review, Interview, and Progress; it owns no business logic.
+- Next.js pre-renders the landing/workspace shell and renders Review, Interview,
+  and Progress. Server route handlers validate Stytch sessions, sign session
+  ownership, and proxy only allowlisted product routes with a server-only key.
+  No model, parsing, retrieval, or database logic runs in the frontend.
 - FastAPI exposes `/review`, `/review/github`, `/interview/turn`, completed-session
   `/interview/*/feedback`, `/progress/*`, `/runtime/cache`, `/runtime/spend`, and
   `/health`.
@@ -107,8 +110,8 @@ request-scoped.
 
 1. Rotate deployment credentials, then deploy Render from `render.yaml` with the
    pooled Neon URL.
-2. Deploy `frontend/app.py` to Streamlit Community Cloud and run the hosted
-   smoke/manual privacy checklist.
+2. Deploy `frontend/` to Vercel, configure Stytch redirects and server-only API
+   credentials, and run the hosted smoke checklist in `docs/vercel-deployment.md`.
 3. Improve and remeasure Neon hybrid retrieval without weakening gates; switch
    only if a new baseline wins. Re-audit Langfuse native cost after provider
    readback changes.

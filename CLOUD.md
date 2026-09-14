@@ -10,7 +10,9 @@ verified. Terraform has been formatted and validated without AWS credentials;
 it has never been planned against an account or applied. Creating paid cloud
 resources is an explicit user checkpoint.
 
-The practical production path is Neon, Render, and Streamlit Community Cloud.
+The practical production path is Neon, Render, and Vercel. See
+`docs/vercel-deployment.md` for the current Next.js deployment. Historical AWS
+Streamlit configuration remains unapplied and must be migrated before use.
 Neon is already migrated and seeded; only the two application deployments
 remain. The AWS module remains useful as portfolio architecture evidence and as
 a future migration path, but it should not be applied while the owner wants to
@@ -45,7 +47,8 @@ operational evidence requires another deployable.
 Use this path for the next real public deployment unless the owner explicitly
 re-opens AWS funding:
 
-- Streamlit Community Cloud hosts the existing Streamlit UI from `frontend/app.py`.
+- Vercel hosts the Next.js project in `frontend/`. Server-only environment
+  variables replace Streamlit secrets; configure Stytch `/api/auth/callback`.
 - Render hosts the FastAPI backend.
 - Neon project `holy-feather-79203801`, branch `production`, provides hosted
   PostgreSQL with pgvector for durable review, interview, progress, and the
@@ -64,7 +67,7 @@ administrative seeding use its direct URL.
 
 ## Local Compose parity
 
-`compose.yaml` runs pgvector Postgres, Redis, GitHub MCP, FastAPI, and Streamlit
+`compose.yaml` runs pgvector Postgres, Redis, GitHub MCP, FastAPI, and Next.js
 with health-gated dependencies. Migrations are explicit:
 
 ```bash

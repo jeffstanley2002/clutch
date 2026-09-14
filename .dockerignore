@@ -19,3 +19,7 @@ infra/terraform/backend.hcl
 infra/terraform/terraform.tfvars
 infra/localstack/volume
 infra/localstack/terraform/localstack.tfplan
+**/node_modules
+**/.next
+**/.env*
+**/*.tsbuildinfo

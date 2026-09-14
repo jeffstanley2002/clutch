@@ -26,7 +26,7 @@ profile_id="hosted-smoke-profile"
 echo "Backend health"
 curl --retry 3 --retry-delay 5 -fsS "$api_url/health" >/dev/null
 echo "Frontend health"
-curl --retry 3 --retry-delay 5 -fsS "$frontend_url/_stcore/health" >/dev/null
+curl --retry 3 --retry-delay 5 -fsS "$frontend_url/" >/dev/null
 echo "Runtime diagnostics"
 curl -fsS "$api_url/runtime/cache" -H "$auth_header" >/dev/null
 curl -fsS "$api_url/runtime/spend" -H "$auth_header" >/dev/null

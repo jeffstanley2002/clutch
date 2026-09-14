@@ -95,20 +95,23 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        CLUTCH_ALLOW_LOCAL_ANONYMOUS: "true"
     environment:
       CLUTCH_API_KEY: ${CLUTCH_API_KEY:-}
       CLUTCH_API_BASE_URL: http://backend:8000
+      CLUTCH_ALLOW_LOCAL_ANONYMOUS: "true"
     ports:
-      - "8501:8501"
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
       test:
         - CMD
-        - python
-        - -c
-        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5

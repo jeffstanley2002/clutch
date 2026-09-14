@@ -21,3 +21,6 @@ infra/localstack/terraform/localstack.tfplan
 .neon
 .env.local
 .env.neon
+.next/
+*.tsbuildinfo
+.vercel/

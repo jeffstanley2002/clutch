@@ -1,116 +1,99 @@
 # Frontend Memory
 
-## Current state
+## Current state (2026-09-14, Next.js migration)
 
-The Streamlit app implements a three-stage workflow rail (vertical native radio
-navigation with short stage descriptions):
+`frontend/` is now a Next.js 16 App Router project (Node 22, TypeScript,
+strict mode) replacing Streamlit as the UI client. `frontend/app.py` and its
+Streamlit tests/requirements remain in the tree only as a rollback artifact
+per `UX-CONTRACT.md`; no new work should target them.
 
-- Review: pasted Python or GitHub repo/PR + optional ref, role context, findings,
-  anchored citations, bounded source/MCP summary, generated questions, and a
-  stage-level provenance disclosure with model/version/tokens/latency/cost.
-- Interview: starts from generated questions, validates blank answers, renders
-  per-turn score/signals/feedback, advances until complete, then renders the
-  structured readiness summary, strengths, recurring issues, practice tasks,
-  and privacy-safe supporting findings.
-- Progress: shows improved/persistent categories, evidence session IDs, practice
-  tasks, and can save a snapshot.
-- Auth: when Stytch `[stytch]` secrets are configured, unauthenticated users see
-  a recruiter-facing landing/login screen, Stytch sends email magic links, and
-  the app derives a stable opaque `user_<sha256>` profile ID from the signed-in
-  identity.
+Screens:
 
-The full flow and a public GitHub review were browser-verified at desktop. The
-model-backed and forced-fallback review states, rule-based interview assessment,
-keyboard focus, answer clearing, citation deduplication, and empty/error states
-were rechecked on 2026-09-10. The 390px layout has no horizontal overflow. Fresh
-review, interview-assessment, and progress screenshots from the five-service
-Compose stack live under `docs/images/` and are embedded in the README.
-`DESIGN.md` passes the premium strict audit; the official linter reports no
-errors (the existing `accent` naming convention may produce a missing-primary
-warning). Streamlit AppTest covers model/fallback origins, anchored
-links, the exact GitHub scope message, the auth landing gate, correct top-level
-parsing of the hosted API settings in the Streamlit secrets example, and a
-guard that prevents `pandas` from being imported during initial app startup.
+- `/` — a static, pre-rendered marketing/landing page: hero with a worked
+  example finding → interview follow-up, a three-step "how it works" section,
+  and the email/local-practice login form (`components/login.tsx`).
+- `/workspace` — the authenticated app shell (`components/workspace.tsx`,
+  ~1,050 lines): Review (paste code or GitHub link, role selector, findings
+  panel), Interview (question-by-question practice with scoring/feedback),
+  and Progress (evidence-backed history, snapshot save). Client-rendered,
+  session-gated.
+- Server route handlers (not pages): `app/api/auth/[action]/route.ts`
+  (login/local/callback/logout — Stytch magic link or, only when
+  `CLUTCH_ALLOW_LOCAL_ANONYMOUS=true` and not on Vercel, an anonymous local
+  session) and `app/api/clutch/[...path]/route.ts` (the sole allowlisted,
+  origin-checked, ownership-signing proxy to FastAPI).
 
-## Startup and presentation (2026-09-14)
+Wired up: full Review → Interview → feedback → Progress loop against a real
+FastAPI backend, cross-user ownership isolation, CSRF/origin enforcement,
+Stytch and local-anonymous auth, citation link sanitization, generic
+user-facing error copy (no raw backend detail), pagination-free single-page
+findings (all findings render; Streamlit's five-per-page limit was dropped
+since the layout no longer needs it), and light/dark-agnostic (light-only)
+premium visual design in `app/globals.css` (~1,600 lines, shared design
+tokens with `DESIGN.md`).
 
-- Community Cloud selects `frontend/requirements.txt` beside `app.py`: only
-  pinned Streamlit 1.62.0 and Requests 2.34.2, with their transitive dependencies.
-  Frontend Docker uses the same list and now copies `.streamlit/config.toml`;
-  `.dockerignore` allows only that config from the secrets directory.
-- Explicit light base, system-local fonts, no duplicate Google Fonts requests.
-  Landing colors consume the shared CSS tokens. No app-owned startup network
-  request; regression coverage checks this with external HTTP forbidden.
-- Public example highlights line 3 and offers a keyboard-operable suggested
-  revision. Native details/summary also collapses the engineering panels;
-  opening either disclosure makes no server request or rerun. Source/README
-  links provide an optional deeper inspection path.
-- Workbench has clearer workflow navigation, pending-review source/submit
-  controls disabled, and a copyable example in its empty state. Global focus,
-  scrollbar, disabled-button, and reduced-motion styles cover both surfaces.
-- Verification: 13 frontend tests, Ruff, mypy, and strict premium audit pass.
-  Browser checks cover desktop/mobile landing, disclosures, keyboard focus,
-  invalid login input, review service failure, and Interview empty state.
-  Docker image build is unverified because the Docker daemon is unavailable.
-- These changes are local, not deployed. Hosted cold/warm timings are unmeasured.
+Nothing is stubbed. No TODO/FIXME markers exist in `app/`, `components/`,
+or `lib/`.
+
+## Verification (2026-09-14)
+
+- `npm run lint`, `npm run typecheck`, `npm test` (9 unit/contract/ownership
+  tests, one integration test conditionally skipped), and `npm run build`
+  all pass clean.
+- `npm run test:integration` (`tests/run-integration.mjs`) spins up an
+  isolated local FastAPI (`DATABASE_URL`/`REDIS_URL`/`OPENAI_API_KEY` forced
+  empty — no production data or spend touched) and a production Next.js
+  build on throwaway ports, then runs the full HTTP flow end to end:
+  review → interview turns → feedback → progress, plus 401/403/404 ownership
+  and CSRF checks. Passes.
+- Manually verified the standalone Docker output
+  (`CLUTCH_STANDALONE=true npm run build`, then `node .next/standalone
+  /server.js` with `.next/static` copied alongside) serves `/`, `/workspace`,
+  and `/icon.svg` with 200s — this is exactly what `frontend/Dockerfile`
+  packages, confirming the multi-stage build is correct without needing a
+  local Docker daemon (which was unavailable in this session, consistent
+  with prior sessions' notes).
+- Browser-verified with a headless-Chrome/Puppeteer driver (landing at
+  1440px and 390px, workspace Review/Interview/Progress tabs, local-anonymous
+  login, the generic "service unavailable" fallback banner with no backend
+  running) — no horizontal overflow, no console errors after fixing the
+  favicon 404 below.
+- Added `app/icon.svg` (the brand mark, matching `components/brand.tsx`'s
+  colors) so the browser's automatic `/favicon.ico` request no longer 404s;
+  there was no `public/` directory or icon convention file before this.
 
 ## Decisions
 
-- The frontend only calls FastAPI through `CLUTCH_API_BASE_URL`; it never imports
-  parser, provider, persistence, retrieval, or MCP business logic.
-- It attaches the optional deployment API key server-side; that value is never
-  rendered into browser state.
-- `CLUTCH_API_BASE_URL` and `CLUTCH_API_KEY` can come from environment variables
-  or `st.secrets`, so the same app runs locally and on Streamlit Community
-  Cloud.
-- Without Stytch secrets, a local generated profile ID connects review,
-  interview, and progress for anonymous development. With Stytch secrets, the
-  hashed Stytch user identity owns the profile ID.
-- UI state covers initial, validation, loading, success, empty, and service
-  failure behavior.
-- The unauthenticated landing page is a public product surface: it explains the
-  project, shows a compact review-to-interview loop preview, and names the main
-  user-facing strengths before login: cited findings, GitHub review, interview
-  follow-ups, progress history, and private practice sessions. Keep recruiter
-  and demo-specific language off the page; avoid exposing internal schema-chain
-  shorthand or raw-retention slogans in the hero.
-- The landing hero uses a keyed native Streamlit container and columns. Raw HTML
-  never spans the login widget, which keeps the workflow preview and login copy
-  inside the same responsive card at desktop and 390px. The Stytch form has an
-  explicit hero-local margin/padding treatment so the magic-link box does not
-  sit tightly against the capability chips.
-- `.streamlit/config.toml` sets `[client].toolbarMode = "viewer"` and the app
-  stylesheet hides reachable Streamlit toolbar/menu chrome. Streamlit Community
-  Cloud can still show owner/deployment controls such as “Manage app” to signed
-  in owners outside the app DOM. Do not hide Streamlit's `header` element: it
-  contains the sidebar reopen control after the sidebar is collapsed.
-- The authenticated workbench forces Streamlit's sidebar to start expanded; the
-  signed-in identity and Log out action live in the sidebar rather than in a
-  main-page account strip.
-- Long review result sets are paginated in the Review page at five findings per
-  page. The backend still returns the full result and the sidebar metric still
-  shows the total finding count.
-- User-facing frontend errors are intentionally generic and action-oriented.
-  They do not render raw exceptions, backend URLs, provider payload details, or
-  deployment configuration hints. Review request failures can preserve safe
-  backend messages, and deterministic fallback banners name the safe fallback
-  reason instead of only saying that no model call completed.
-- The GitHub review form validates URL shape before submitting. It accepts
-  canonical repository and pull-request links, plus harmless copied-browser
-  query strings/fragments, and rejects unsupported paths such as `/tree/...`
-  with correction copy before any backend/MCP call starts.
-- Deployment placeholders use reviewed, line-local `detect-secrets`
-  annotations; the repository does not suppress the keyword detector globally or
-  weaken the committed baseline.
-- Every finding, question, assessment, citation, and final aggregation has a
-  literal origin label. A warning appears whenever the applicable model did not
-  complete; deterministic/template output is never described as AI-generated.
+- Session ownership: an HttpOnly/Secure(prod)/SameSite=Lax signed cookie
+  (`lib/auth.ts`) carries either a Stytch-verified identity or, in local
+  mode only, a locally-signed anonymous identity. The same `profileId()`
+  hashing scheme as the legacy Streamlit app is reused so a user's progress
+  history is continuous across the migration.
+- `CLUTCH_ALLOW_LOCAL_ANONYMOUS` is read at module scope in `app/page.tsx`
+  and is forced off whenever `process.env.VERCEL` is set, so anonymous
+  practice can never accidentally ship to production.
+- The proxy route (`app/api/clutch/[...path]/route.ts`) is the only place
+  that holds `CLUTCH_API_KEY`; it allowlists product paths, rewrites/verifies
+  profile IDs, checks request origin on mutations, and signs interview
+  ownership into per-session cookies (bounded to the 11 most recent so
+  header size can't grow unbounded).
+- No client-side persistence: review/answer drafts live in React state only,
+  matching the old Streamlit "no autosave" behavior; reloading loses the
+  active draft, navigating stages within the workspace does not.
+- Docker/Compose now expose the frontend on port 3000 (was 8501) and health-
+  check with a plain `fetch()` instead of Streamlit's `_stcore/health`.
+- CI gained a dedicated `frontend` job (lint, typecheck, unit tests, build,
+  `npm audit --omit=dev`, then the Python-backed integration test) that other
+  jobs (image builds) now depend on.
 
 ## Known gaps
 
-- No user-account picker, historical snapshot list, report export format, or
-  backend-side JWT verification; Streamlit owns user login for the v1 demo.
-- SSE/live token streaming is deferred until interview behavior is richer.
-- Streamlit Community Cloud can still show its host-owned dark skeleton while a
-  sleeping app wakes or starts. The app can reduce this window, but cannot fully
-  replace that wrapper screen from inside Streamlit code.
+- Hosted Vercel deployment itself has not happened yet; `docs/vercel-
+  deployment.md` documents the Root Directory/env var/Stytch redirect setup
+  and cutover checklist but nothing there has been exercised against a real
+  Vercel project or a live Stytch project/domain.
+- No visual regression/screenshot diffing is wired into CI; verification is
+  manual (this session) or unit/contract-test-based.
+- The 150s proxy timeout / 180s function duration assumption in
+  `docs/vercel-deployment.md` has not been checked against the actual Vercel
+  plan the user will deploy on.

@@ -1,3 +1,7 @@
+> **Frontend migration (2026-09-14):** Use [Vercel deployment](vercel-deployment.md)
+> for the new Next.js frontend. Streamlit instructions below are rollback
+> reference only. The Neon/Render backend instructions still apply.
+
 # Neon → Render → Streamlit Deployment Runbook
 
 Clutch's production data layer is already prepared. The only remaining work is

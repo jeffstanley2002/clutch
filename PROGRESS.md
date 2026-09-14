@@ -1834,3 +1834,85 @@ Next up:
 - Deploy this frontend revision and check its dependency selection and fresh
   mobile/desktop visits. For complete removal of the Cloud wrapper, choose a
   static entry page or an always-on hosting migration and update auth redirects.
+
+## 2026-09-14 (Day 17 Streamlit to Next.js migration, verification pass)
+
+Phase: 4 deployment and polish (UI platform switch)
+
+Did:
+
+- Picked up an in-progress, uncommitted Streamlit-to-Next.js rewrite from a
+  crashed prior session (`frontend/app/`, `components/`, `lib/`, `tests/`,
+  `UX-CONTRACT.md`, `docs/vercel-deployment.md`, updated CI/Dockerfile/Compose,
+  and doc reconciliation across AGENTS/ARCHITECTURE/DESIGN/README were already
+  written but unverified and unlogged) and verified/finished it rather than
+  redoing it, since the code was already substantially complete and correct.
+- Ran and confirmed clean: `npm run lint`, `npm run typecheck`, `npm test`
+  (9 unit/ownership/contract tests), and `npm run build`.
+- Ran `npm run test:integration`: an isolated local FastAPI (production
+  `DATABASE_URL`/`REDIS_URL`/`OPENAI_API_KEY` forced empty, so no prod data
+  or spend was touched) plus a production Next.js build on throwaway ports,
+  exercising the full review → interview turns → feedback → progress HTTP
+  flow with cross-user ownership and CSRF checks. Passed.
+- Manually verified the multi-stage Dockerfile's standalone output outside
+  Docker (local daemon still unavailable, consistent with prior sessions):
+  built with `CLUTCH_STANDALONE=true`, copied `.next/standalone` +
+  `.next/static` exactly as the Dockerfile does, ran `node server.js`, and
+  confirmed `/`, `/workspace`, and the new `/icon.svg` all return 200.
+- Browser-verified with a headless-Chrome/Puppeteer driver (no project
+  screenshot skill existed for this repo yet): landing page at 1440px and
+  390px, the local-anonymous login path, and the Review/Interview/Progress
+  workspace tabs including the generic "service unavailable" fallback state
+  with no backend running.
+- Found and fixed one real gap: no `public/` directory or icon file existed,
+  so every page load 404'd on the browser's automatic `/favicon.ico` request.
+  Added `app/icon.svg` using the existing brand-mark colors; Next's built-in
+  icon convention now serves it and the console error is gone.
+- Rewrote `frontend/MEMORY.md`, which still described the retired Streamlit
+  screens, to describe the current Next.js screens, what's wired up, the
+  verification performed, and the real remaining gaps.
+
+Learned / decided:
+
+- The crashed session's frontend code, doc edits, and CI/Docker/Compose
+  changes were all internally consistent with each other and with the
+  already-updated architecture docs; the gap was verification and memory
+  hygiene, not missing implementation.
+- `next build` without `CLUTCH_STANDALONE=true` is what `next start` (and
+  the integration-test harness) needs; the Docker-only standalone output
+  must be built and checked separately, since the two are not the same
+  `.next` output shape.
+- `tests/run-integration.mjs` is safe to run against this session's real
+  `.env` because it explicitly overrides the provider/database/cache
+  variables to empty before spawning uvicorn, isolating it from the Neon
+  production database and any model spend.
+
+Verification:
+
+- Frontend: lint, typecheck, 9 unit tests, production build, and the
+  Python-backed integration test all passed.
+- Standalone Docker-equivalent server smoke: `/`, `/workspace`, `/icon.svg`
+  all 200 outside a container.
+- Browser smoke: no horizontal overflow at 390px, no console errors after
+  the favicon fix, generic (non-leaking) error copy confirmed in the
+  Progress-tab fallback state.
+
+Open issues:
+
+- Same as before this pass: hosted Vercel deployment, real Stytch redirect
+  configuration, and the Vercel function-duration assumption in
+  `docs/vercel-deployment.md` are all still unexercised against a live
+  project. The user is deploying to Vercel and rotating/reconfiguring
+  production API keys and routing themselves next.
+- No visual regression tooling is wired into CI; this session's browser
+  verification was manual and one-off.
+- Docker daemon still unavailable in this environment; the actual
+  `docker build` for `frontend/Dockerfile` remains unexercised, though its
+  standalone-output assumption is now directly verified.
+
+Next up:
+
+- User deploys `frontend/` to Vercel per `docs/vercel-deployment.md`,
+  configures production Stytch/session/API-key environment variables, and
+  runs the cutover verification checklist there. After that smoke passes,
+  retire the Streamlit Community Cloud deployment and its keepalive workflow.

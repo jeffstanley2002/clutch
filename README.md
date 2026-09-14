@@ -6,14 +6,13 @@ request into cited findings, interviewer-style follow-ups, a stateful practice
 interview, and cross-session progress evidence.
 
 **Status:** the application and Neon production data layer are complete. The
-remaining handoff is deploying FastAPI to Render and the UI to Streamlit
-Community Cloud, as documented in
+remaining handoff is deploying FastAPI to Render and the UI to Vercel, as documented in
 [`docs/free-deployment.md`](docs/free-deployment.md). AWS remains unapplied
 architecture evidence while cost is paused.
 
 ```mermaid
 flowchart LR
-  UI[Streamlit] --> API[FastAPI]
+  UI[Next.js on Vercel] --> API[FastAPI]
   API --> AGENT[One LangGraph review agent]
   API --> INTERVIEW[Interview + progress services]
   AGENT --> PARSER[tree-sitter]
@@ -80,19 +79,20 @@ python -m pip install -e ".[dev]"
 uvicorn backend.app.main:app --reload
 ```
 
-In another terminal:
+In another terminal (Node.js 22+):
 
 ```bash
-. .venv/bin/activate
-streamlit run frontend/app.py
+npm ci --prefix frontend
+cp frontend/.env.example frontend/.env.local
+# Set CLUTCH_ALLOW_LOCAL_ANONYMOUS=true in frontend/.env.local for local practice.
+npm run dev --prefix frontend
 ```
 
-Open `http://localhost:8501`. Without an OpenAI key, the UI clearly labels
+Open `http://localhost:3000`. Without an OpenAI key, the UI clearly labels
 deterministic/template/rule-based fallbacks. Database, Redis, GitHub token, and
-Langfuse remain optional for local development. Without Stytch secrets, local
-development uses an anonymous generated profile ID. With Stytch secrets, the app
-shows a landing/login screen and derives progress from the signed-in email
-identity.
+Langfuse remain optional for local development. Local anonymous practice requires an explicit environment opt-in. Production
+requires Stytch authentication and derives progress from the same hashed Stytch
+user identity as the legacy client.
 
 Copy `.env.example` to `.env` to opt into provider-backed behavior. Important
 variables are:
@@ -104,7 +104,7 @@ variables are:
   require explicit per-million-token price variables
 - `CLUTCH_LIVE_EVAL_MAX_USD`, `CLUTCH_LIVE_EVAL_PER_REQUEST_USD` for the
   isolated, manually invoked live-model evaluation budget
-- `CLUTCH_REQUIRE_AUTH`, `CLUTCH_API_KEY` (both backend and Streamlit receive
+- `CLUTCH_REQUIRE_AUTH`, `CLUTCH_API_KEY` (both backend and Next.js receive
   the same server-side key in a deployed environment)
 - pooled `DATABASE_URL` for runtime; direct `DIRECT_DATABASE_URL` for Alembic
   and administrative seeding
@@ -113,10 +113,11 @@ variables are:
 - `LANGFUSE_*`; tracing is off unless `LANGFUSE_TRACING_ENABLED=true` and both
   keys are configured
 
-For local Stytch magic-link login, copy `.streamlit/secrets.example.toml` to
-`.streamlit/secrets.toml`, fill in the `[stytch]` values from the Stytch
-dashboard, and keep `redirect_url = "http://localhost:8501"`. Do not commit
-`.streamlit/secrets.toml`.
+For the frontend, run `npm ci --prefix frontend`, copy `frontend/.env.example`
+to `frontend/.env.local`, and configure Stytch or explicitly enable
+`CLUTCH_ALLOW_LOCAL_ANONYMOUS=true` for local practice. See
+[`docs/vercel-deployment.md`](docs/vercel-deployment.md) for the Vercel root
+directory, server-only environment variables, and Stytch callback URL.
 
 For a local credentialed demo without running the app containers, keep
 Postgres/Redis running and start the Python services from `.venv`:
@@ -133,11 +134,11 @@ export GITHUB_MCP_URL="http://127.0.0.1:8001/mcp"
 
 CLUTCH_MCP_TRANSPORT=streamable-http clutch-github-mcp
 uvicorn backend.app.main:app --reload
-streamlit run frontend/app.py
+npm run dev --prefix frontend
 ```
 
 Run each long-lived command in its own terminal. The UI is at
-`http://localhost:8501`.
+`http://localhost:3000`.
 
 ## Full local stack
 
@@ -149,16 +150,16 @@ docker compose run --rm backend alembic upgrade head
 docker compose up -d backend frontend
 ```
 
-The UI is at `http://localhost:8501`, FastAPI at `http://localhost:8000`, and
+The UI is at `http://localhost:3000`, FastAPI at `http://localhost:8000`, and
 the MCP Streamable HTTP endpoint at `http://localhost:8001/mcp`. Run migrations
 as a one-off command; do not run them independently in every backend replica.
 
 ## Low-cost public deployment
 
 Neon production is migrated, seeded, and verified. Deploy the FastAPI backend
-to Render and the UI to Streamlit Community Cloud. The exact remaining secrets,
+to Render and the UI to Vercel. The exact remaining secrets,
 settings, and smoke checklist live in
-[`docs/free-deployment.md`](docs/free-deployment.md); `render.yaml` and
+[`docs/vercel-deployment.md`](docs/vercel-deployment.md); `render.yaml` and
 `scripts/hosted_smoke.sh` make the handoff repeatable.
 
 ## API surface
@@ -398,8 +399,7 @@ for ECR/ECS, so those resources are optional flags rather than part of the
 default local rehearsal.
 
 The production data layer now runs on Neon Postgres with pgvector. The only
-remaining public-hosting steps are Render for FastAPI and Streamlit Community
-Cloud for the UI; Redis is optional for multi-replica shared cache/spend state.
+remaining public-hosting steps are Render for FastAPI and Vercel for the UI; Redis is optional for multi-replica shared cache/spend state.
 
 ## Known limitations
 
@@ -419,7 +419,7 @@ Cloud for the UI; Redis is optional for multi-replica shared cache/spend state.
 
 ## Resume-ready bullets
 
-- Built a read-only Applied AI review copilot with FastAPI, Streamlit,
+- Built a read-only Applied AI review copilot with FastAPI, Next.js,
   LangGraph, tree-sitter, strict Pydantic outputs, PostgreSQL/pgvector, Redis,
   and a deliberately scoped three-tool GitHub MCP boundary.
 - Designed a 21-scenario regression suite—15 code reviews, three adversarial

@@ -1,24 +1,21 @@
-FROM python:3.11.16-slim-bookworm
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
-    STREAMLIT_SERVER_HEADLESS=true
-
+FROM node:22-bookworm-slim AS dependencies
 WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
-COPY frontend/requirements.txt ./frontend/requirements.txt
-RUN python -m pip install --no-cache-dir -r frontend/requirements.txt
+FROM dependencies AS build
+COPY frontend/ ./
+ARG CLUTCH_ALLOW_LOCAL_ANONYMOUS=false
+ENV CLUTCH_ALLOW_LOCAL_ANONYMOUS=$CLUTCH_ALLOW_LOCAL_ANONYMOUS
+ENV NEXT_TELEMETRY_DISABLED=1 CLUTCH_STANDALONE=true
+RUN npm run build
 
-COPY frontend ./frontend
-COPY .streamlit/config.toml ./.streamlit/config.toml
-
-RUN addgroup --system --gid 10001 clutch \
-    && adduser --system --uid 10001 --ingroup clutch clutch \
-    && chown -R clutch:clutch /app
-
-USER 10001:10001
-EXPOSE 8501
-
-CMD ["streamlit", "run", "frontend/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+FROM node:22-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+RUN groupadd --gid 10001 clutch && useradd --uid 10001 --gid clutch clutch
+COPY --from=build --chown=clutch:clutch /app/.next/standalone ./
+COPY --from=build --chown=clutch:clutch /app/.next/static ./.next/static
+USER clutch
+EXPOSE 3000
+CMD ["node", "server.js"]

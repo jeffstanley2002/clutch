@@ -3,7 +3,7 @@
 ## Overview
 
 Clutch is a read-only AI review and interview prep system built around one
-well-scoped agent. The user submits code through Streamlit. Streamlit calls a
+well-scoped agent. The user submits code through Next.js. Next.js calls a
 FastAPI backend. FastAPI validates the request, invokes a LangGraph agent, and
 returns structured Pydantic outputs. The agent uses direct internal tools for
 static review and clean-code retrieval. A separate, deliberately narrow MCP
@@ -12,13 +12,13 @@ server owns all external GitHub fetch operations.
 The implemented review path is:
 
 ```text
-Streamlit pasted-code form
+Next.js pasted-code form
   -> FastAPI /review
   -> Pydantic request model
   -> LangGraph review service
   -> strict OpenAI structured synthesis or labeled deterministic fallback
   -> Pydantic ReviewResponse
-  -> Streamlit findings and interview follow-ups
+  -> Next.js findings and interview follow-ups
 ```
 
 That path now supports pasted code and bounded GitHub repo/PR input, durable
@@ -28,10 +28,14 @@ zero-service fallback so the first path remains runnable.
 
 ## System Components
 
-### Streamlit UI
+### Next.js UI
 
-Streamlit is the only v1 web client. It should stay focused on the review and
-interview workflow rather than becoming a marketing site.
+Next.js is the primary v1 web client. Its landing and workspace shell are
+pre-rendered independently of FastAPI. React owns transient draft/results state;
+Next.js route handlers own Stytch session validation, same-origin mutation
+checks, signed review/interview ownership, response schema validation, and an
+allowlisted proxy. API/provider credentials never enter browser state. The
+legacy `frontend/app.py` is retained for rollback until Vercel cutover passes.
 
 Current screens:
 
@@ -43,7 +47,7 @@ Current screens:
 
 ### FastAPI Backend
 
-FastAPI owns the service boundary. Streamlit should not call model providers,
+FastAPI owns the service boundary. Next.js should not call model providers,
 retrieval code, databases, or MCP tools directly.
 
 Current endpoints:
@@ -66,7 +70,7 @@ Current endpoints:
 When `CLUTCH_API_KEY` is set—or `CLUTCH_REQUIRE_AUTH` is true—every route except
 `/health` requires a constant-time `X-Clutch-API-Key` match. Terraform requires
 a Secrets Manager API-key ARN before any public ECS service count can exceed
-zero and injects the value only into FastAPI and server-side Streamlit.
+zero and injects the value only into FastAPI and server-side Next.js.
 
 SSE is introduced for streaming interview turns once the non-streaming review
 path is stable.
@@ -256,8 +260,8 @@ shapes:
 
 ### Pasted Code Review
 
-1. User submits code in Streamlit.
-2. Streamlit sends `ReviewRequest` to FastAPI.
+1. User submits code in Next.js.
+2. Next.js sends `ReviewRequest` to FastAPI.
 3. FastAPI validates size, language, and required fields.
 4. Backend treats code as untrusted input and passes it as quoted source data,
    never as instructions.
@@ -268,7 +272,7 @@ shapes:
 8. Pydantic validates line/citation grounding; invalid model output is retried
    once, then replaced by explicitly labeled static findings and template
    questions.
-9. FastAPI returns `ReviewResponse` to Streamlit without logging raw code.
+9. FastAPI returns `ReviewResponse` to Next.js without logging raw code.
 
 ### GitHub Review
 
@@ -341,7 +345,7 @@ validation fail. Credentialed model evals remain manual/controlled.
 
 Local development runs all services locally or through Docker Compose. The
 prepared public path uses Neon production Postgres, Render for FastAPI, and
-Streamlit Community Cloud for the UI; only the two application deployments
+Vercel for the Next.js UI; only the two application deployments
 remain.
 
 The validated, unapplied Terraform deployment models:
@@ -382,7 +386,7 @@ Detailed deployment choices live in `CLOUD.md`.
 
 ### Unclear Boundaries
 
-- Streamlit is only a client; all business logic belongs behind FastAPI.
+- Next.js is only a client; all business logic belongs behind FastAPI.
 - The MCP server owns external GitHub fetching only.
 - Retrieval over the app's own rubric data remains internal.
 - The agent service owns context assembly and model/tool orchestration.
@@ -400,3 +404,11 @@ Detailed deployment choices live in `CLOUD.md`.
 The product can look impressive while giving shallow advice. The main defense
 is eval-first behavior: golden code samples, expected findings, citation checks,
 and honest README failure analysis.
+
+## Frontend migration — 2026-09-14
+
+The user superseded the original Streamlit-only decision due to Community
+Cloud startup latency. See `docs/vercel-deployment.md` for deployment and
+session handling. Historical AWS Streamlit topology below is unapplied legacy
+reference, not the active frontend hosting target. Backend behavior and eval
+baselines are unchanged. SSE remains deferred.

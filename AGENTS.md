@@ -58,14 +58,12 @@ not the Phase 1 work below.
 
 ## 1. Confirmed architecture decisions
 
-- **UI: Streamlit.** Not Next.js/React. Rationale: full-stack proof
-  (React/Next.js, .NET) already exists on the resume from prior
-  internships — polishing a frontend here adds little new signal. Streamlit
-  builds the review/interview dashboard fast and leaves the saved time for
-  agent orchestration, retrieval quality, evals, guardrails, and
-  observability, which is what these job descriptions actually test for.
+- **UI: Next.js / React / TypeScript (2026-09-14 user override).** Replace
+  Streamlit Community Cloud with Vercel to remove its startup wrapper. Keep
+  FastAPI as the backend; Next.js route handlers own server-side authentication
+  and the API-key proxy. The old Streamlit client remains a rollback artifact.
 - **Backend stays a real service, not just Streamlit-calls-Python.**
-  Streamlit → FastAPI (HTTP/SSE) → Agent Service. This supports saying in an
+  Next.js → FastAPI (HTTP/SSE) → Agent Service. This supports saying in an
   interview: "the UI is one client; the system is exposed through an API and
   could serve a CLI, a GitHub Action, or a bot just as easily."
 - **MCP: yes, but scoped to ONE deliberate boundary.** Wrap only the
@@ -100,7 +98,7 @@ not the Phase 1 work below.
 | Layer | Choice |
 |---|---|
 | Language | Python |
-| UI | Streamlit |
+| UI | Next.js / React / TypeScript |
 | API/service boundary | FastAPI (+ SSE for streaming interview turns) |
 | Agent orchestration | LangGraph |
 | LLM | OpenAI API first; add a `ModelProvider` abstraction later to compare vs Claude |
@@ -125,7 +123,7 @@ Work in this order — do not skip ahead to later-phase polish while an
 earlier phase has open gaps. Each phase should end in something runnable.
 
 **Phase 1 (Weeks 1–2) — Core review loop works end to end**
-FastAPI skeleton, Streamlit UI skeleton, tree-sitter-based parsing for a
+FastAPI skeleton, Next.js UI skeleton, tree-sitter-based parsing for a
 pasted function or small repo, LangGraph agent with 1–2 tools
 (`static_review`, `retrieve_clean_code_principles`) producing a Pydantic
 `CodeFinding[]` list. Basic (vector-only) retrieval over a seeded clean-code
@@ -155,7 +153,7 @@ read-only default. Wire evals into GitHub Actions as a regression gate.
 
 **Phase 4 (Weeks 7–8) — Progress tracking, observability, caching, deployment, polish**
 Add persistent `ProgressSnapshot` tracking across sessions (what improved,
-what recurring issues remain) and surface it in the Streamlit UI. Add
+what recurring issues remain) and surface it in the Next.js UI. Add
 Langfuse/Phoenix tracing on every request (prompt → model → tool call →
 tool latency → result → response, with tokens/cost/latency visible). Add
 Redis caching with measured before/after latency. Add the `ModelProvider`
@@ -238,7 +236,7 @@ Structure to create as the repo grows:
 /parsing/MEMORY.md            (tree-sitter setup: languages supported, chunking approach)
 /knowledge_base/MEMORY.md     (rubric/clean-code/question-bank content, hybrid search config + why)
 /evals/MEMORY.md              (eval dataset size/shape, current metric baselines, what changed them)
-/frontend/MEMORY.md           (Streamlit screens, what's wired up, what's stubbed)
+/frontend/MEMORY.md           (Next.js screens, what's wired up, what's stubbed)
 /infra/MEMORY.md              (Docker, AWS resources, CI/CD state, secrets handling)
 ```
 
@@ -325,7 +323,7 @@ session can pick up exactly where it left off without re-deriving context.
 
 ## 8. Definition of done for the whole project
 
-- End-to-end flow works from Streamlit through FastAPI/LangGraph/MCP: paste
+- End-to-end flow works from Next.js through FastAPI/LangGraph/MCP: paste
   or link code → structured, cited findings → generated follow-up
   questions → a live simulated interview turn → a structured feedback
   report.

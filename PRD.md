@@ -43,7 +43,7 @@ Secondary users:
 
 ### 1. Pasted Code Review
 
-The user pastes a function or small code snippet into the Streamlit UI, chooses
+The user pastes a function or small code snippet into the web UI, chooses
 role context such as "backend intern", and submits it for review. The system
 returns structured findings with severity, location, explanation, suggested
 improvement, and citations to clean-code principles.
@@ -77,7 +77,7 @@ answers are improving.
 
 ## V1 Features
 
-- Streamlit dashboard with pasted-code input and review output.
+- Web dashboard with pasted-code input and review output.
 - FastAPI backend exposing review and interview endpoints.
 - LangGraph agent with tools for static review and clean-code retrieval.
 - Tree-sitter based parsing for Python first, with room for more languages.
@@ -175,16 +175,15 @@ The project is successful when it can demonstrate:
 - Show progress across at least two sessions.
 - Demonstrate at least one prompt-injection test that fails safely.
 - Show eval metrics and one model comparison table in the README.
-- Run through CI and deploy through the prepared Neon → Render → Streamlit
-  Community Cloud path; keep the AWS path in `CLOUD.md` as unapplied future
+- Run through CI and deploy through the prepared Neon → Render → Vercel path; keep the AWS path in `CLOUD.md` as unapplied future
   architecture evidence.
 
 ## Assumptions
 
 - Python is the primary language for implementation and the first reviewed
   language.
-- Streamlit is sufficient for the UI because the portfolio signal is in AI
-  engineering depth rather than frontend polish.
+- The public entry page should appear independently of backend startup. The
+  interface supports fast navigation between review, interview, and progress.
 - PostgreSQL with pgvector is enough for v1 retrieval and persistence.
 - A single well-engineered LangGraph agent is preferable until evals prove a
   need for multi-agent orchestration.
