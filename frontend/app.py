@@ -200,7 +200,6 @@ def _render_landing_gate() -> None:
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
         [data-testid="stToolbar"],
         [data-testid="stDecoration"],
@@ -209,89 +208,90 @@ def _render_landing_gate() -> None:
             height: 0;
         }
         html, .stApp {
-            font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
-            background: #F7F6F3;
+            font-family: "Avenir Next", "Segoe UI", sans-serif;
+            background: var(--clutch-bg);
         }
         [data-testid="stMainBlockContainer"] {
             padding-top: 2rem;
             padding-bottom: 3rem;
         }
         .st-key-landing_hero {
-            padding: clamp(1.4rem, 3vw, 2.4rem);
-            border: 1px solid #E1E1DC;
+            padding: clamp(1.25rem, 3vw, 2.4rem);
+            border: 1px solid var(--clutch-border);
             border-radius: 0.5rem;
-            background: #FFFFFF;
+            background: var(--clutch-surface);
         }
         .st-key-landing_hero [data-testid="stHorizontalBlock"] {
             gap: clamp(1.75rem, 4vw, 3.5rem);
         }
-        .clutch-wordmark {
+        .stApp .clutch-wordmark {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             margin-bottom: 1.4rem;
         }
-        .clutch-wordmark-mark {
+        .stApp .clutch-wordmark-mark {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             width: 1.6rem;
             height: 1.6rem;
             border-radius: 0.35rem;
-            background: #267A5B;
-            color: #FFFFFF;
+            background: var(--clutch-accent);
+            color: var(--clutch-surface);
             font-weight: 700;
             font-size: 0.85rem;
         }
-        .clutch-wordmark-word {
+        .stApp .clutch-wordmark-word {
             font-size: 1.05rem;
             font-weight: 700;
-            color: #171717;
+            color: var(--clutch-text);
         }
-        .clutch-hero-title {
-            max-width: 16ch;
+        .stApp .clutch-hero-title {
+            max-width: 22ch;
             margin: 0 0 1rem;
-            color: #171717;
-            font-size: clamp(2.1rem, 3.6vw, 3.4rem);
+            color: var(--clutch-text);
+            font-size: clamp(2rem, 3.2vw, 3rem);
+            padding: 0;
             line-height: 1.12;
             letter-spacing: -0.01em;
             font-weight: 700;
         }
-        .clutch-hero-title > a {
+        .stApp .clutch-hero-title > a {
             display: none;
         }
-        .clutch-hero-copy {
+        .stApp .clutch-hero-copy {
             max-width: 34rem;
             margin: 0;
-            color: #444444;
+            color: var(--clutch-text-muted);
             font-size: 1.05rem;
             line-height: 1.6;
         }
-        .clutch-trust-line {
+        .stApp .clutch-trust-line {
             max-width: 34rem;
             margin: 1.1rem 0 0;
-            color: #666666;
+            color: var(--clutch-text-muted);
             font-size: 0.88rem;
             line-height: 1.5;
         }
-        .clutch-signin-lead {
-            margin: 2.25rem 0 0.85rem;
+        .stApp .clutch-signin-lead {
+            margin: 1.5rem 0 0.6rem;
             padding-top: 1.5rem;
-            border-top: 1px solid #E1E1DC;
-            color: #171717;
+            border-top: 1px solid var(--clutch-border);
+            color: var(--clutch-text);
             font-size: 0.95rem;
             font-weight: 600;
         }
         .st-key-landing_hero [data-testid="stForm"] {
             margin-top: 0.25rem;
             padding: 1.1rem 1.15rem;
-            background: #FBFBFA;
-            border-color: #E1E1DC;
+            background: var(--clutch-surface-2);
+            border-color: var(--clutch-border);
             border-radius: 0.5rem;
         }
         .st-key-landing_hero [data-testid="stForm"] label p {
             font-weight: 600;
-            color: #171717;
+            color: var(--clutch-text);
         }
         .st-key-landing_hero [data-testid="stButton"] {
             margin-top: 0.6rem;
@@ -301,134 +301,174 @@ def _render_landing_gate() -> None:
             padding-inline: 1.1rem;
             font-weight: 600;
         }
-        .clutch-cta-copy {
+        .stApp .clutch-cta-copy {
             max-width: 34rem;
-            color: #666666;
+            color: var(--clutch-text-muted);
             font-size: 0.86rem;
             line-height: 1.5;
             margin: 0.6rem 0 0;
         }
-        .clutch-preview-label {
+        .stApp .clutch-preview-label {
             margin: 0 0 0.6rem;
-            color: #666666;
+            color: var(--clutch-text-muted);
             font-size: 0.82rem;
-            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 0.02em;
         }
-        .clutch-code-card {
-            border: 1px solid #E1E1DC;
+        .stApp .clutch-code-card {
+            border: 1px solid var(--clutch-border);
             border-radius: 0.5rem;
-            background: #FBFBFA;
+            background: var(--clutch-surface-2);
             overflow: hidden;
         }
-        .clutch-code-filename {
+        .stApp .clutch-code-filename {
             padding: 0.5rem 0.85rem;
-            border-bottom: 1px solid #E1E1DC;
-            color: #666666;
-            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            border-bottom: 1px solid var(--clutch-border);
+            color: var(--clutch-text-muted);
+            font-family: "SFMono-Regular", Consolas, monospace;
             font-size: 0.8rem;
         }
-        .clutch-code-body {
+        .stApp .clutch-code-body {
             display: block;
             overflow-wrap: anywhere;
             white-space: pre-wrap;
             margin: 0;
             padding: 0.9rem 0.85rem;
-            color: #171717;
-            font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+            color: var(--clutch-text);
+            font-family: "SFMono-Regular", Consolas, monospace;
             font-size: 0.85rem;
             line-height: 1.55;
         }
-        .clutch-finding {
-            border-top: 1px solid #E1E1DC;
+        .stApp .clutch-finding {
+            border-top: 1px solid var(--clutch-border);
             padding: 0.95rem 0.85rem;
         }
-        .clutch-finding-tag {
+        .stApp .clutch-finding-tag {
             display: inline-block;
             margin-bottom: 0.5rem;
             padding: 0.15rem 0.5rem;
             border-radius: 0.3rem;
-            background: #E3F0E9;
-            color: #1B5C44;
+            background: var(--clutch-accent-muted);
+            color: var(--clutch-accent-strong);
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.02em;
             text-transform: uppercase;
         }
-        .clutch-finding h3 {
+        .stApp .clutch-finding h3 {
             margin: 0 0 0.4rem;
-            color: #171717;
+            color: var(--clutch-text);
             font-size: 0.98rem;
         }
-        .clutch-finding p {
+        .stApp .clutch-finding p {
             margin: 0;
-            color: #444444;
+            color: var(--clutch-text-muted);
             font-size: 0.9rem;
             line-height: 1.55;
         }
-        .clutch-followup {
-            border-top: 1px solid #E1E1DC;
+        .stApp .clutch-followup {
+            border-top: 1px solid var(--clutch-border);
             padding: 0.95rem 0.85rem;
         }
-        .clutch-followup span {
+        .stApp .clutch-followup span {
             display: block;
             margin-bottom: 0.35rem;
-            color: #666666;
+            color: var(--clutch-text-muted);
             font-size: 0.78rem;
             font-weight: 600;
         }
-        .clutch-followup p {
+        .stApp .clutch-followup p {
             margin: 0;
-            color: #171717;
+            color: var(--clutch-text);
             font-size: 0.92rem;
             line-height: 1.5;
         }
-        .clutch-features {
+        .stApp .clutch-features {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 1.75rem;
             margin-top: 2rem;
             padding-top: 1.75rem;
-            border-top: 1px solid #E1E1DC;
+            border-top: 1px solid var(--clutch-border);
         }
-        .clutch-feature h3 {
+        .stApp .clutch-feature h3 {
             margin: 0 0 0.4rem;
-            color: #171717;
+            color: var(--clutch-text);
             font-size: 1rem;
         }
-        .clutch-feature p {
+        .stApp .clutch-feature p {
             margin: 0;
-            color: #666666;
+            color: var(--clutch-text-muted);
             font-size: 0.92rem;
             line-height: 1.55;
         }
-        .clutch-sections {
+        .stApp .clutch-sections {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 1rem;
             margin-top: 1.75rem;
         }
-        .clutch-panel {
-            border: 1px solid #E1E1DC;
+        .stApp .clutch-panel {
+            border: 1px solid var(--clutch-border);
             border-radius: 0.5rem;
-            background: #FFFFFF;
+            background: var(--clutch-surface);
             padding: 1.1rem;
         }
-        .clutch-panel h2 {
+        .stApp .clutch-panel h2 {
             margin: 0 0 0.65rem;
-            color: #171717;
+            color: var(--clutch-text);
             font-size: 1rem;
             font-weight: 600;
         }
-        .clutch-panel p,
-        .clutch-panel li {
-            color: #666666;
+        .stApp .clutch-panel p,
+        .stApp .clutch-panel li {
+            color: var(--clutch-text-muted);
             line-height: 1.6;
             font-size: 0.92rem;
         }
-        .clutch-panel ul {
+        .stApp .clutch-panel ul {
             padding-left: 1.1rem;
             margin-bottom: 0;
         }
+        .stApp .clutch-masthead, .clutch-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            color: var(--clutch-text-muted);
+            font-size: 0.8rem;
+            padding: 0.25rem 0 1.1rem;
+        }
+        .stApp .clutch-masthead > span { letter-spacing: 0.08em; font-size: 0.7rem; }
+        .stApp .clutch-footer { margin-top: 1.5rem; }
+        .stApp .clutch-code-filename { display: flex; justify-content: space-between; gap: 1rem; }
+        .stApp .clutch-code-body { padding-inline: 0; }
+        .stApp .clutch-code-body code { background: none; padding: 0; font-size: inherit; }
+        .stApp .clutch-code-line { display: block; padding-inline: 0.85rem; }
+        .stApp .clutch-line-number { color: var(--clutch-text-muted); margin-right: 1rem; user-select: none; }
+        .stApp .clutch-code-highlight { background: var(--clutch-accent-muted); border-left: 3px solid var(--clutch-accent); }
+        .stApp .clutch-code-line b { color: var(--clutch-accent-strong); }
+        .stApp .clutch-revision { border-top: 1px solid var(--clutch-border); }
+        .stApp .clutch-revision summary, .clutch-engineering summary {
+            padding: 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--clutch-accent-strong);
+        }
+        .stApp .clutch-revision summary:hover, .clutch-engineering summary:hover {
+            background: var(--clutch-accent-muted);
+        }
+        .stApp .clutch-revision summary:active, .clutch-engineering summary:active {
+            background: var(--clutch-border);
+        }
+        .stApp .clutch-revision .clutch-code-body { padding: 0.5rem 1rem; }
+        .stApp .clutch-revision p { padding: 0 1rem 1rem; margin: 0; font-size: 0.85rem; color: var(--clutch-text-muted); }
+        .stApp .clutch-engineering { border-block: 1px solid var(--clutch-border); margin-top: 2rem; }
+        .stApp .clutch-engineering summary { padding-inline: 0.5rem; }
+        .stApp .clutch-engineering summary span { font-weight: 400; color: var(--clutch-text-muted); margin-left: 0.75rem; }
+        .stApp .clutch-engineering .clutch-sections { margin: 0.5rem 0 1rem; }
         @media (max-width: 820px) {
             .st-key-landing_hero [data-testid="stHorizontalBlock"] {
                 flex-wrap: wrap;
@@ -437,11 +477,11 @@ def _render_landing_gate() -> None:
                 flex: 1 1 100%;
                 width: 100%;
             }
-            .clutch-sections,
-            .clutch-features {
+            .stApp .clutch-sections,
+            .stApp .clutch-features {
                 grid-template-columns: 1fr;
             }
-            .clutch-hero-title {
+            .stApp .clutch-hero-title {
                 max-width: none;
             }
         }
@@ -450,10 +490,13 @@ def _render_landing_gate() -> None:
         unsafe_allow_html=True,
     )
 
+    st.markdown(
+        '<div class="clutch-masthead"><span>CODE REVIEW / INTERVIEW PRACTICE</span>'
+        '<a href="https://github.com/jeffstanley2002/clutch">View source ↗</a></div>',
+        unsafe_allow_html=True,
+    )
     with st.container(key="landing_hero"):
-        copy, preview = st.columns(
-            [1.05, 0.95], gap="large", vertical_alignment="top"
-        )
+        copy, preview = st.columns([1.05, 0.95], gap="large", vertical_alignment="top")
         with copy:
             st.markdown(
                 """
@@ -488,13 +531,15 @@ def _render_landing_gate() -> None:
                 submitted = st.form_submit_button(
                     "Email me a login link",
                     type="primary",
+                    width="stretch",
                 )
             if submitted:
                 if "@" not in email:
                     st.warning("Enter a valid email address.")
                 else:
                     try:
-                        _send_stytch_magic_link(email.strip())
+                        with st.spinner("Sending your sign-in link…"):
+                            _send_stytch_magic_link(email.strip())
                     except requests.RequestException:
                         st.error(
                             "The login link could not be sent. Check the email "
@@ -518,7 +563,7 @@ def _render_landing_gate() -> None:
                 """
                 <p class="clutch-cta-copy">
                     We'll email a one-time sign-in link — no password needed.
-                    Your review history stays private to your account.
+                    Review code, practise your reasoning, and revisit your progress.
                 </p>
                 """,
                 unsafe_allow_html=True,
@@ -528,10 +573,10 @@ def _render_landing_gate() -> None:
                 """
                 <p class="clutch-preview-label">Example finding</p>
                 <div class="clutch-code-card" aria-label="Example code review">
-                    <div class="clutch-code-filename">review.py</div>
-                    <div class="clutch-code-body">def get_user(user_id):<br>&nbsp;&nbsp;&nbsp;&nbsp;users = load_users()<br>&nbsp;&nbsp;&nbsp;&nbsp;return [u for u in users if u["id"] == user_id][0]</div>
+                    <div class="clutch-code-filename"><span>review.py</span><span>Python · 3 lines</span></div>
+                    <div class="clutch-code-body" role="code"><span class="clutch-code-line"><span class="clutch-line-number" aria-hidden="true">1</span><b>def</b> get_user(user_id):</span><span class="clutch-code-line"><span class="clutch-line-number" aria-hidden="true">2</span>    users = load_users()</span><span class="clutch-code-line clutch-code-highlight"><span class="clutch-line-number" aria-hidden="true">3</span>    <b>return</b> [u for u in users if u["id"] == user_id][0]</span></div>
                     <div class="clutch-finding">
-                        <span class="clutch-finding-tag">Correctness</span>
+                        <span class="clutch-finding-tag">Correctness · Line 3</span>
                         <h3>Possible IndexError</h3>
                         <p>
                             This raises <code>IndexError</code> if no user
@@ -544,6 +589,12 @@ def _render_landing_gate() -> None:
                         <span>Interview follow-up</span>
                         <p>Why did you choose this error-handling strategy?</p>
                     </div>
+                    <details class="clutch-revision">
+                        <summary>See a suggested revision</summary>
+                        <pre class="clutch-code-body"><code>def get_user(user_id):&#10;    return next(&#10;        (u for u in load_users()&#10;         if u["id"] == user_id),&#10;        None,&#10;    )</code></pre>
+                        <p>An explicit missing-user result. The caller must handle
+                        <code>None</code>; a domain exception is another valid choice.</p>
+                    </details>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -565,6 +616,8 @@ def _render_landing_gate() -> None:
                 <p>Track recurring issues without exposing your practice sessions.</p>
             </div>
         </div>
+        <details class="clutch-engineering">
+        <summary>Under the hood <span>Architecture, guardrails &amp; evaluation</span></summary>
         <div class="clutch-sections">
             <section class="clutch-panel">
                 <h2>AI review pipeline</h2>
@@ -587,10 +640,13 @@ def _render_landing_gate() -> None:
                 <ul>
                     <li>Prompt-injection tests treat code and README text as untrusted.</li>
                     <li>Langfuse traces are privacy-reduced and redact raw inputs.</li>
-                    <li>Evals, Redis caching, and deployment docs show operating judgment.</li>
+                    <li>Versioned evals gate regressions; Redis caches retrieval results.</li>
                 </ul>
             </section>
         </div>
+        </details>
+        <div class="clutch-footer">Built for thoughtful practice.
+        <a href="https://github.com/jeffstanley2002/clutch#readme">Read the project notes ↗</a></div>
         """,
         unsafe_allow_html=True,
     )
@@ -716,7 +772,8 @@ def _render_sidebar_nav() -> PageName:
     # back blank. Locking navigation until the pending call finishes avoids
     # that lost-work state.
     nav_locked = bool(
-        st.session_state.get("review_pending") or st.session_state.get("interview_pending")
+        st.session_state.get("review_pending")
+        or st.session_state.get("interview_pending")
     )
     with st.sidebar:
         st.markdown(
@@ -731,12 +788,15 @@ def _render_sidebar_nav() -> PageName:
             """,
             unsafe_allow_html=True,
         )
-        selected = st.segmented_control(
+        selected = st.radio(
             "Workflow",
             options=["Review", "Interview", "Progress"],
-            format_func=lambda page: page,
+            captions=[
+                "Inspect the evidence",
+                "Practise your reasoning",
+                "See what improves",
+            ],
             key="workflow_nav",
-            selection_mode="single",
             label_visibility="collapsed",
             disabled=nav_locked,
         )
@@ -759,7 +819,8 @@ def _render_sidebar_nav() -> PageName:
             )
         st.metric(
             "Interview turn",
-            interview["turn_number"] if interview and not interview["completed"]
+            interview["turn_number"]
+            if interview and not interview["completed"]
             else ("Done" if interview and interview["completed"] else "—"),
             icon=":material/mic:",
         )
@@ -832,8 +893,11 @@ def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
             label = _STAGE_LABELS.get(stage_name, stage_name)
             status = str(stage.get("status", "unknown"))
             state: Literal["running", "complete", "error"] = (
-                "complete" if status == "completed" else "error"
-                if status in {"failed", "fallback"} else "running"
+                "complete"
+                if status == "completed"
+                else "error"
+                if status in {"failed", "fallback"}
+                else "running"
             )
             with st.status(label, state=state, expanded=False):
                 with st.container(horizontal=True):
@@ -849,9 +913,7 @@ def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
                 output_tokens = stage.get("output_tokens")
                 metric_cols = st.container(horizontal=True)
                 with metric_cols:
-                    if isinstance(input_tokens, int) or isinstance(
-                        output_tokens, int
-                    ):
+                    if isinstance(input_tokens, int) or isinstance(output_tokens, int):
                         st.metric(
                             "Tokens",
                             f"{(input_tokens or 0) + (output_tokens or 0):,}",
@@ -866,9 +928,7 @@ def _render_stage_provenance(provenance: list[dict[str, Any]]) -> None:
                 if failure_category:
                     st.caption(
                         "⚠️ "
-                        + _FAILURE_LABELS.get(
-                            failure_category, str(failure_category)
-                        )
+                        + _FAILURE_LABELS.get(failure_category, str(failure_category))
                     )
 
 
@@ -997,9 +1057,7 @@ def _render_findings(findings: list[dict[str, Any]]) -> None:
 
     if total_pages > 1:
         with st.container(horizontal=True, vertical_alignment="center"):
-            st.caption(
-                f"Page {current_page} of {total_pages}"
-            )
+            st.caption(f"Page {current_page} of {total_pages}")
             st.button(
                 "Previous page",
                 icon=":material/chevron_left:",
@@ -1017,18 +1075,18 @@ def _render_findings(findings: list[dict[str, Any]]) -> None:
 
 
 def _render_review_page() -> None:
-    st.subheader(
-        f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="gray"
-    )
+    review_pending = st.session_state.review_pending is not None
+    st.subheader(f"{_PAGE_ICONS['Review']} 1 · Review the evidence", divider="gray")
     st.write(
-        "Paste Python or fetch a public GitHub repository/PR through the read-only "
-        "MCP boundary. Durable history contains only hashes and derived metadata."
+        "Bring a Python snippet or a GitHub pull request. Get specific findings, "
+        "supporting references, and questions to practise next."
     )
     input_mode = st.segmented_control(
         "Review source",
         options=["Paste code", "GitHub"],
         key="review_input_mode",
         selection_mode="single",
+        disabled=review_pending,
     )
     code = ""
     source_url = ""
@@ -1064,6 +1122,7 @@ def _render_review_page() -> None:
             "Review GitHub source" if input_mode == "GitHub" else "Review code",
             type="primary",
             icon=":material/rocket_launch:",
+            disabled=review_pending,
         )
 
     if submitted:
@@ -1090,9 +1149,7 @@ def _render_review_page() -> None:
     pending = st.session_state.review_pending
     if pending is not None:
         try:
-            with st.spinner(
-                "Reviewing structure, evidence, and interview signals…"
-            ):
+            with st.spinner("Reviewing structure, evidence, and interview signals…"):
                 if pending["input_mode"] == "GitHub":
                     github_result = _api_request(
                         "POST",
@@ -1157,6 +1214,16 @@ def _render_review_page() -> None:
             "Start with a function you recently wrote—especially one with error "
             "handling, state, or an unfinished tradeoff."
         )
+        with st.expander("Need a snippet to try?", icon=":material/code:"):
+            st.caption(
+                "Copy this example into Python code above, then choose Review code. "
+                "Consider what happens when a user cannot be found."
+            )
+            st.code(
+                "def get_user(users, user_id):\n"
+                '    return [u for u in users if u["id"] == user_id][0]\n',
+                language="python",
+            )
         return
 
     ingestion = st.session_state.github_ingestion
@@ -1187,9 +1254,7 @@ def _render_review_page() -> None:
             f"{review['confidence']:.0%}",
             icon=":material/verified:",
         )
-        st.metric(
-            "Findings", len(review["findings"]), icon=":material/flag:"
-        )
+        st.metric("Findings", len(review["findings"]), icon=":material/flag:")
         st.metric(
             "Latency",
             f"{review['latency_ms']:.0f} ms",
@@ -1287,9 +1352,7 @@ def _render_feedback_report(report: dict[str, Any]) -> None:
     )
     st.caption(_origin_label(report.get("origin"), item="report"))
     with st.container(horizontal=True):
-        st.metric(
-            "Strengths", len(report["strengths"]), icon=":material/thumb_up:"
-        )
+        st.metric("Strengths", len(report["strengths"]), icon=":material/thumb_up:")
         st.metric(
             "Recurring issues",
             len(report["recurring_issues"]),
@@ -1521,16 +1584,12 @@ def _load_progress() -> dict[str, Any] | None:
                 f"/progress/{st.session_state.profile_id}",
             )
     except requests.RequestException:
-        st.error(
-            "Progress could not be loaded. Try again in a moment."
-        )
+        st.error("Progress could not be loaded. Try again in a moment.")
         return None
 
 
 def _render_progress_page() -> None:
-    st.subheader(
-        f"{_PAGE_ICONS['Progress']} 3 · Track the pattern", divider="gray"
-    )
+    st.subheader(f"{_PAGE_ICONS['Progress']} 3 · Track the pattern", divider="gray")
     st.write(
         "Progress is based on repeated finding categories for this generated "
         "practice profile—not on a vague model score."
@@ -1624,14 +1683,13 @@ def _render_progress_page() -> None:
 
 st.set_page_config(
     page_title="Clutch",
-    page_icon="🗂️",
+    page_icon=":material/rate_review:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     [data-testid="stToolbar"],
     [data-testid="stDecoration"],
@@ -1667,10 +1725,15 @@ st.markdown(
         --clutch-danger: #B3261E;
         --clutch-warning: #8A5A00;
         --clutch-success: #267A5B;
+        --clutch-scroll-thumb: #C7C7C0;
+        --clutch-scroll-track: #F1F1EE;
+        --clutch-scroll-hover: #666666;
+        --clutch-scroll-active: #267A5B;
+        color-scheme: light;
     }
 
     html, .stApp {
-        font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
         background: var(--clutch-bg);
     }
     [data-testid="stMainBlockContainer"] {
@@ -1684,22 +1747,43 @@ st.markdown(
         border-right: 1px solid var(--clutch-border);
     }
     textarea, .stTextArea textarea {
-        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
+        font-family: "SFMono-Regular", Consolas, monospace !important;
         resize: none !important;
     }
     code, pre, [data-testid="stCode"] {
-        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace !important;
+        font-family: "SFMono-Regular", Consolas, monospace !important;
     }
     *:focus-visible {
         outline: 2px solid var(--clutch-accent) !important;
         outline-offset: 2px !important;
     }
-    html {
-        scrollbar-color: #C7C7C0 #F1F1EE;
+    * {
+        scrollbar-color: var(--clutch-scroll-thumb) var(--clutch-scroll-track);
         scrollbar-width: thin;
     }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: var(--clutch-scroll-track); }
+    ::-webkit-scrollbar-thumb { background: var(--clutch-scroll-thumb); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--clutch-scroll-hover); }
+    ::-webkit-scrollbar-thumb:active { background: var(--clutch-scroll-active); }
     @media (forced-colors: active) {
-        html { scrollbar-color: auto; }
+        * { scrollbar-color: auto; }
+        ::-webkit-scrollbar-thumb { background: ButtonText; }
+        ::-webkit-scrollbar-track { background: Canvas; }
+        *:focus-visible { outline-color: Highlight !important; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation: none !important;
+            transition: none !important;
+            scroll-behavior: auto !important;
+        }
+    }
+    a { text-underline-offset: 0.2em; }
+    button:not(:disabled), a { cursor: pointer; }
+    button:disabled { cursor: not-allowed; }
+    @media (max-width: 640px) {
+        [data-testid="stMainBlockContainer"] { padding: 2.5rem 1rem 2rem; }
     }
 
     /* Primary buttons: solid, flat, no gradient/glow */
@@ -1708,8 +1792,13 @@ st.markdown(
         border: none !important;
         box-shadow: none !important;
     }
-    button[kind="primary"]:hover {
+    button[kind="primary"]:hover:not(:disabled) {
         background: var(--clutch-accent-strong) !important;
+    }
+
+    button[kind="primary"]:active:not(:disabled) {
+        background: var(--clutch-accent-strong) !important;
+        outline: 2px solid var(--clutch-accent-muted);
     }
 
     /* Cards: thin border, minimal radius, no gradient fill */

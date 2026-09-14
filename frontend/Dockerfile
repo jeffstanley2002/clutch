@@ -8,11 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
-COPY src ./src
-RUN python -m pip install --no-cache-dir .
+COPY frontend/requirements.txt ./frontend/requirements.txt
+RUN python -m pip install --no-cache-dir -r frontend/requirements.txt
 
 COPY frontend ./frontend
+COPY .streamlit/config.toml ./.streamlit/config.toml
 
 RUN addgroup --system --gid 10001 clutch \
     && adduser --system --uid 10001 --ingroup clutch clutch \

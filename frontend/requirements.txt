@@ -1,0 +1,4 @@
+# Community Cloud prefers this file beside frontend/app.py over the root file.
+# Keep the UI independent of the agent, database, and model-provider packages.
+streamlit==1.62.0
+requests==2.34.2

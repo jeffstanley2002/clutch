@@ -1,18 +1,22 @@
 [client]
 toolbarMode = "viewer"
 
+[browser]
+gatherUsageStats = false
+
 [theme]
+base = "light"
 primaryColor = "#267A5B"
 backgroundColor = "#F7F6F3"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#171717"
-font = "sans serif"
+font = '"Avenir Next", "Segoe UI", sans-serif'
 baseRadius = "0.5rem"
 buttonRadius = "0.5rem"
 showWidgetBorder = true
 baseFontSize = 16
 linkColor = "#267A5B"
-codeFont = "monospace"
+codeFont = '"SFMono-Regular", Consolas, monospace'
 
 [theme.sidebar]
 backgroundColor = "#F1F1EE"

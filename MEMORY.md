@@ -71,6 +71,15 @@ Implemented boundaries:
 - Keep the live-model harness isolated from CI and capped at $0.50/run by
   default; missing credentials must return a typed unavailable report at $0.
 
+## Frontend polish (2026-09-14)
+
+Streamlit startup now uses a light base, local fonts, and a frontend-only
+requirements file. The landing offers highlighted example evidence, a suggested
+revision, and source links; native disclosures avoid server reruns. Navigation
+and form busy states are clearer. Frontend tests and browser checks pass; this
+revision is local and hosted speed has not been measured. Community Cloud's
+pre-app shell/hibernation remains a hosting limit; see `docs/free-deployment.md`.
+
 ## Known gaps / next work
 
 - Neon and local implementation are complete. The remaining owner steps are

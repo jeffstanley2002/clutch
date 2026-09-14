@@ -2,7 +2,8 @@
 
 ## Current state
 
-The Streamlit app implements a three-stage workflow rail:
+The Streamlit app implements a three-stage workflow rail (vertical native radio
+navigation with short stage descriptions):
 
 - Review: pasted Python or GitHub repo/PR + optional ref, role context, findings,
   anchored citations, bounded source/MCP summary, generated questions, and a
@@ -24,11 +25,34 @@ keyboard focus, answer clearing, citation deduplication, and empty/error states
 were rechecked on 2026-09-10. The 390px layout has no horizontal overflow. Fresh
 review, interview-assessment, and progress screenshots from the five-service
 Compose stack live under `docs/images/` and are embedded in the README.
-`DESIGN.md` passes the premium strict audit and official linter with zero
-errors or warnings. Streamlit AppTest covers model/fallback origins, anchored
+`DESIGN.md` passes the premium strict audit; the official linter reports no
+errors (the existing `accent` naming convention may produce a missing-primary
+warning). Streamlit AppTest covers model/fallback origins, anchored
 links, the exact GitHub scope message, the auth landing gate, correct top-level
 parsing of the hosted API settings in the Streamlit secrets example, and a
 guard that prevents `pandas` from being imported during initial app startup.
+
+## Startup and presentation (2026-09-14)
+
+- Community Cloud selects `frontend/requirements.txt` beside `app.py`: only
+  pinned Streamlit 1.62.0 and Requests 2.34.2, with their transitive dependencies.
+  Frontend Docker uses the same list and now copies `.streamlit/config.toml`;
+  `.dockerignore` allows only that config from the secrets directory.
+- Explicit light base, system-local fonts, no duplicate Google Fonts requests.
+  Landing colors consume the shared CSS tokens. No app-owned startup network
+  request; regression coverage checks this with external HTTP forbidden.
+- Public example highlights line 3 and offers a keyboard-operable suggested
+  revision. Native details/summary also collapses the engineering panels;
+  opening either disclosure makes no server request or rerun. Source/README
+  links provide an optional deeper inspection path.
+- Workbench has clearer workflow navigation, pending-review source/submit
+  controls disabled, and a copyable example in its empty state. Global focus,
+  scrollbar, disabled-button, and reduced-motion styles cover both surfaces.
+- Verification: 13 frontend tests, Ruff, mypy, and strict premium audit pass.
+  Browser checks cover desktop/mobile landing, disclosures, keyboard focus,
+  invalid login input, review service failure, and Interview empty state.
+  Docker image build is unverified because the Docker daemon is unavailable.
+- These changes are local, not deployed. Hosted cold/warm timings are unmeasured.
 
 ## Decisions
 

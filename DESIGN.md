@@ -15,11 +15,15 @@ colors:
   warning: "#8A5A00"
   danger: "#B3261E"
   success: "#267A5B"
+  scroll-thumb: "#C7C7C0"
+  scroll-track: "#F1F1EE"
+  scroll-hover: "#666666"
+  scroll-active: "#267A5B"
 typography:
   sans:
-    fontFamily: '"Inter", "Avenir Next", "Segoe UI", sans-serif'
+    fontFamily: '"Avenir Next", "Segoe UI", sans-serif'
   mono:
-    fontFamily: '"JetBrains Mono", "SFMono-Regular", Consolas, monospace'
+    fontFamily: '"SFMono-Regular", Consolas, monospace'
 rounded:
   DEFAULT: "0.5rem"
   sm: "0.35rem"
@@ -29,6 +33,22 @@ spacing:
   section-gap: "2rem"
   page-max: "76rem"
 components:
+  page:
+    backgroundColor: "{colors.bg}"
+  code-highlight:
+    backgroundColor: "{colors.accent-muted}"
+    textColor: "{colors.accent-strong}"
+  status-success:
+    backgroundColor: "{colors.success}"
+    textColor: "#FFFFFF"
+  scrollbar:
+    backgroundColor: "{colors.scroll-track}"
+  scrollbar-thumb:
+    backgroundColor: "{colors.scroll-thumb}"
+  scrollbar-thumb-hover:
+    backgroundColor: "{colors.scroll-hover}"
+  scrollbar-thumb-active:
+    backgroundColor: "{colors.scroll-active}"
   button-primary:
     backgroundColor: "{colors.accent}"
     textColor: "#FFFFFF"
@@ -123,6 +143,12 @@ component language.
 
 ## Colors
 
+The Streamlit config explicitly sets `base = "light"`; the application CSS
+uses `color-scheme: light`. These apply to the app, not the host-owned Cloud
+wake screen. Landing styles consume the same `--clutch-*` semantic variables
+as the workbench; scope custom typography under `.stApp` to override
+Streamlit Markdown defaults predictably.
+
 The app runs on a warm off-white (`bg`) page with white (`surface`) cards and
 a light neutral (`surface-2`) for the sidebar and code chrome. One muted green
 `accent` marks the primary action, links, active nav, and the small set of
@@ -130,16 +156,20 @@ semantic tags (e.g. a finding's category); `accent-muted` is its pale
 background for tag chips. `warning` and `danger` are semantic only and must
 always appear with text or an icon, never as the sole signal. `focus` reuses
 `accent` at 2px so keyboard location is visible without introducing a second
-color. In forced-colors mode, system colors own focus and scrollbars.
+color. In forced-colors mode, system colors own focus and scrollbars. Scrollbar
+tokens map to `--clutch-scroll-*` globally, with standards-based rules and
+WebKit fallbacks for track, thumb, hover, and active behavior.
 
 ## Typography
 
-Use Inter where available, then Avenir Next, Segoe UI, and system sans for
-product copy. Code and technical evidence use JetBrains Mono, SFMono-Regular,
-or a platform monospace. Sentence case is standard; short uppercase tags
+Use Avenir Next, Segoe UI, and system sans for product copy. Code and
+technical evidence use SFMono-Regular, Consolas, or a platform monospace.
+Fonts are system-local: no Google Fonts stylesheet, remote font face, or
+late font swap. The Streamlit theme and CSS use the same family stacks.
+Sentence case is standard; short uppercase tags
 (severity, category, difficulty, status badges) are the only intentional use
 of letter-spacing and all-caps — never body copy or headlines. Hero headline
-sizing stays in the 56–72px range at most (`clamp(2.1rem, 3.6vw, 3.4rem)`),
+sizing uses `clamp(2rem, 3.2vw, 3rem)` with a 22ch maximum line length,
 well short of full-bleed display type. Body copy stays at a 16px baseline
 with compact but readable line lengths (~17–19px in the hero column).
 
@@ -150,7 +180,8 @@ keyboard and screen-reader order follows the task. Major sections use a 2rem
 rhythm; related finding details stay inside one bordered container. At narrow
 widths, all content stacks and code owns any necessary internal overflow.
 Loading, errors, and empty guidance occupy the result region without moving
-the input controls.
+the input controls. Review source and submit controls disable during a pending
+review. The empty review includes a copyable example inside a native expander.
 
 The public sign-in gate uses one thin-bordered white hero card with two
 balanced columns: a plain wordmark, a concrete two-line headline, one short
@@ -160,8 +191,12 @@ interview follow-up) on the right, labeled "Example finding" so it is never
 mistaken for a live result. Below the hero, three plain feature blocks
 (heading + one sentence, no cards or icons) state real product behavior, and
 the three technical-credibility panels (pipeline / agent boundary /
-production signals) stay as simple bordered cards for portfolio-review
-readers. At narrow widths, the columns stack in natural reading order without
+production signals) live inside an “Under the hood” disclosure for readers
+who want implementation detail. The code example highlights the finding line
+and offers a suggested revision in a native HTML details/summary disclosure.
+These disclosures work without Python reruns, requests, or JavaScript. A small
+masthead and footer link directly to the project source and notes. At narrow
+widths, the columns stack in natural reading order without
 horizontal overflow. The authenticated workbench moves navigation into the
 sidebar (wordmark, workflow switcher, live session metrics) so the main
 column is reserved for the active page.
@@ -203,9 +238,11 @@ out of scope for read-only v1.
 ### Navigation and data display
 
 Workflow navigation—Review → Interview → Progress—lives in the sidebar as a
-segmented control, alongside the wordmark and live session metrics
+vertical native radio group with short stage descriptions, alongside the
+wordmark and live session metrics
 (confidence, finding count, interview turn) rendered with `st.metric`.
-Streamlit's segmented control owns its keyboard and selection behavior. The
+Streamlit's radio group owns its keyboard and selection behavior. Vertical
+stacking avoids wrapped navigation labels at the default sidebar width. The
 same stage names are used everywhere, and the sidebar stacks above the main
 column at narrow widths. Request metadata is utility copy, subordinate to
 findings and questions.
@@ -246,7 +283,9 @@ glowing dots, AI glyphs, or ornamental icon use in marketing copy.
 Motion communicates loading, a state transition, or a one-time completion
 moment only (`st.balloons` on finishing an interview, `st.toast` for a
 transient save confirmation). No hover lift, glow, or ambient/looping
-animation anywhere. Respect the platform's reduced-motion behavior.
+animation anywhere. The shared stylesheet disables animation and transitions
+when reduced motion
+is requested.
 
 ### Content and data visualization
 

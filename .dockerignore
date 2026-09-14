@@ -6,7 +6,8 @@
 .pytest_cache
 .ruff_cache
 .secrets.baseline
-.streamlit
+.streamlit/*
+!.streamlit/config.toml
 .venv
 **/__pycache__
 **/*.pyc

@@ -1777,3 +1777,60 @@ Next up:
 
 - Redeploy frontend/backend and retry the hosted GitHub form with both a copied
   README URL and a canonical repo URL.
+
+## 2026-09-14 (Streamlit startup and recruiter-facing polish)
+
+Phase: 4 deployment and polish
+
+Did:
+
+- Added frontend-only pinned dependencies beside the Community Cloud entrypoint;
+  updated the frontend image to use them and include the public theme config.
+  Kept other `.streamlit` files excluded from the Docker build context.
+- Set an explicit light theme, removed duplicate Google Fonts imports, and
+  aligned native widgets and custom HTML on system-local font stacks.
+- Refined the landing typography and spacing, highlighted the example finding,
+  added a suggested revision and collapsible engineering details using native
+  browser disclosures, and linked the source/README.
+- Replaced wrapping sidebar segments with a vertical native workflow selector,
+  added a copyable example to the empty review, disabled review source/submit
+  controls while pending, and improved shared focus/scrollbar/motion styles.
+- Added startup tests that forbid external HTTP and login failure/retry coverage.
+  Updated current-state memories, DESIGN.md, and the hosted deployment runbook.
+
+Learned / decided:
+
+- Entrypoint-local requirements take precedence over root requirements on
+  Community Cloud. This reduces rebuild/setup work, not necessarily every warm
+  request; backend packages were not eagerly imported by the frontend.
+- Community Cloud's wrapper and idle hibernation cannot be removed by app CSS.
+  Static entry hosting or an always-on Streamlit deployment is required to
+  decouple the first impression from that host. No paid resources or host move
+  were created; no hosted latency improvement is claimed.
+- Streamlit Markdown's defaults can override single-class typography. Scoped
+  `.stApp` selectors now make the intended landing type/spacing effective.
+
+Verification:
+
+- 13 frontend tests passed; Ruff check/format and mypy passed.
+- Premium strict audit: zero findings. Official DESIGN.md lint: zero errors,
+  one warning for the established `accent` rather than `primary` token name.
+- Real browser: desktop and 390px landing, keyboard-operated revision and
+  engineering disclosures, visible 2px focus ring, inline invalid-email error,
+  Review backend-unavailable recovery, Interview empty state, Progress failure,
+  and 390px workbench. No horizontal page overflow at the tested narrow width.
+- Login success/failure/retry is mocked in tests; no email or paid model request
+  was sent. Live auth and complete live-model flow were not rerun.
+- Docker build could not run because the local Docker daemon is unavailable.
+
+Open issues:
+
+- Changes are local and have not been pushed or deployed. Cloud pre-app loading
+  remains possible; cold/warm hosted timing is still unmeasured.
+- Rebuild the frontend image once Docker is running.
+
+Next up:
+
+- Deploy this frontend revision and check its dependency selection and fresh
+  mobile/desktop visits. For complete removal of the Cloud wrapper, choose a
+  static entry page or an always-on hosting migration and update auth redirects.

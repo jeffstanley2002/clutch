@@ -28,6 +28,16 @@ group, IAM role/policy, Secrets Manager API key, and CloudWatch log groups.
 ECR and ECS returned LocalStack 501 license errors, so they remain optional
 flags rather than default resources.
 
+## Frontend packaging update (2026-09-14)
+
+- Frontend Docker and Community Cloud now use `frontend/requirements.txt`;
+  the UI no longer installs the backend/agent package stack. Docker copies the
+  public Streamlit theme config; other `.streamlit` files remain excluded.
+- Updated `docs/free-deployment.md` with the entrypoint dependency precedence,
+  app-owned startup fixes, remaining host-owned loading/hibernation, and the
+  static-entry/always-on hosting alternatives. No hosting migration performed.
+- Fresh frontend Docker build could not run: local Docker daemon is not up.
+
 ## Decisions
 
 - Alembic runs as an explicit one-off task.

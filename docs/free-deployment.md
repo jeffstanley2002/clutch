@@ -181,7 +181,7 @@ After Render is healthy, create the Streamlit app with:
 - Repository: this GitHub repository
 - Branch: the deployment branch
 - Main file path: `frontend/app.py`
-- Dependency file: root `requirements.txt`
+- Dependency file: `frontend/requirements.txt` (automatically selected beside the entrypoint)
 - Python version: `3.11`
 
 Open **Advanced settings** and paste this TOML into **Secrets**. Keep the two
@@ -203,6 +203,44 @@ Streamlit uses Stytch email magic links for user login and sends only an opaque
 hashed profile ID to FastAPI. It uses `CLUTCH_API_KEY` server-side when calling
 FastAPI; the key is not rendered into the browser page. If you edit any Stytch
 secret later, restart the Streamlit app so the configuration reloads.
+
+### Startup behavior and the Community Cloud limit
+
+The frontend installs only its pinned Streamlit and Requests dependencies from
+`frontend/requirements.txt`. Community Cloud checks the entrypoint directory
+before the repository root, so it no longer installs the agent/database/model
+stack from the root editable package. This reduces dependency setup on rebuilds;
+it does not imply those packages were previously imported on every visit.
+The frontend Docker image uses the same requirements and copies only the theme
+config from `.streamlit`; secrets remain excluded from the build context.
+
+The theme explicitly selects a light base and system-local fonts. Landing and
+initial Review rendering perform no backend/model/auth HTTP request without a
+user action (a magic-link callback necessarily authenticates). The example and
+engineering disclosures work in the browser without a server rerun. No fake
+loading overlay, sleep delay, parent-frame script, or hidden skeleton is used.
+
+Community Cloud still owns the pre-app shell and hibernates inactive apps after
+12 hours. App CSS cannot affect the host wrapper before the WebSocket/script
+is ready. The existing keep-alive workflow is best effort, not an availability
+guarantee; a successful HTTP response or scheduled ping does not prove a usable
+page. See [Streamlit hibernation](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app)
+and [dependency selection](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies).
+
+For a public entry page that renders independently of Python startup, use a
+static HTML landing page on a static host/CDN and link to the Streamlit app.
+To remove Community Cloud's wrapper and idle hibernation from the app itself,
+run this frontend image on an always-on service; Streamlit will still need
+its JavaScript bundle and WebSocket connection. Keep the backend always-on too
+if first-review cold starts are unacceptable. Neither option means literally
+zero network loading. A host/domain move also requires updating the Stytch
+redirect allowlist and `stytch.redirect_url`. No hosting migration or paid
+resource has been created by this change.
+
+After deploying, test a fresh signed-out visit on mobile and desktop, confirm
+the Cloud build selects `frontend/requirements.txt`, and record cold and warm
+first-content timings separately. Local render checks do not establish hosted
+latency or uptime.
 
 ## 6. Hosted Smoke and Manual Checks
 
