@@ -72,5 +72,5 @@ Optional:
 This is not a substitute for reviewing and applying the production AWS plan.
 LocalStack is used here to catch Terraform/provider wiring mistakes early and
 to practice the deployment flow without touching a real AWS account. The real
-AWS checkpoint in `CLOUD.md` still applies before any paid resources are
+AWS plan in `infra/terraform` still needs review before any paid resources are
 created.
